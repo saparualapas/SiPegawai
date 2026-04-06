@@ -64,7 +64,7 @@ body.idle-warn-active .sidebar { top: 44px; }
 .auth-title{font-size:1.1rem;font-weight:800;color:var(--navy);margin-bottom:.25rem;}
 
 /* SIDEBAR */
-.sidebar{position:fixed;left:0;top:0;bottom:0;width:250px;background:var(--navy);display:flex;flex-direction:column;z-index:100;}
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:250px;background:var(--navy);display:flex;flex-direction:column;z-index:100;overflow:hidden;}
 .sb-brand{padding:1.25rem 1rem;display:flex;align-items:center;gap:.75rem;border-bottom:1px solid rgba(255,255,255,.1);}
 .sb-icon{width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:grid;place-items:center;color:#fff;font-size:.95rem;flex-shrink:0;}
 .sb-name{font-weight:800;font-size:.95rem;color:#fff;}
@@ -434,10 +434,11 @@ tbody td.wrap{white-space:normal;min-width:140px;}
       <div class="sb-icon"><i class="fas fa-users"></i></div>
       <div><div class="sb-name">SiPegawai</div><div class="sb-sub">Lapas Kelas III Saparua</div></div>
     </div>
-    <div id="navAdmin" style="display:none">
+    <div id="navAdmin" style="display:none;overflow-y:auto;flex:1;">
       <div class="nav-sec">Admin</div>
       <a class="nav-item" onclick="showPage('dash')"><i class="fas fa-chart-pie"></i>Dashboard</a>
       <a class="nav-item" onclick="showPage('approval')"><i class="fas fa-user-check"></i>Approval <span class="nav-badge" id="bdgApproval" style="display:none">0</span></a>
+      <a class="nav-item" onclick="showPage('daftarPegawai')"><i class="fas fa-user-plus"></i>Daftar Pegawai</a>
       <a class="nav-item" onclick="showPage('pegawai')"><i class="fas fa-users"></i>Semua Pegawai</a>
       <a class="nav-item" onclick="showPage('dokAdmin')"><i class="fas fa-folder-open"></i>Semua Dokumen</a>
       <div class="nav-sec">Kelola</div>
@@ -446,7 +447,7 @@ tbody td.wrap{white-space:normal;min-width:140px;}
       <a class="nav-item" onclick="showPage('backup')"><i class="fas fa-database"></i>Backup & Export</a>
       <a class="nav-item" onclick="showPage('setting')"><i class="fas fa-cog"></i>Pengaturan</a>
     </div>
-    <div id="navUser" style="display:none">
+    <div id="navUser" style="display:none;overflow-y:auto;flex:1;">
       <div class="nav-sec">Menu</div>
       <a class="nav-item" onclick="showPage('profil')"><i class="fas fa-id-card"></i>Profil Saya</a>
       <a class="nav-item" onclick="showPage('dokUser')"><i class="fas fa-file-alt"></i>Dokumen Saya</a>
@@ -512,10 +513,40 @@ tbody td.wrap{white-space:normal;min-width:140px;}
     </div>
 
 
+    <!-- DAFTAR PEGAWAI (ADMIN) -->
+    <div id="pageDaftarPegawai" style="display:none">
+      <div class="topbar"><div><div class="page-title">Daftar Pegawai</div><div class="page-sub">Tambah akun pegawai langsung — otomatis aktif tanpa approval</div></div></div>
+      <div style="max-width:520px">
+        <div class="card"><div class="card-hd"><span class="card-title"><i class="fas fa-user-plus" style="color:var(--accent);margin-right:.4rem"></i>Data Pegawai Baru</span></div><div class="card-body">
+          <div class="alert-info alert-box"><i class="fas fa-info-circle"></i><div>Akun yang didaftarkan admin langsung aktif. Pegawai bisa login segera setelah didaftarkan.</div></div>
+          <div class="form-group"><label class="form-label">Nama Lengkap *</label><input class="form-control" id="dpNama" placeholder="Nama lengkap pegawai" maxlength="100"/></div>
+          <div class="form-group"><label class="form-label">NIP *</label>
+            <input class="form-control" id="dpNip" placeholder="18 digit angka" inputmode="numeric" maxlength="18"
+              style="font-family:'JetBrains Mono',monospace;font-size:.85rem;letter-spacing:.05em"
+              oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,18);document.getElementById('dpNipCount').textContent=this.value.length+'/18';document.getElementById('dpNipCount').style.color=this.value.length===18?'var(--accent2)':'var(--muted)'"/>
+            <small id="dpNipCount" style="color:var(--muted);font-size:.7rem;float:right;margin-top:.2rem">0/18</small>
+          </div>
+          <div class="form-group"><label class="form-label">Jabatan *</label><select class="form-control" id="dpJabatan"><option value="">Pilih jabatan...</option></select></div>
+          <div class="form-group"><label class="form-label">Email *</label><input class="form-control" type="email" id="dpEmail" placeholder="email@instansi.go.id" inputmode="email"/></div>
+          <div class="form-group"><label class="form-label">Password *</label>
+            <div class="pw-wrap"><input class="form-control" type="password" id="dpPass" placeholder="Min. 6 karakter"/><button type="button" class="pw-toggle" onclick="togglePw('dpPass')" tabindex="-1"><i class="fas fa-eye" id="eye_dpPass"></i></button></div>
+          </div>
+          <div class="form-group"><label class="form-label">Konfirmasi Password *</label>
+            <div class="pw-wrap"><input class="form-control" type="password" id="dpPass2" placeholder="Ulangi password"/><button type="button" class="pw-toggle" onclick="togglePw('dpPass2')" tabindex="-1"><i class="fas fa-eye" id="eye_dpPass2"></i></button></div>
+          </div>
+          <div id="dpAlert" style="display:none;margin-bottom:.65rem"></div>
+          <div style="display:flex;gap:.7rem">
+            <button class="btn-s" style="flex:1;justify-content:center" onclick="resetDaftarPegawai()"><i class="fas fa-times"></i> Reset</button>
+            <button class="btn-p" style="flex:2;justify-content:center" id="btnDaftarPeg" onclick="doDaftarPegawaiAdmin()"><i class="fas fa-user-plus"></i> Daftarkan Pegawai</button>
+          </div>
+        </div></div>
+      </div>
+    </div>
+
     <!-- PENGATURAN -->
     <div id="pageSetting" style="display:none">
       <div class="topbar"><div><div class="page-title">Pengaturan</div></div></div>
-      <div class="grid-2col" style="max-width:860px">
+      <div style="max-width:520px">
         <div class="card"><div class="card-hd"><span class="card-title"><i class="fas fa-cloud" style="color:var(--accent);margin-right:.4rem"></i>Cloudflare R2</span></div><div class="card-body">
           <div class="alert-info alert-box"><i class="fas fa-lock"></i><div>Hanya admin yang dapat mengubah konfigurasi R2.</div></div>
           <div class="form-group"><label class="form-label">Account ID</label><input class="form-control" id="r2AID" style="font-family:'JetBrains Mono',monospace;font-size:.79rem"/></div>
@@ -525,13 +556,7 @@ tbody td.wrap{white-space:normal;min-width:140px;}
           <button class="btn-p" onclick="saveR2()" style="width:100%;justify-content:center"><i class="fas fa-save"></i> Simpan R2</button>
           <div id="r2Stat" style="margin-top:.65rem;font-size:.79rem;color:var(--muted)"></div>
         </div></div>
-        <div class="card"><div class="card-hd"><span class="card-title"><i class="fas fa-key" style="color:var(--warn);margin-right:.4rem"></i>Ubah Password</span></div><div class="card-body">
-          <div class="form-group"><label class="form-label">Password Lama</label><div class="pw-wrap"><input class="form-control" type="password" id="aOP" placeholder="Masukkan password saat ini"/><button type="button" class="pw-toggle" onclick="togglePw('aOP')" tabindex="-1"><i class="fas fa-eye" id="eye_aOP"></i></button></div></div>
-          <div class="form-group"><label class="form-label">Password Baru</label><div class="pw-wrap"><input class="form-control" type="password" id="aNP" placeholder="Min. 6 karakter"/><button type="button" class="pw-toggle" onclick="togglePw('aNP')" tabindex="-1"><i class="fas fa-eye" id="eye_aNP"></i></button></div></div>
-          <div class="form-group"><label class="form-label">Konfirmasi</label><div class="pw-wrap"><input class="form-control" type="password" id="aCP" placeholder="Ulangi password baru"/><button type="button" class="pw-toggle" onclick="togglePw('aCP')" tabindex="-1"><i class="fas fa-eye" id="eye_aCP"></i></button></div></div>
-          <button class="btn-p" id="btnChangePassAdmin" onclick="changePass('aNP','aCP','aOP','btnChangePassAdmin')" style="width:100%;justify-content:center"><i class="fas fa-save"></i> Ubah Password</button>
-          <div id="passAlertAdmin" style="display:none;margin-top:.65rem"></div>
-        </div></div>
+
       </div>
     </div>
 
@@ -1383,7 +1408,7 @@ async function enterApp(prof){
 
   if(prof.role==='admin'){
     const savedPage=sessionStorage.getItem('activePage');
-    const adminPages=['dash','approval','pegawai','dokAdmin','jabatan','kategori','setting'];
+    const adminPages=['dash','approval','daftarPegawai','pegawai','dokAdmin','jabatan','kategori','setting','backup'];
     const startPage=(savedPage&&adminPages.includes(savedPage))?savedPage:'dash';
     showPage(startPage);
   } else {
@@ -2701,11 +2726,127 @@ async function exportFullJSON(){
 }
 
 // ═══════════════════════════════
+//  DAFTAR PEGAWAI (ADMIN)
+// ═══════════════════════════════
+function loadDaftarPegawaiForm(){
+  // Reset form
+  resetDaftarPegawai();
+  // Isi dropdown jabatan
+  const sel=document.getElementById('dpJabatan');
+  if(sel){
+    sel.innerHTML='<option value="">Pilih jabatan...</option>'+
+      allJabatan.map(j=>`<option value="${j.id}">${j.nama}</option>`).join('');
+  }
+}
+
+function resetDaftarPegawai(){
+  ['dpNama','dpNip','dpEmail','dpPass','dpPass2'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.value='';
+  });
+  document.getElementById('dpJabatan').value='';
+  document.getElementById('dpNipCount').textContent='0/18';
+  document.getElementById('dpNipCount').style.color='var(--muted)';
+  hideDpAlert();
+}
+
+function showDpAlert(msg,type){
+  const box=document.getElementById('dpAlert');
+  const cls={ok:'alert-success',err:'alert-danger',warn:'alert-warn'};
+  const ico={ok:'fa-check-circle',err:'fa-times-circle',warn:'fa-exclamation-triangle'};
+  box.className=`alert-box ${cls[type]||'alert-warn'}`;
+  box.innerHTML=`<i class="fas ${ico[type]||'fa-exclamation-triangle'}"></i><div>${msg}</div>`;
+  box.style.display='flex';
+  if(type==='ok') setTimeout(hideDpAlert,5000);
+}
+function hideDpAlert(){ document.getElementById('dpAlert').style.display='none'; }
+
+async function doDaftarPegawaiAdmin(){
+  const nama  = document.getElementById('dpNama').value.trim();
+  const nip   = document.getElementById('dpNip').value.replace(/[^0-9]/g,'');
+  const jabId = document.getElementById('dpJabatan').value;
+  const email = document.getElementById('dpEmail').value.trim().toLowerCase();
+  const pass  = document.getElementById('dpPass').value;
+  const pass2 = document.getElementById('dpPass2').value;
+
+  // Validasi
+  if(!nama)          {showDpAlert('Nama lengkap wajib diisi.','warn');return;}
+  if(nama.length<3)  {showDpAlert('Nama minimal 3 karakter.','warn');return;}
+  if(!nip)           {showDpAlert('NIP wajib diisi.','warn');return;}
+  if(nip.length!==18){showDpAlert(`NIP harus 18 digit (sekarang ${nip.length} digit).`,'warn');return;}
+  if(!jabId)         {showDpAlert('Pilih jabatan terlebih dahulu.','warn');return;}
+  if(!email||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){showDpAlert('Format email tidak valid.','warn');return;}
+  if(!pass)          {showDpAlert('Password wajib diisi.','warn');return;}
+  if(pass.length<6)  {showDpAlert('Password minimal 6 karakter.','warn');return;}
+  if(pass!==pass2)   {showDpAlert('Konfirmasi password tidak cocok.','warn');return;}
+
+  const btn=document.getElementById('btnDaftarPeg');
+  setBtn(btn,true);
+  hideDpAlert();
+
+  try{
+    // 1. Buat akun di Supabase Auth
+    const{data,error}=await sb.auth.admin
+      ? sb.auth.admin.createUser({email,password:pass,email_confirm:true})
+      : await sb.auth.signUp({email,password:pass});
+
+    // Supabase JS v2 client tidak punya auth.admin di frontend
+    // Gunakan signUp biasa lalu langsung set status approved
+    let userId=null;
+    if(error){
+      // Coba cek apakah email sudah terdaftar
+      showDpAlert('Gagal membuat akun: '+error.message,'err');
+      setBtn(btn,false,'<i class="fas fa-user-plus"></i> Daftarkan Pegawai');
+      return;
+    }
+    userId=data?.user?.id;
+    if(!userId){
+      showDpAlert('Gagal membuat akun. Email mungkin sudah terdaftar.','err');
+      setBtn(btn,false,'<i class="fas fa-user-plus"></i> Daftarkan Pegawai');
+      return;
+    }
+
+    // 2. Set session agar bisa insert profile
+    if(data?.session){
+      try{ await sb.auth.setSession({
+        access_token:data.session.access_token,
+        refresh_token:data.session.refresh_token
+      }); }catch(e){}
+    }
+    await new Promise(r=>setTimeout(r,500));
+
+    // 3. Simpan profil langsung dengan status approved (tanpa perlu approval)
+    let saved=false;
+    for(let i=1;i<=3;i++){
+      const{error:pErr}=await sb.from('profiles').upsert({
+        id:userId, nama_lengkap:nama, nip, jabatan_id:jabId,
+        email, status_akun:'approved', role:'user',
+        updated_at:new Date().toISOString()
+      },{onConflict:'id'});
+      if(!pErr){saved=true;break;}
+      if(i<3) await new Promise(r=>setTimeout(r,600));
+    }
+
+    if(!saved){
+      showDpAlert('Akun dibuat tapi profil gagal disimpan. Cari user di Approval dan approve manual.','warn');
+    } else {
+      showDpAlert(`<strong>${nama}</strong> berhasil didaftarkan dan langsung aktif! Pegawai bisa login dengan email <strong>${email}</strong>.`,'ok');
+      resetDaftarPegawai();
+      // Reload data
+      loadDash();
+    }
+  }catch(e){
+    showDpAlert('Error: '+e.message,'err');
+  }
+  setBtn(btn,false,'<i class="fas fa-user-plus"></i> Daftarkan Pegawai');
+}
+
+// ═══════════════════════════════
 //  NAVIGATION
 // ═══════════════════════════════
-const PAGES=['Dash','Approval','Pegawai','DokAdmin','Jabatan','Kategori','Setting','Backup','Profil','EditProfil','DokUser','Upload'];
+const PAGES=['Dash','Approval','DaftarPegawai','Pegawai','DokAdmin','Jabatan','Kategori','Setting','Backup','Profil','EditProfil','DokUser','Upload'];
 const PAGE_LOADERS={
   dash:loadDash, approval:()=>loadApproval(1), pegawai:()=>loadPeg(1),
+  daftarPegawai:()=>{ loadDaftarPegawaiForm(); },
   dokAdmin:()=>loadDokAdmin(1), jabatan:()=>loadJabPage(1),
   kategori:()=>loadKatPage(1),
   profil:loadProfil, editProfil:loadProfil,
