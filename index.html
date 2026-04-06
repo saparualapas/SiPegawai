@@ -441,11 +441,14 @@ tbody td.wrap{white-space:normal;min-width:140px;}
       <a class="nav-item" onclick="showPage('daftarPegawai')"><i class="fas fa-user-plus"></i>Daftar Pegawai</a>
       <a class="nav-item" onclick="showPage('pegawai')"><i class="fas fa-users"></i>Semua Pegawai</a>
       <a class="nav-item" onclick="showPage('dokAdmin')"><i class="fas fa-folder-open"></i>Semua Dokumen</a>
+      <a class="nav-item" onclick="showPage('uploadAdmin')"><i class="fas fa-cloud-upload-alt"></i>Upload Dokumen</a>
       <div class="nav-sec">Kelola</div>
       <a class="nav-item" onclick="showPage('jabatan')"><i class="fas fa-id-badge"></i>Jabatan</a>
       <a class="nav-item" onclick="showPage('kategori')"><i class="fas fa-tags"></i>Kategori Dokumen</a>
       <a class="nav-item" onclick="showPage('backup')"><i class="fas fa-database"></i>Backup & Export</a>
       <a class="nav-item" onclick="showPage('setting')"><i class="fas fa-cog"></i>Pengaturan</a>
+      <div class="nav-sec">Akun</div>
+      <a class="nav-item" onclick="showPage('editProfilAdmin')"><i class="fas fa-user-edit"></i>Edit Profil & Password</a>
     </div>
     <div id="navUser" style="display:none;overflow-y:auto;flex:1;">
       <div class="nav-sec">Menu</div>
@@ -495,7 +498,7 @@ tbody td.wrap{white-space:normal;min-width:140px;}
     <div id="pageDokAdmin" style="display:none">
       <div class="topbar"><div><div class="page-title">Semua Dokumen</div></div></div>
       <div class="toolbar"><div class="srch"><i class="fas fa-search"></i><input type="text" id="dokAdminQ" placeholder="Cari nama file..." oninput="filterDokAdmin()"/></div><div class="srch" style="max-width:210px"><i class="fas fa-user"></i><input type="text" id="dokAdminPegQ" placeholder="Cari nama pegawai..." oninput="filterDokAdmin()"/></div><select class="fsel" id="dokAdminKatF" onchange="filterDokAdmin()"><option value="">Semua Kategori</option></select></div>
-      <div class="card"><div class="tbl-scroll-hint"><i class="fas fa-arrows-alt-h"></i> Geser ke samping untuk melihat semua kolom</div><div class="tbl-wrap"><table><thead><tr><th>File</th><th>Kategori</th><th>Keterangan</th><th>Pegawai</th><th>Ukuran</th><th>Diupload</th><th>Aksi</th></tr></thead><tbody id="dokAdminList"></tbody></table><div id="dokAdminSkel"></div><div id="dokAdminEmpty" class="empty" style="display:none"><i class="fas fa-folder-open"></i><p>Belum ada dokumen.</p></div><div id="dokAdminPgn" class="pgn" style="display:none"></div></div></div>
+      <div class="card"><div class="tbl-scroll-hint"><i class="fas fa-arrows-alt-h"></i> Geser ke samping untuk melihat semua kolom</div><div class="tbl-wrap"><table><thead><tr><th>File</th><th>Kategori</th><th>Keterangan</th><th>Milik Pegawai</th><th>Diupload Oleh</th><th>Ukuran</th><th>Diupload</th><th>Aksi</th></tr></thead><tbody id="dokAdminList"></tbody></table><div id="dokAdminSkel"></div><div id="dokAdminEmpty" class="empty" style="display:none"><i class="fas fa-folder-open"></i><p>Belum ada dokumen.</p></div><div id="dokAdminPgn" class="pgn" style="display:none"></div></div></div>
     </div>
 
     <!-- JABATAN -->
@@ -539,6 +542,52 @@ tbody td.wrap{white-space:normal;min-width:140px;}
             <button class="btn-s" style="flex:1;justify-content:center" onclick="resetDaftarPegawai()"><i class="fas fa-times"></i> Reset</button>
             <button class="btn-p" style="flex:2;justify-content:center" id="btnDaftarPeg" onclick="doDaftarPegawaiAdmin()"><i class="fas fa-user-plus"></i> Daftarkan Pegawai</button>
           </div>
+        </div></div>
+      </div>
+    </div>
+
+    <!-- UPLOAD DOKUMEN ADMIN -->
+    <div id="pageUploadAdmin" style="display:none">
+      <div class="topbar"><div><div class="page-title">Upload Dokumen</div><div class="page-sub">Upload dokumen atas nama pegawai</div></div></div>
+      <div style="max-width:560px"><div class="card card-body">
+        <div class="alert-info alert-box" style="margin-bottom:1rem"><i class="fas fa-info-circle"></i><div>Pilih pegawai terlebih dahulu, lalu upload dokumen atas namanya. Dokumen akan tercatat sebagai milik pegawai yang dipilih dan diunggah oleh admin.</div></div>
+        <div class="form-group">
+          <label class="form-label">Pegawai *</label>
+          <div style="position:relative;margin-bottom:.4rem"><i class="fas fa-search" style="position:absolute;left:.85rem;top:50%;transform:translateY(-50%);color:var(--muted);font-size:.78rem;pointer-events:none"></i><input type="text" class="form-control" id="upAdminPegQ" placeholder="Ketik nama atau NIP pegawai..." oninput="searchUpAdminPeg()" style="padding-left:2.3rem"/></div>
+          <div id="upAdminPegList" style="display:none;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;max-height:200px;overflow-y:auto;box-shadow:var(--shadow);margin-bottom:.4rem"></div>
+          <div id="upAdminPegSel" style="display:none;background:var(--accent-l);border:1.5px solid var(--accent);border-radius:10px;padding:.6rem .9rem;align-items:center;gap:.7rem">
+            <div class="av" style="width:32px;height:32px;border-radius:8px;font-size:.75rem;flex-shrink:0" id="upAdminPegAv">?</div>
+            <div style="flex:1;min-width:0"><div style="font-weight:700;font-size:.84rem;color:var(--navy)" id="upAdminPegNama">—</div><div style="font-size:.71rem;color:var(--muted);font-family:'JetBrains Mono',monospace" id="upAdminPegNip">—</div></div>
+            <button onclick="clearUpAdminPeg()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:.85rem"><i class="fas fa-times"></i></button>
+          </div>
+          <input type="hidden" id="upAdminPegId"/>
+        </div>
+        <div class="form-group"><label class="form-label">Kategori *</label><select class="form-control" id="upAdminKat"><option value="">Pilih kategori...</option></select></div>
+        <div class="form-group"><label class="form-label">Keterangan</label><input class="form-control" id="upAdminKet" placeholder="cth: SK Pengangkatan 2024"/></div>
+        <div class="form-group"><label class="form-label">File *</label>
+          <div class="upload-zone" id="upAdminZone"><i class="fas fa-cloud-upload-alt" style="font-size:1.7rem;color:var(--muted);margin-bottom:.65rem;display:block"></i><p style="font-weight:500;margin-bottom:.2rem">Klik atau drag & drop</p><span style="font-size:.77rem;color:var(--muted)">PDF, JPG, PNG — maks 10MB</span><input type="file" id="upAdminFile" style="display:none" accept=".pdf,.jpg,.jpeg,.png"/></div>
+          <div id="upAdminFileSel" style="display:none;background:var(--surface2);border-radius:9px;padding:.65rem;font-size:.82rem;align-items:center;gap:.7rem"><i class="fas fa-file" style="color:var(--accent)"></i><span id="upAdminFileName"></span><button onclick="clearUpAdminFile()" style="margin-left:auto;background:none;border:none;color:var(--muted);cursor:pointer"><i class="fas fa-times"></i></button></div>
+        </div>
+        <div id="upAdminSizeAlert" class="alert-danger alert-box" style="display:none"><i class="fas fa-exclamation-circle"></i><div id="upAdminSizeAlertTxt"></div></div>
+        <div id="upAdminPrgWrap" style="display:none;margin-bottom:.875rem"><div style="display:flex;justify-content:space-between;font-size:.79rem;margin-bottom:.32rem"><span id="upAdminPrgLabel">Mengupload...</span><span id="upAdminPrgPct">0%</span></div><div class="progress-wrap"><div class="progress-fill" id="upAdminPrgBar" style="width:0%"></div></div></div>
+        <button class="btn-p" id="btnUploadAdmin" onclick="doUploadAdmin()" style="width:100%;justify-content:center"><i class="fas fa-upload"></i> Upload Dokumen</button>
+      </div></div>
+    </div>
+
+    <!-- EDIT PROFIL ADMIN -->
+    <div id="pageEditProfilAdmin" style="display:none">
+      <div class="topbar"><div><div class="page-title">Edit Profil & Password</div><div class="page-sub">Perbarui data diri dan password admin</div></div></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.375rem;max-width:860px">
+        <div class="card"><div class="card-hd"><span class="card-title"><i class="fas fa-user" style="color:var(--accent);margin-right:.4rem"></i>Data Diri</span></div><div class="card-body">
+          <div class="form-row"><div class="form-group"><label class="form-label">Nama Lengkap</label><input class="form-control" id="eAdminNama"/></div><div class="form-group"><label class="form-label">NIP</label><input class="form-control" id="eAdminNip" style="font-family:'JetBrains Mono',monospace;font-size:.79rem"/></div></div>
+          <div class="form-group"><label class="form-label">Email</label><input class="form-control" type="email" id="eAdminEmail"/></div>
+          <div class="alert-warn alert-box" style="margin-bottom:.5rem"><i class="fas fa-exclamation-triangle"></i><div style="font-size:.79rem">Perubahan email memerlukan konfirmasi ke email baru.</div></div>
+          <div style="display:flex;gap:.7rem"><button class="btn-s" style="flex:1;justify-content:center" onclick="loadProfilAdmin()"><i class="fas fa-undo"></i> Reset</button><button class="btn-p" style="flex:2;justify-content:center" id="btnSaveAdminPro" onclick="saveProAdmin()"><i class="fas fa-save"></i> Simpan</button></div>
+        </div></div>
+        <div class="card"><div class="card-hd"><span class="card-title"><i class="fas fa-key" style="color:var(--warn);margin-right:.4rem"></i>Ubah Password</span></div><div class="card-body">
+          <div class="form-group"><label class="form-label">Password Baru</label><div class="pw-wrap"><input class="form-control" type="password" id="eAdminNP" placeholder="Min. 6 karakter"/><button type="button" class="pw-toggle" onclick="togglePw('eAdminNP')" tabindex="-1"><i class="fas fa-eye" id="eye_eAdminNP"></i></button></div></div>
+          <div class="form-group"><label class="form-label">Konfirmasi</label><div class="pw-wrap"><input class="form-control" type="password" id="eAdminCP" placeholder="Ulangi password baru"/><button type="button" class="pw-toggle" onclick="togglePw('eAdminCP')" tabindex="-1"><i class="fas fa-eye" id="eye_eAdminCP"></i></button></div></div>
+          <button class="btn-p" onclick="changePass('eAdminNP','eAdminCP')" style="width:100%;justify-content:center"><i class="fas fa-save"></i> Ubah Password</button>
         </div></div>
       </div>
     </div>
@@ -2040,7 +2089,7 @@ async function loadDokAdmin(p=1){
   if(!s){ toast('Sesi habis, silakan login ulang.','warn'); skelEl.innerHTML=''; return; }
 
   const from=(p-1)*PS,to=from+PS-1;
-  let q=sb.from('dokumen').select('*,profiles(nama_lengkap,nip),kategori_dokumen:kategori_id(nama)',{count:'exact'});
+  let q=sb.from('dokumen').select('*,profiles:user_id(nama_lengkap,nip),uploader:uploaded_by(nama_lengkap),kategori_dokumen:kategori_id(nama)',{count:'exact'});
   if(dakF.katId) q=q.eq('kategori_id',dakF.katId);
   if(dakF.q) q=q.ilike('nama_file','%'+dakF.q+'%');
 
@@ -2075,6 +2124,7 @@ async function loadDokAdmin(p=1){
     <td><span class="chip chip-navy">${d.kategori_dokumen?.nama||'—'}</span></td>
     <td style="font-size:.82rem;color:var(--muted);max-width:180px"><span style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${d.keterangan||'—'}</span></td>
     <td><div class="emp-name">${d.profiles?.nama_lengkap||'—'}</div><div class="emp-nip">${d.profiles?.nip||''}</div></td>
+    <td style="font-size:.79rem">${d.uploaded_by&&d.uploaded_by!==d.user_id?`<span style="color:var(--accent);font-weight:600"><i class="fas fa-user-shield" style="font-size:.7rem"></i> ${d.uploader?.nama_lengkap||'Admin'}</span>`:'<span style="color:var(--muted)">Pegawai</span>'}</td>
     <td style="font-size:.77rem;color:var(--muted)">${fmtSz(d.ukuran_file)}</td>
     <td style="font-size:.77rem;color:var(--muted)">${fmtD(d.uploaded_at)}</td>
     <td><button class="btn-ok" onclick="adminOpenDok('${d.r2_key}','${(d.nama_file||'').replace(/'/g,"\'")}')"><i class="fas fa-download"></i> Buka</button></td></tr>`).join('');
@@ -2784,72 +2834,260 @@ async function doDaftarPegawaiAdmin(){
   hideDpAlert();
 
   try{
-    // 1. Buat akun di Supabase Auth
-    const{data,error}=await sb.auth.admin
-      ? sb.auth.admin.createUser({email,password:pass,email_confirm:true})
-      : await sb.auth.signUp({email,password:pass});
+    // 1. Daftarkan akun via signUp biasa (tidak pakai auth.admin yang butuh service_role key)
+    const{data,error}=await sb.auth.signUp({
+      email, password:pass,
+      options:{ emailRedirectTo: window.location.origin+window.location.pathname }
+    });
 
-    // Supabase JS v2 client tidak punya auth.admin di frontend
-    // Gunakan signUp biasa lalu langsung set status approved
-    let userId=null;
     if(error){
-      // Coba cek apakah email sudah terdaftar
-      showDpAlert('Gagal membuat akun: '+error.message,'err');
+      const msg=error.message.toLowerCase();
+      if(msg.includes('already registered')||msg.includes('already been registered')||msg.includes('email already')){
+        showDpAlert('Email <strong>'+email+'</strong> sudah terdaftar. Gunakan email lain.','err');
+      } else {
+        showDpAlert('Gagal membuat akun: '+error.message,'err');
+      }
       setBtn(btn,false,'<i class="fas fa-user-plus"></i> Daftarkan Pegawai');
       return;
     }
-    userId=data?.user?.id;
+
+    const userId=data?.user?.id;
     if(!userId){
       showDpAlert('Gagal membuat akun. Email mungkin sudah terdaftar.','err');
       setBtn(btn,false,'<i class="fas fa-user-plus"></i> Daftarkan Pegawai');
       return;
     }
 
-    // 2. Set session agar bisa insert profile
-    if(data?.session){
-      try{ await sb.auth.setSession({
-        access_token:data.session.access_token,
-        refresh_token:data.session.refresh_token
-      }); }catch(e){}
-    }
-    await new Promise(r=>setTimeout(r,500));
+    // 2. Simpan profil via RPC admin_upsert_profile (SECURITY DEFINER — bypass RLS)
+    //    Status langsung 'approved' karena admin yang daftarkan
+    const{error:rpcErr}=await sb.rpc('admin_upsert_profile',{
+      p_id        : userId,
+      p_nama      : nama,
+      p_nip       : nip,
+      p_jabatan_id: jabId,
+      p_email     : email,
+      p_status    : 'approved',
+      p_role      : 'user'
+    });
 
-    // 3. Simpan profil langsung dengan status approved (tanpa perlu approval)
-    let saved=false;
-    for(let i=1;i<=3;i++){
-      const{error:pErr}=await sb.from('profiles').upsert({
-        id:userId, nama_lengkap:nama, nip, jabatan_id:jabId,
-        email, status_akun:'approved', role:'user',
-        updated_at:new Date().toISOString()
-      },{onConflict:'id'});
-      if(!pErr){saved=true;break;}
-      if(i<3) await new Promise(r=>setTimeout(r,600));
-    }
-
-    if(!saved){
-      showDpAlert('Akun dibuat tapi profil gagal disimpan. Cari user di Approval dan approve manual.','warn');
+    if(rpcErr){
+      showDpAlert('Akun dibuat tapi profil gagal disimpan: '+rpcErr.message+'. Cari user di Approval dan approve manual.','warn');
     } else {
-      showDpAlert(`<strong>${nama}</strong> berhasil didaftarkan dan langsung aktif! Pegawai bisa login dengan email <strong>${email}</strong>.`,'ok');
+      showDpAlert(`<strong>${nama}</strong> berhasil didaftarkan dan langsung aktif!<br>Pegawai bisa login dengan email <strong>${email}</strong> dan password yang ditentukan.`,'ok');
       resetDaftarPegawai();
-      // Reload data
       loadDash();
     }
   }catch(e){
-    showDpAlert('Error: '+e.message,'err');
+    showDpAlert('Error tidak terduga: '+e.message,'err');
   }
   setBtn(btn,false,'<i class="fas fa-user-plus"></i> Daftarkan Pegawai');
 }
 
 // ═══════════════════════════════
+//  UPLOAD DOKUMEN ADMIN
+// ═══════════════════════════════
+let upAdminFile=null, upAdminPegSelected=null, upAdminPegTimer=null;
+
+function setupUploadAdmin(){
+  const z=document.getElementById('upAdminZone');
+  const inp=document.getElementById('upAdminFile');
+  if(!z||!inp)return;
+  z.addEventListener('click',()=>inp.click());
+  z.addEventListener('dragover',e=>{e.preventDefault();z.classList.add('drag');});
+  z.addEventListener('dragleave',()=>z.classList.remove('drag'));
+  z.addEventListener('drop',e=>{e.preventDefault();z.classList.remove('drag');setUpAdminFile(e.dataTransfer.files[0]);});
+  inp.addEventListener('change',()=>setUpAdminFile(inp.files[0]));
+}
+
+function setUpAdminFile(f){
+  const alertBox=document.getElementById('upAdminSizeAlert');
+  const alertTxt=document.getElementById('upAdminSizeAlertTxt');
+  if(alertBox) alertBox.style.display='none';
+  if(!f) return;
+  const allowed=['pdf','jpg','jpeg','png'];
+  const ext=(f.name.split('.').pop()||'').toLowerCase();
+  if(!allowed.includes(ext)){
+    alertTxt.innerHTML=`<strong>Format tidak didukung!</strong> File <em>${f.name}</em> bertipe <strong>.${ext}</strong>. Hanya PDF, JPG, PNG.`;
+    alertBox.style.display='flex';
+    document.getElementById('upAdminFile').value='';return;
+  }
+  if(f.size>10*1024*1024){
+    const mb=(f.size/1024/1024).toFixed(2);
+    alertTxt.innerHTML=`<strong>File terlalu besar!</strong> ${f.name} berukuran <strong>${mb} MB</strong>, maks 10 MB.`;
+    alertBox.style.display='flex';
+    document.getElementById('upAdminFile').value='';return;
+  }
+  upAdminFile=f;
+  document.getElementById('upAdminZone').style.display='none';
+  const s=document.getElementById('upAdminFileSel');
+  s.style.display='flex';
+  document.getElementById('upAdminFileName').textContent=f.name+' ('+fmtSz(f.size)+')';
+}
+
+function clearUpAdminFile(){
+  upAdminFile=null;
+  document.getElementById('upAdminFile').value='';
+  document.getElementById('upAdminZone').style.display='block';
+  document.getElementById('upAdminFileSel').style.display='none';
+  const b=document.getElementById('upAdminSizeAlert');if(b)b.style.display='none';
+}
+
+async function searchUpAdminPeg(){
+  clearTimeout(upAdminPegTimer);
+  const q=document.getElementById('upAdminPegQ').value.trim();
+  const list=document.getElementById('upAdminPegList');
+  if(q.length<2){list.style.display='none';return;}
+  upAdminPegTimer=setTimeout(async()=>{
+    const{data}=await sb.from('profiles')
+      .select('id,nama_lengkap,nip,jabatan(nama)')
+      .eq('status_akun','approved').eq('role','user')
+      .or(`nama_lengkap.ilike.%${q}%,nip.ilike.%${q}%`)
+      .limit(8);
+    if(!data||!data.length){list.innerHTML='<div style="padding:.7rem 1rem;font-size:.82rem;color:var(--muted)">Tidak ditemukan</div>';list.style.display='block';return;}
+    list.innerHTML=data.map(p=>`
+      <div onclick="selectUpAdminPeg('${p.id}','${(p.nama_lengkap||'').replace(/'/g,"\\'")}','${p.nip||''}')"
+        style="padding:.6rem 1rem;cursor:pointer;display:flex;align-items:center;gap:.6rem;border-bottom:1px solid var(--border);transition:background .12s"
+        onmouseover="this.style.background='var(--navy-ll)'" onmouseout="this.style.background=''">
+        <div class="av" style="width:30px;height:30px;border-radius:7px;font-size:.72rem;flex-shrink:0">${ini(p.nama_lengkap)}</div>
+        <div><div style="font-size:.83rem;font-weight:600;color:var(--navy)">${p.nama_lengkap||'—'}</div>
+        <div style="font-size:.7rem;color:var(--muted);font-family:'JetBrains Mono',monospace">${p.nip||'—'} · ${p.jabatan?.nama||'—'}</div></div>
+      </div>`).join('');
+    list.style.display='block';
+  },300);
+}
+
+function selectUpAdminPeg(id,nama,nip){
+  upAdminPegSelected={id,nama,nip};
+  document.getElementById('upAdminPegId').value=id;
+  document.getElementById('upAdminPegNama').textContent=nama;
+  document.getElementById('upAdminPegNip').textContent=nip;
+  document.getElementById('upAdminPegAv').textContent=ini(nama);
+  document.getElementById('upAdminPegSel').style.display='flex';
+  document.getElementById('upAdminPegList').style.display='none';
+  document.getElementById('upAdminPegQ').value='';
+}
+
+function clearUpAdminPeg(){
+  upAdminPegSelected=null;
+  document.getElementById('upAdminPegId').value='';
+  document.getElementById('upAdminPegSel').style.display='none';
+  document.getElementById('upAdminPegQ').value='';
+}
+
+function setPrgAdmin(p,l){
+  document.getElementById('upAdminPrgBar').style.width=p+'%';
+  document.getElementById('upAdminPrgPct').textContent=p+'%';
+  document.getElementById('upAdminPrgLabel').textContent=l;
+}
+
+async function doUploadAdmin(){
+  const pegId=document.getElementById('upAdminPegId').value;
+  const katId=document.getElementById('upAdminKat').value;
+  const ket=document.getElementById('upAdminKet').value.trim();
+  if(!pegId){toast('Pilih pegawai terlebih dahulu!','warn');return;}
+  if(!katId){toast('Pilih kategori terlebih dahulu!','warn');return;}
+  if(!upAdminFile){toast('Pilih file terlebih dahulu!','warn');return;}
+  await loadR2();
+  if(!R2.accountId||!R2.accessKey||!R2.secretKey||!R2.bucket){toast('R2 belum dikonfigurasi!','err');return;}
+  const btn=document.getElementById('btnUploadAdmin');
+  setBtn(btn,true);
+  const safeFileName=upAdminFile.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+  const r2Key=`${pegId}/${Date.now()}_${safeFileName}`;
+  const ep=`https://${R2.accountId}.r2.cloudflarestorage.com`;
+  document.getElementById('upAdminPrgWrap').style.display='block';
+  setPrgAdmin(10,'Menyiapkan file...');
+  try{
+    const fileBuffer=await upAdminFile.arrayBuffer();
+    setPrgAdmin(25,'Mengunggah ke Cloudflare R2...');
+    await r2Put(ep,R2.bucket,r2Key,fileBuffer,upAdminFile.type||'application/octet-stream');
+    setPrgAdmin(75,'Menyimpan ke database...');
+    const katNama=allKategori.find(k=>k.id===katId)?.nama||null;
+    const{error:dbErr}=await sb.from('dokumen').insert({
+      user_id      : pegId,           // milik pegawai ini
+      uploaded_by  : CU.id,           // diunggah oleh admin
+      nama_file    : upAdminFile.name,
+      kategori_id  : katId,
+      jenis_dokumen: katNama,
+      keterangan   : ket||null,
+      ukuran_file  : upAdminFile.size,
+      r2_key       : r2Key,
+      uploaded_at  : new Date().toISOString()
+    });
+    if(dbErr) throw new Error('Gagal simpan ke database: '+dbErr.message);
+    setPrgAdmin(100,'Selesai!');
+    document.getElementById('upAdminPrgBar').classList.add('done');
+    toast(`Dokumen berhasil diupload atas nama ${upAdminPegSelected?.nama||'pegawai'} ✓`,'ok');
+    clearUpAdminFile();
+    clearUpAdminPeg();
+    document.getElementById('upAdminKat').value='';
+    document.getElementById('upAdminKet').value='';
+    setTimeout(()=>{
+      document.getElementById('upAdminPrgWrap').style.display='none';
+      document.getElementById('upAdminPrgBar').classList.remove('done');
+      setPrgAdmin(0,'');
+    },2000);
+  }catch(e){
+    toast('Upload gagal: '+e.message,'err');
+    setPrgAdmin(0,'');
+    document.getElementById('upAdminPrgWrap').style.display='none';
+  }
+  setBtn(btn,false,'<i class="fas fa-upload"></i> Upload Dokumen');
+}
+
+function loadUploadAdminPage(){
+  // Isi dropdown kategori
+  const sel=document.getElementById('upAdminKat');
+  if(sel) sel.innerHTML='<option value="">Pilih kategori...</option>'+
+    allKategori.map(k=>`<option value="${k.id}">${k.nama}</option>`).join('');
+  setupUploadAdmin();
+  clearUpAdminPeg();
+  clearUpAdminFile();
+}
+
+// ═══════════════════════════════
+//  EDIT PROFIL ADMIN
+// ═══════════════════════════════
+function loadProfilAdmin(){
+  const p=CP; if(!p) return;
+  const n=document.getElementById('eAdminNama');
+  const ni=document.getElementById('eAdminNip');
+  const e=document.getElementById('eAdminEmail');
+  if(n)  n.value=p.nama_lengkap||'';
+  if(ni) ni.value=p.nip||'';
+  if(e)  e.value=p.email||'';
+}
+
+async function saveProAdmin(){
+  const nama =document.getElementById('eAdminNama').value.trim();
+  const nip  =document.getElementById('eAdminNip').value.trim();
+  const email=document.getElementById('eAdminEmail').value.trim();
+  if(!nama){toast('Nama tidak boleh kosong!','warn');return;}
+  const btn=document.getElementById('btnSaveAdminPro');
+  setBtn(btn,true);
+  const{error}=await sb.from('profiles').update({
+    nama_lengkap:nama, nip:nip||null, email:email||CP.email
+  }).eq('id',CU.id);
+  setBtn(btn,false,'<i class="fas fa-save"></i> Simpan');
+  if(error){toast('Gagal: '+error.message,'err');return;}
+  const{data:np}=await sb.from('profiles').select('*,jabatan(nama)').eq('id',CU.id).single();
+  CP=np;
+  sessionStorage.setItem('currentProfile',JSON.stringify(np));
+  setSidebar(np);
+  toast('Profil admin diperbarui ✓','ok');
+}
+
+// ═══════════════════════════════
 //  NAVIGATION
 // ═══════════════════════════════
-const PAGES=['Dash','Approval','DaftarPegawai','Pegawai','DokAdmin','Jabatan','Kategori','Setting','Backup','Profil','EditProfil','DokUser','Upload'];
+const PAGES=['Dash','Approval','DaftarPegawai','Pegawai','DokAdmin','UploadAdmin','Jabatan','Kategori','Setting','Backup','Profil','EditProfil','EditProfilAdmin','DokUser','Upload'];
 const PAGE_LOADERS={
   dash:loadDash, approval:()=>loadApproval(1), pegawai:()=>loadPeg(1),
   daftarPegawai:()=>{ loadDaftarPegawaiForm(); },
   dokAdmin:()=>loadDokAdmin(1), jabatan:()=>loadJabPage(1),
+  uploadAdmin:()=>loadUploadAdminPage(),
   kategori:()=>loadKatPage(1),
   profil:loadProfil, editProfil:loadProfil,
+  editProfilAdmin:loadProfilAdmin,
   dokUser:()=>loadDokUser(selKatId,1),
   setting:()=>{ loadR2(); },
   backup:()=>{ loadBackupPage(); },
