@@ -581,13 +581,14 @@ tbody td.wrap{white-space:normal;min-width:140px;}
         <div class="card"><div class="card-hd"><span class="card-title"><i class="fas fa-user" style="color:var(--accent);margin-right:.4rem"></i>Data Diri</span></div><div class="card-body">
           <div class="form-row"><div class="form-group"><label class="form-label">Nama Lengkap</label><input class="form-control" id="eAdminNama"/></div><div class="form-group"><label class="form-label">NIP</label><input class="form-control" id="eAdminNip" style="font-family:'JetBrains Mono',monospace;font-size:.79rem"/></div></div>
           <div class="form-group"><label class="form-label">Email</label><input class="form-control" type="email" id="eAdminEmail"/></div>
-          <div class="alert-warn alert-box" style="margin-bottom:.5rem"><i class="fas fa-exclamation-triangle"></i><div style="font-size:.79rem">Perubahan email memerlukan konfirmasi ke email baru.</div></div>
           <div style="display:flex;gap:.7rem"><button class="btn-s" style="flex:1;justify-content:center" onclick="loadProfilAdmin()"><i class="fas fa-undo"></i> Reset</button><button class="btn-p" style="flex:2;justify-content:center" id="btnSaveAdminPro" onclick="saveProAdmin()"><i class="fas fa-save"></i> Simpan</button></div>
         </div></div>
         <div class="card"><div class="card-hd"><span class="card-title"><i class="fas fa-key" style="color:var(--warn);margin-right:.4rem"></i>Ubah Password</span></div><div class="card-body">
+          <div class="form-group"><label class="form-label">Password Lama</label><div class="pw-wrap"><input class="form-control" type="password" id="eAdminOP" placeholder="Password saat ini"/><button type="button" class="pw-toggle" onclick="togglePw('eAdminOP')" tabindex="-1"><i class="fas fa-eye" id="eye_eAdminOP"></i></button></div></div>
           <div class="form-group"><label class="form-label">Password Baru</label><div class="pw-wrap"><input class="form-control" type="password" id="eAdminNP" placeholder="Min. 6 karakter"/><button type="button" class="pw-toggle" onclick="togglePw('eAdminNP')" tabindex="-1"><i class="fas fa-eye" id="eye_eAdminNP"></i></button></div></div>
-          <div class="form-group"><label class="form-label">Konfirmasi</label><div class="pw-wrap"><input class="form-control" type="password" id="eAdminCP" placeholder="Ulangi password baru"/><button type="button" class="pw-toggle" onclick="togglePw('eAdminCP')" tabindex="-1"><i class="fas fa-eye" id="eye_eAdminCP"></i></button></div></div>
-          <button class="btn-p" onclick="changePass('eAdminNP','eAdminCP')" style="width:100%;justify-content:center"><i class="fas fa-save"></i> Ubah Password</button>
+          <div class="form-group"><label class="form-label">Konfirmasi Password Baru</label><div class="pw-wrap"><input class="form-control" type="password" id="eAdminCP" placeholder="Ulangi password baru"/><button type="button" class="pw-toggle" onclick="togglePw('eAdminCP')" tabindex="-1"><i class="fas fa-eye" id="eye_eAdminCP"></i></button></div></div>
+          <div id="passAlertAdmin" class="alert-box" style="display:none;margin-bottom:.65rem"></div>
+          <button class="btn-p" id="btnChangePassAdmin" onclick="changePass('eAdminNP','eAdminCP','eAdminOP','btnChangePassAdmin')" style="width:100%;justify-content:center"><i class="fas fa-save"></i> Ubah Password</button>
         </div></div>
       </div>
     </div>
@@ -2089,7 +2090,7 @@ async function loadDokAdmin(p=1){
   if(!s){ toast('Sesi habis, silakan login ulang.','warn'); skelEl.innerHTML=''; return; }
 
   const from=(p-1)*PS,to=from+PS-1;
-  let q=sb.from('dokumen').select('*,profiles:user_id(nama_lengkap,nip),uploader:uploaded_by(nama_lengkap),kategori_dokumen:kategori_id(nama)',{count:'exact'});
+  let q=sb.from('dokumen').select('*,kategori_dokumen:kategori_id(nama)',{count:'exact'});
   if(dakF.katId) q=q.eq('kategori_id',dakF.katId);
   if(dakF.q) q=q.ilike('nama_file','%'+dakF.q+'%');
 
@@ -2110,8 +2111,6 @@ async function loadDokAdmin(p=1){
   const{data,count}=await q.order('uploaded_at',{ascending:false}).range(from,to);
   dakTotal=count||0;
   skelEl.innerHTML='';
-
-  // Sembunyikan empty dulu sebelum render — cegah tampil bersamaan
   emptyEl.style.display='none';
 
   if(!data||!data.length){
@@ -2119,15 +2118,28 @@ async function loadDokAdmin(p=1){
     return;
   }
 
-  listEl.innerHTML=data.map(d=>`<tr>
+  // Ambil data profiles untuk user_id dan uploaded_by secara terpisah
+  const allUserIds=[...new Set([
+    ...data.map(d=>d.user_id).filter(Boolean),
+    ...data.map(d=>d.uploaded_by).filter(Boolean)
+  ])];
+  const{data:profData}=await sb.from('profiles').select('id,nama_lengkap,nip').in('id',allUserIds);
+  const profMap={};(profData||[]).forEach(p=>{ profMap[p.id]=p; });
+
+  listEl.innerHTML=data.map(d=>{
+    const owner=profMap[d.user_id]||{};
+    const uploader=d.uploaded_by?profMap[d.uploaded_by]:null;
+    const uploadedByAdmin=uploader&&d.uploaded_by!==d.user_id;
+    return `<tr>
     <td><div style="display:flex;align-items:center;gap:.6rem"><div class="doc-ico" style="background:${dBg(d.nama_file)};color:${dClr(d.nama_file)};width:30px;height:30px;border-radius:7px"><i class="fas ${dIco(d.nama_file)}"></i></div><span style="font-weight:600;font-size:.84rem;color:var(--navy)">${d.nama_file}</span></div></td>
     <td><span class="chip chip-navy">${d.kategori_dokumen?.nama||'—'}</span></td>
     <td style="font-size:.82rem;color:var(--muted);max-width:180px"><span style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${d.keterangan||'—'}</span></td>
-    <td><div class="emp-name">${d.profiles?.nama_lengkap||'—'}</div><div class="emp-nip">${d.profiles?.nip||''}</div></td>
-    <td style="font-size:.79rem">${d.uploaded_by&&d.uploaded_by!==d.user_id?`<span style="color:var(--accent);font-weight:600"><i class="fas fa-user-shield" style="font-size:.7rem"></i> ${d.uploader?.nama_lengkap||'Admin'}</span>`:'<span style="color:var(--muted)">Pegawai</span>'}</td>
+    <td><div class="emp-name">${owner.nama_lengkap||'—'}</div><div class="emp-nip">${owner.nip||''}</div></td>
+    <td style="font-size:.79rem">${uploadedByAdmin?`<span style="color:var(--accent);font-weight:600"><i class="fas fa-user-shield" style="font-size:.7rem"></i> ${uploader.nama_lengkap||'Admin'}</span>`:'<span style="color:var(--muted)">Pegawai</span>'}</td>
     <td style="font-size:.77rem;color:var(--muted)">${fmtSz(d.ukuran_file)}</td>
     <td style="font-size:.77rem;color:var(--muted)">${fmtD(d.uploaded_at)}</td>
-    <td><button class="btn-ok" onclick="adminOpenDok('${d.r2_key}','${(d.nama_file||'').replace(/'/g,"\'")}')"><i class="fas fa-download"></i> Buka</button></td></tr>`).join('');
+    <td><button class="btn-ok" onclick="adminOpenDok('${d.r2_key}','${(d.nama_file||'').replace(/'/g,"\\'")}')"><i class="fas fa-download"></i> Buka</button></td></tr>`;
+  }).join('');
   pgn('dokAdminPgn',p,dakTotal,'loadDokAdmin');
 }
 
@@ -2834,7 +2846,14 @@ async function doDaftarPegawaiAdmin(){
   hideDpAlert();
 
   try{
-    // 1. Daftarkan akun via signUp biasa (tidak pakai auth.admin yang butuh service_role key)
+    // Simpan session admin dulu sebelum signUp (signUp bisa replace session aktif)
+    const{data:{session:adminSess}}=await sb.auth.getSession();
+    const adminToken=adminSess?{
+      access_token:adminSess.access_token,
+      refresh_token:adminSess.refresh_token
+    }:null;
+
+    // 1. Daftarkan akun via signUp biasa
     const{data,error}=await sb.auth.signUp({
       email, password:pass,
       options:{ emailRedirectTo: window.location.origin+window.location.pathname }
@@ -2858,8 +2877,12 @@ async function doDaftarPegawaiAdmin(){
       return;
     }
 
-    // 2. Simpan profil via RPC admin_upsert_profile (SECURITY DEFINER — bypass RLS)
-    //    Status langsung 'approved' karena admin yang daftarkan
+    // 2. Langsung restore session admin agar tidak auto-login ke akun pegawai baru
+    if(adminToken){
+      try{ await sb.auth.setSession(adminToken); }catch(e){}
+    }
+
+    // 3. Simpan profil via RPC admin_upsert_profile (SECURITY DEFINER — bypass RLS)
     const{error:rpcErr}=await sb.rpc('admin_upsert_profile',{
       p_id        : userId,
       p_nama      : nama,
@@ -2873,7 +2896,7 @@ async function doDaftarPegawaiAdmin(){
     if(rpcErr){
       showDpAlert('Akun dibuat tapi profil gagal disimpan: '+rpcErr.message+'. Cari user di Approval dan approve manual.','warn');
     } else {
-      showDpAlert(`<strong>${nama}</strong> berhasil didaftarkan dan langsung aktif!<br>Pegawai bisa login dengan email <strong>${email}</strong> dan password yang ditentukan.`,'ok');
+      showDpAlert(`✓ <strong>${nama}</strong> berhasil didaftarkan dan langsung aktif!<br>Email: <strong>${email}</strong> · Password sudah ditentukan.`,'ok');
       resetDaftarPegawai();
       loadDash();
     }
