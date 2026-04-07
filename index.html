@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>SiPegawai - Lapas Saparua</title>
+<title>SiPegawai - Lapas Kelas III Saparua</title>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet"/>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -566,7 +566,7 @@ tbody td.wrap{white-space:normal;min-width:140px;}
         <div class="form-group"><label class="form-label">Keterangan</label><input class="form-control" id="upAdminKet" placeholder="cth: SK Pengangkatan 2024"/></div>
         <div class="form-group"><label class="form-label">File *</label>
           <div class="upload-zone" id="upAdminZone"><i class="fas fa-cloud-upload-alt" style="font-size:1.7rem;color:var(--muted);margin-bottom:.65rem;display:block"></i><p style="font-weight:500;margin-bottom:.2rem">Klik atau drag & drop</p><span style="font-size:.77rem;color:var(--muted)">PDF, JPG, PNG — maks 10MB</span><input type="file" id="upAdminFile" style="display:none" accept=".pdf,.jpg,.jpeg,.png"/></div>
-          <div class="alert-info alert-box" style="margin-top:.6rem;font-size:.78rem"><i class="fas fa-lightbulb"></i><div><strong>Tips penamaan file:</strong> Gunakan format <strong>NamaPegawai_JudulDokumen</strong> agar mudah dicari.<br>Contoh: <em>BudiSantoso_SK_Pengangkatan_2024.pdf</em></div></div>
+          <div class="alert-info alert-box" style="margin-top:.6rem;font-size:.78rem"><i class="fas fa-lightbulb"></i><div><strong>Tips penamaan file:</strong> Gunakan format <strong>NamaPegawai_JudulDokumen</strong> agar mudah dicari.<br>Contoh: <em>UlisLeuwol_SK_Pengangkatan_2026.pdf</em></div></div>
           <div id="upAdminFileSel" style="display:none;background:var(--surface2);border-radius:9px;padding:.65rem;font-size:.82rem;align-items:center;gap:.7rem"><i class="fas fa-file" style="color:var(--accent)"></i><span id="upAdminFileName"></span><button onclick="clearUpAdminFile()" style="margin-left:auto;background:none;border:none;color:var(--muted);cursor:pointer"><i class="fas fa-times"></i></button></div>
         </div>
         <div id="upAdminSizeAlert" class="alert-danger alert-box" style="display:none"><i class="fas fa-exclamation-circle"></i><div id="upAdminSizeAlertTxt"></div></div>
@@ -748,7 +748,7 @@ tbody td.wrap{white-space:normal;min-width:140px;}
         <div class="form-group"><label class="form-label">Keterangan</label><input class="form-control" id="upKet" placeholder="cth: SK Pengangkatan 2024"/></div>
         <div class="form-group"><label class="form-label">File *</label>
           <div class="upload-zone" id="upZone"><i class="fas fa-cloud-upload-alt" style="font-size:1.7rem;color:var(--muted);margin-bottom:.65rem;display:block"></i><p style="font-weight:500;margin-bottom:.2rem">Klik atau drag & drop</p><span style="font-size:.77rem;color:var(--muted)">PDF, JPG, PNG — maks 10MB</span><input type="file" id="upFile" style="display:none" accept=".pdf,.jpg,.jpeg,.png"/></div>
-          <div class="alert-info alert-box" style="margin-top:.6rem;font-size:.78rem"><i class="fas fa-lightbulb"></i><div><strong>Tips penamaan file:</strong> Gunakan format <strong>NamaPegawai_JudulDokumen</strong> agar mudah dicari.<br>Contoh: <em>BudiSantoso_SK_Pengangkatan_2024.pdf</em></div></div>
+          <div class="alert-info alert-box" style="margin-top:.6rem;font-size:.78rem"><i class="fas fa-lightbulb"></i><div><strong>Tips penamaan file:</strong> Gunakan format <strong>NamaPegawai_JudulDokumen</strong> agar mudah dicari.<br>Contoh: <em>UlisLeuwol_SK_Pengangkatan_2024.pdf</em></div></div>
           <div id="upFileSel" style="display:none;background:var(--surface2);border-radius:9px;padding:.65rem;font-size:.82rem;align-items:center;gap:.7rem"><i class="fas fa-file" style="color:var(--accent)"></i><span id="upFileName"></span><button onclick="clearUpFile()" style="margin-left:auto;background:none;border:none;color:var(--muted);cursor:pointer"><i class="fas fa-times"></i></button></div>
         </div>
         <div id="upPrgWrap" style="display:none;margin-bottom:.875rem"><div style="display:flex;justify-content:space-between;font-size:.79rem;margin-bottom:.32rem"><span id="upPrgLabel">Mengupload...</span><span id="upPrgPct">0%</span></div><div class="progress-wrap"><div class="progress-fill" id="upPrgBar" style="width:0%"></div></div></div>
@@ -1208,6 +1208,10 @@ async function doReg(){
   if(!nip){showErr('rErr','rErrTxt','NIP wajib diisi.');return;}
   if(nip.length!==18){showErr('rErr','rErrTxt',`NIP harus 18 digit angka (sekarang ${nip.length} digit).`);return;}
 
+  // Cek NIP sudah terdaftar
+  const{data:nipCheck}=await sb.from('profiles').select('id').eq('nip',nip).maybeSingle();
+  if(nipCheck){showErr('rErr','rErrTxt','NIP <strong>'+nip+'</strong> sudah terdaftar. Hubungi admin jika ada kesalahan.');return;}
+
   if(!jabId){showErr('rErr','rErrTxt','Pilih jabatan terlebih dahulu.');return;}
   if(!email){showErr('rErr','rErrTxt','Email wajib diisi.');return;}
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){showErr('rErr','rErrTxt','Format email tidak valid. Contoh: nama@instansi.go.id');return;}
@@ -1473,7 +1477,7 @@ async function enterApp(prof){
 
   if(prof.role==='admin'){
     const savedPage=sessionStorage.getItem('activePage');
-    const adminPages=['dash','approval','daftarPegawai','pegawai','dokAdmin','jabatan','kategori','setting','backup'];
+    const adminPages=['dash','approval','daftarPegawai','pegawai','dokAdmin','uploadAdmin','jabatan','kategori','setting','backup','editProfilAdmin'];
     const startPage=(savedPage&&adminPages.includes(savedPage))?savedPage:'dash';
     showPage(startPage);
   } else {
@@ -2231,10 +2235,13 @@ async function saveEditDokAdmin(){
 }
 
 async function delDokAdmin(id, r2Key){
-  // Hapus dari database saja — file di R2 tetap dipertahankan
   const{error:dbErr}=await sb.from('dokumen').delete().eq('id',id);
   if(dbErr){ toast('Gagal hapus: '+dbErr.message,'err'); return; }
-  toast('Dokumen berhasil dihapus dari catatan ✓','ok');
+  if(r2Key){
+    try{ await r2Delete(r2Key); }
+    catch(e){ console.warn('R2 delete warning:',e.message); }
+  }
+  toast('Dokumen/data telah terhapus','ok');
   loadDokAdmin(dakPage);
 }
 
@@ -2433,21 +2440,15 @@ function konfirmHapusDokAdmin(btn){
 }
 
 async function delDok(id, isAdmin=false){
-  // Ambil r2_key dulu sebelum hapus dari database
   const{data:dok,error:fetchErr}=await sb.from('dokumen').select('r2_key,nama_file').eq('id',id).single();
   if(fetchErr){toast('Gagal: '+fetchErr.message,'err');return;}
-  // Hapus dari database
   const{error:dbErr}=await sb.from('dokumen').delete().eq('id',id);
   if(dbErr){toast('Gagal hapus: '+dbErr.message,'err');return;}
-  // Hapus dari R2 hanya jika bukan admin
-  if(!isAdmin && dok && dok.r2_key){
-    try{
-      await r2Delete(dok.r2_key);
-    }catch(e){
-      console.warn('R2 delete warning:',e.message);
-    }
+  if(dok && dok.r2_key){
+    try{ await r2Delete(dok.r2_key); }
+    catch(e){ console.warn('R2 delete warning:',e.message); }
   }
-  toast('Dokumen berhasil dihapus ✓','ok');
+  toast('Dokumen/data telah terhapus','ok');
   if(isAdmin){ loadDokAdmin(dakPage); }
   else { loadDokUser(selKatId,dukPage); }
 }
@@ -2955,6 +2956,10 @@ async function doDaftarPegawaiAdmin(){
   if(!nip)           {showDpAlert('NIP wajib diisi.','warn');return;}
   if(nip.length!==18){showDpAlert(`NIP harus 18 digit (sekarang ${nip.length} digit).`,'warn');return;}
   if(!jabId)         {showDpAlert('Pilih jabatan terlebih dahulu.','warn');return;}
+
+  // Cek NIP sudah terdaftar
+  const{data:nipCk}=await sb.from('profiles').select('id,nama_lengkap').eq('nip',nip).maybeSingle();
+  if(nipCk){showDpAlert(`NIP <strong>${nip}</strong> sudah digunakan oleh <strong>${nipCk.nama_lengkap||'pegawai lain'}</strong>. Periksa kembali NIP yang dimasukkan.`,'err');return;}
   if(!email||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){showDpAlert('Format email tidak valid.','warn');return;}
   if(!pass)          {showDpAlert('Password wajib diisi.','warn');return;}
   if(pass.length<6)  {showDpAlert('Password minimal 6 karakter.','warn');return;}
