@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>SiPegawai - Lapas Kelas III Saparua</title>
+<title>SiPegawai - Lapas Saparua</title>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet"/>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -566,7 +566,7 @@ tbody td.wrap{white-space:normal;min-width:140px;}
         <div class="form-group"><label class="form-label">Keterangan</label><input class="form-control" id="upAdminKet" placeholder="cth: SK Pengangkatan 2024"/></div>
         <div class="form-group"><label class="form-label">File *</label>
           <div class="upload-zone" id="upAdminZone"><i class="fas fa-cloud-upload-alt" style="font-size:1.7rem;color:var(--muted);margin-bottom:.65rem;display:block"></i><p style="font-weight:500;margin-bottom:.2rem">Klik atau drag & drop</p><span style="font-size:.77rem;color:var(--muted)">PDF, JPG, PNG — maks 10MB</span><input type="file" id="upAdminFile" style="display:none" accept=".pdf,.jpg,.jpeg,.png"/></div>
-          <div class="alert-info alert-box" style="margin-top:.6rem;font-size:.78rem"><i class="fas fa-lightbulb"></i><div><strong>Tips penamaan file:</strong> Gunakan format <strong>NamaPegawai_JudulDokumen</strong> agar mudah dicari.<br>Contoh: <em>UlisLeuwol_SK_Pengangkatan_2026.pdf</em></div></div>
+          <div class="alert-info alert-box" style="margin-top:.6rem;font-size:.78rem"><i class="fas fa-lightbulb"></i><div><strong>Tips penamaan file:</strong> Gunakan format <strong>NamaPegawai_JudulDokumen</strong> agar mudah dicari.<br>Contoh: <em>BudiSantoso_SK_Pengangkatan_2024.pdf</em></div></div>
           <div id="upAdminFileSel" style="display:none;background:var(--surface2);border-radius:9px;padding:.65rem;font-size:.82rem;align-items:center;gap:.7rem"><i class="fas fa-file" style="color:var(--accent)"></i><span id="upAdminFileName"></span><button onclick="clearUpAdminFile()" style="margin-left:auto;background:none;border:none;color:var(--muted);cursor:pointer"><i class="fas fa-times"></i></button></div>
         </div>
         <div id="upAdminSizeAlert" class="alert-danger alert-box" style="display:none"><i class="fas fa-exclamation-circle"></i><div id="upAdminSizeAlertTxt"></div></div>
@@ -748,7 +748,7 @@ tbody td.wrap{white-space:normal;min-width:140px;}
         <div class="form-group"><label class="form-label">Keterangan</label><input class="form-control" id="upKet" placeholder="cth: SK Pengangkatan 2024"/></div>
         <div class="form-group"><label class="form-label">File *</label>
           <div class="upload-zone" id="upZone"><i class="fas fa-cloud-upload-alt" style="font-size:1.7rem;color:var(--muted);margin-bottom:.65rem;display:block"></i><p style="font-weight:500;margin-bottom:.2rem">Klik atau drag & drop</p><span style="font-size:.77rem;color:var(--muted)">PDF, JPG, PNG — maks 10MB</span><input type="file" id="upFile" style="display:none" accept=".pdf,.jpg,.jpeg,.png"/></div>
-          <div class="alert-info alert-box" style="margin-top:.6rem;font-size:.78rem"><i class="fas fa-lightbulb"></i><div><strong>Tips penamaan file:</strong> Gunakan format <strong>NamaPegawai_JudulDokumen</strong> agar mudah dicari.<br>Contoh: <em>UlisLeuwol_SK_Pengangkatan_2024.pdf</em></div></div>
+          <div class="alert-info alert-box" style="margin-top:.6rem;font-size:.78rem"><i class="fas fa-lightbulb"></i><div><strong>Tips penamaan file:</strong> Gunakan format <strong>NamaPegawai_JudulDokumen</strong> agar mudah dicari.<br>Contoh: <em>BudiSantoso_SK_Pengangkatan_2024.pdf</em></div></div>
           <div id="upFileSel" style="display:none;background:var(--surface2);border-radius:9px;padding:.65rem;font-size:.82rem;align-items:center;gap:.7rem"><i class="fas fa-file" style="color:var(--accent)"></i><span id="upFileName"></span><button onclick="clearUpFile()" style="margin-left:auto;background:none;border:none;color:var(--muted);cursor:pointer"><i class="fas fa-times"></i></button></div>
         </div>
         <div id="upPrgWrap" style="display:none;margin-bottom:.875rem"><div style="display:flex;justify-content:space-between;font-size:.79rem;margin-bottom:.32rem"><span id="upPrgLabel">Mengupload...</span><span id="upPrgPct">0%</span></div><div class="progress-wrap"><div class="progress-fill" id="upPrgBar" style="width:0%"></div></div></div>
@@ -2236,12 +2236,15 @@ async function saveEditDokAdmin(){
 
 async function delDokAdmin(id, r2Key){
   const{error:dbErr}=await sb.from('dokumen').delete().eq('id',id);
-  if(dbErr){ toast('Gagal hapus: '+dbErr.message,'err'); return; }
+  if(dbErr){
+    showAlertBanner('Gagal menghapus dokumen: '+dbErr.message,'err');
+    return;
+  }
   if(r2Key){
     try{ await r2Delete(r2Key); }
     catch(e){ console.warn('R2 delete warning:',e.message); }
   }
-  toast('Dokumen/data telah terhapus','ok');
+  showAlertBanner('Dokumen/data telah terhapus','ok');
   loadDokAdmin(dakPage);
 }
 
@@ -2441,14 +2444,20 @@ function konfirmHapusDokAdmin(btn){
 
 async function delDok(id, isAdmin=false){
   const{data:dok,error:fetchErr}=await sb.from('dokumen').select('r2_key,nama_file').eq('id',id).single();
-  if(fetchErr){toast('Gagal: '+fetchErr.message,'err');return;}
+  if(fetchErr){
+    showAlertBanner('Gagal menghapus dokumen: '+fetchErr.message,'err');
+    return;
+  }
   const{error:dbErr}=await sb.from('dokumen').delete().eq('id',id);
-  if(dbErr){toast('Gagal hapus: '+dbErr.message,'err');return;}
+  if(dbErr){
+    showAlertBanner('Gagal menghapus dokumen: '+dbErr.message,'err');
+    return;
+  }
   if(dok && dok.r2_key){
     try{ await r2Delete(dok.r2_key); }
     catch(e){ console.warn('R2 delete warning:',e.message); }
   }
-  toast('Dokumen/data telah terhapus','ok');
+  showAlertBanner('Dokumen/data telah terhapus','ok');
   if(isAdmin){ loadDokAdmin(dakPage); }
   else { loadDokUser(selKatId,dukPage); }
 }
@@ -3033,17 +3042,20 @@ async function doDaftarPegawaiAdmin(){
 // ═══════════════════════════════
 //  UPLOAD DOKUMEN ADMIN
 // ═══════════════════════════════
-let upAdminFile=null, upAdminPegSelected=null, upAdminPegTimer=null;
+let upAdminFile=null, upAdminPegSelected=null, upAdminPegTimer=null, upAdminSetupDone=false;
 
 function setupUploadAdmin(){
   const z=document.getElementById('upAdminZone');
   const inp=document.getElementById('upAdminFile');
   if(!z||!inp)return;
+  // Cegah event listener menumpuk saat halaman dikunjungi berulang
+  if(upAdminSetupDone) return;
+  upAdminSetupDone=true;
   z.addEventListener('click',()=>inp.click());
   z.addEventListener('dragover',e=>{e.preventDefault();z.classList.add('drag');});
   z.addEventListener('dragleave',()=>z.classList.remove('drag'));
   z.addEventListener('drop',e=>{e.preventDefault();z.classList.remove('drag');setUpAdminFile(e.dataTransfer.files[0]);});
-  inp.addEventListener('change',()=>setUpAdminFile(inp.files[0]));
+  inp.addEventListener('change',()=>{if(inp.files[0])setUpAdminFile(inp.files[0]);});
 }
 
 function setUpAdminFile(f){
