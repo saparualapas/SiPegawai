@@ -566,11 +566,13 @@ tbody td.wrap{white-space:normal;min-width:140px;}
         <div class="form-group"><label class="form-label">Keterangan</label><input class="form-control" id="upAdminKet" placeholder="cth: SK Pengangkatan 2024"/></div>
         <div class="form-group"><label class="form-label">File *</label>
           <div class="upload-zone" id="upAdminZone"><i class="fas fa-cloud-upload-alt" style="font-size:1.7rem;color:var(--muted);margin-bottom:.65rem;display:block"></i><p style="font-weight:500;margin-bottom:.2rem">Klik atau drag & drop</p><span style="font-size:.77rem;color:var(--muted)">PDF, JPG, PNG — maks 10MB</span><input type="file" id="upAdminFile" style="display:none" accept=".pdf,.jpg,.jpeg,.png"/></div>
+          <div class="alert-info alert-box" style="margin-top:.6rem;font-size:.78rem"><i class="fas fa-lightbulb"></i><div><strong>Tips penamaan file:</strong> Gunakan format <strong>NamaPegawai_JudulDokumen</strong> agar mudah dicari.<br>Contoh: <em>BudiSantoso_SK_Pengangkatan_2024.pdf</em></div></div>
           <div id="upAdminFileSel" style="display:none;background:var(--surface2);border-radius:9px;padding:.65rem;font-size:.82rem;align-items:center;gap:.7rem"><i class="fas fa-file" style="color:var(--accent)"></i><span id="upAdminFileName"></span><button onclick="clearUpAdminFile()" style="margin-left:auto;background:none;border:none;color:var(--muted);cursor:pointer"><i class="fas fa-times"></i></button></div>
         </div>
         <div id="upAdminSizeAlert" class="alert-danger alert-box" style="display:none"><i class="fas fa-exclamation-circle"></i><div id="upAdminSizeAlertTxt"></div></div>
         <div id="upAdminPrgWrap" style="display:none;margin-bottom:.875rem"><div style="display:flex;justify-content:space-between;font-size:.79rem;margin-bottom:.32rem"><span id="upAdminPrgLabel">Mengupload...</span><span id="upAdminPrgPct">0%</span></div><div class="progress-wrap"><div class="progress-fill" id="upAdminPrgBar" style="width:0%"></div></div></div>
         <button class="btn-p" id="btnUploadAdmin" onclick="doUploadAdmin()" style="width:100%;justify-content:center"><i class="fas fa-upload"></i> Upload Dokumen</button>
+        <div id="upAdminSuccessAlert" class="alert-box" style="display:none;margin-top:.75rem"></div>
       </div></div>
     </div>
 
@@ -580,9 +582,10 @@ tbody td.wrap{white-space:normal;min-width:140px;}
       <div class="grid-2col" style="max-width:860px;width:100%">
         <div class="card"><div class="card-hd"><span class="card-title"><i class="fas fa-user" style="color:var(--accent);margin-right:.4rem"></i>Data Diri</span></div><div class="card-body">
           <div class="form-group"><label class="form-label">Nama Lengkap</label><input class="form-control" id="eAdminNama"/></div>
-          <div class="form-group"><label class="form-label">NIP</label><input class="form-control" id="eAdminNip" style="font-family:'JetBrains Mono',monospace;font-size:.79rem"/></div>
+          <div class="form-group"><label class="form-label">NIP</label><input class="form-control" id="eAdminNip" style="font-family:'JetBrains Mono',monospace;font-size:.79rem" maxlength="18" placeholder="18 digit angka" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,18)"/></div>
           <div class="form-group"><label class="form-label">Email</label><input class="form-control" type="email" id="eAdminEmail"/></div>
           <button class="btn-p" style="width:100%;justify-content:center" id="btnSaveAdminPro" onclick="saveProAdmin()"><i class="fas fa-save"></i> Simpan Perubahan</button>
+        <div id="saveAdminProAlert" class="alert-box" style="display:none;margin-top:.75rem"></div>
         </div></div>
         <div class="card"><div class="card-hd"><span class="card-title"><i class="fas fa-key" style="color:var(--warn);margin-right:.4rem"></i>Ubah Password</span></div><div class="card-body">
           <div class="form-group"><label class="form-label">Password Lama</label><div class="pw-wrap"><input class="form-control" type="password" id="eAdminOP" placeholder="Password saat ini"/><button type="button" class="pw-toggle" onclick="togglePw('eAdminOP')" tabindex="-1"><i class="fas fa-eye" id="eye_eAdminOP"></i></button></div></div>
@@ -713,10 +716,11 @@ tbody td.wrap{white-space:normal;min-width:140px;}
       <div class="topbar"><div><div class="page-title">Edit Profil & Password</div></div></div>
       <div class="grid-2col" style="display:grid;grid-template-columns:1fr 1fr;gap:1.375rem;max-width:860px;width:100%">
         <div class="card"><div class="card-hd"><span class="card-title"><i class="fas fa-user" style="color:var(--accent);margin-right:.4rem"></i>Data Diri</span></div><div class="card-body">
-          <div class="form-row"><div class="form-group"><label class="form-label">Nama Lengkap</label><input class="form-control" id="eNama"/></div><div class="form-group"><label class="form-label">NIP</label><input class="form-control" id="eNip" style="font-family:'JetBrains Mono',monospace;font-size:.79rem"/></div></div>
+          <div class="form-row"><div class="form-group"><label class="form-label">Nama Lengkap</label><input class="form-control" id="eNama"/></div><div class="form-group"><label class="form-label">NIP</label><input class="form-control" id="eNip" style="font-family:'JetBrains Mono',monospace;font-size:.79rem" maxlength="18" placeholder="18 digit angka" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,18)"/></div></div>
           <div class="form-group"><label class="form-label">Jabatan</label><select class="form-control" id="eJabatan"><option value="">Pilih jabatan...</option></select></div>
           <div class="form-group"><label class="form-label">Email</label><input class="form-control" type="email" id="eEmail"/></div>
           <div style="display:flex;gap:.7rem"><button class="btn-s" style="flex:1;justify-content:center" onclick="showPage('profil')">Batal</button><button class="btn-p" style="flex:2;justify-content:center" id="btnSavePro" onclick="savePro()"><i class="fas fa-save"></i> Simpan</button></div>
+        <div id="saveProAlert" class="alert-box" style="display:none;margin-top:.75rem"></div>
         </div></div>
         <div class="card"><div class="card-hd"><span class="card-title"><i class="fas fa-key" style="color:var(--warn);margin-right:.4rem"></i>Ubah Password</span></div><div class="card-body">
           <div class="form-group"><label class="form-label">Password Lama</label><div class="pw-wrap"><input class="form-control" type="password" id="uOP" placeholder="Masukkan password saat ini"/><button type="button" class="pw-toggle" onclick="togglePw('uOP')" tabindex="-1"><i class="fas fa-eye" id="eye_uOP"></i></button></div></div>
@@ -744,12 +748,14 @@ tbody td.wrap{white-space:normal;min-width:140px;}
         <div class="form-group"><label class="form-label">Keterangan</label><input class="form-control" id="upKet" placeholder="cth: SK Pengangkatan 2024"/></div>
         <div class="form-group"><label class="form-label">File *</label>
           <div class="upload-zone" id="upZone"><i class="fas fa-cloud-upload-alt" style="font-size:1.7rem;color:var(--muted);margin-bottom:.65rem;display:block"></i><p style="font-weight:500;margin-bottom:.2rem">Klik atau drag & drop</p><span style="font-size:.77rem;color:var(--muted)">PDF, JPG, PNG — maks 10MB</span><input type="file" id="upFile" style="display:none" accept=".pdf,.jpg,.jpeg,.png"/></div>
+          <div class="alert-info alert-box" style="margin-top:.6rem;font-size:.78rem"><i class="fas fa-lightbulb"></i><div><strong>Tips penamaan file:</strong> Gunakan format <strong>NamaPegawai_JudulDokumen</strong> agar mudah dicari.<br>Contoh: <em>BudiSantoso_SK_Pengangkatan_2024.pdf</em></div></div>
           <div id="upFileSel" style="display:none;background:var(--surface2);border-radius:9px;padding:.65rem;font-size:.82rem;align-items:center;gap:.7rem"><i class="fas fa-file" style="color:var(--accent)"></i><span id="upFileName"></span><button onclick="clearUpFile()" style="margin-left:auto;background:none;border:none;color:var(--muted);cursor:pointer"><i class="fas fa-times"></i></button></div>
         </div>
         <div id="upPrgWrap" style="display:none;margin-bottom:.875rem"><div style="display:flex;justify-content:space-between;font-size:.79rem;margin-bottom:.32rem"><span id="upPrgLabel">Mengupload...</span><span id="upPrgPct">0%</span></div><div class="progress-wrap"><div class="progress-fill" id="upPrgBar" style="width:0%"></div></div></div>
         <div id="upSizeAlert" class="alert-danger alert-box" style="display:none"><i class="fas fa-exclamation-circle"></i><div id="upSizeAlertTxt"></div></div>
         <div id="r2Warn" class="alert-warn alert-box" style="display:none"><i class="fas fa-exclamation-triangle"></i><div>R2 belum dikonfigurasi admin.</div></div>
         <button class="btn-p" id="btnUpload" onclick="doUpload()" style="width:100%;justify-content:center"><i class="fas fa-upload"></i> Upload Dokumen</button>
+        <div id="upSuccessAlert" class="alert-box" style="display:none;margin-top:.75rem"></div>
       </div></div>
     </div>
 
@@ -1934,11 +1940,22 @@ function filterApproval(){
 }
 
 async function approveU(id){
+  // Simpan session admin sebelum operasi apapun
+  const{data:{session:adminSess}}=await sb.auth.getSession();
+  const adminTok=adminSess?{access_token:adminSess.access_token,refresh_token:adminSess.refresh_token}:null;
+
   const{error}=await sb.from('profiles').update({status_akun:'approved'}).eq('id',id).select();
   if(error){toast('Gagal: '+error.message,'err');return;}
+
   // Kirim notifikasi email ke pegawai
   await kirimNotifEmail(id,'approved');
-  toast('Akun disetujui ✓ — notifikasi email dikirim','ok');
+
+  // Pastikan session admin tetap aktif setelah semua operasi
+  if(adminTok){
+    try{ await sb.auth.setSession(adminTok); }catch(e){}
+  }
+
+  toast('Akun disetujui ✓','ok');
   loadApproval(apvPage);loadDash();
 }
 
@@ -2214,15 +2231,10 @@ async function saveEditDokAdmin(){
 }
 
 async function delDokAdmin(id, r2Key){
-  // Hapus dari database dulu
+  // Hapus dari database saja — file di R2 tetap dipertahankan
   const{error:dbErr}=await sb.from('dokumen').delete().eq('id',id);
   if(dbErr){ toast('Gagal hapus: '+dbErr.message,'err'); return; }
-  // Hapus file dari R2
-  if(r2Key){
-    try{ await r2Delete(r2Key); }
-    catch(e){ console.warn('R2 delete warning:',e.message); }
-  }
-  toast('Dokumen berhasil dihapus ✓','ok');
+  toast('Dokumen berhasil dihapus dari catatan ✓','ok');
   loadDokAdmin(dakPage);
 }
 
@@ -2277,18 +2289,38 @@ async function loadProfil(){
 
 async function savePro(){
   const btn=document.getElementById('btnSavePro');setBtn(btn,true);
+  // Validasi NIP 18 digit
+  const nipVal=document.getElementById('eNip').value.replace(/[^0-9]/g,'');
+  if(nipVal && nipVal.length!==18){
+    showInlineAlert('saveProAlert','NIP harus tepat 18 digit angka (sekarang '+nipVal.length+' digit).','warn');
+    setBtn(btn,false,'<i class="fas fa-save"></i> Simpan');return;
+  }
   const{error}=await sb.from('profiles').update({
     nama_lengkap:document.getElementById('eNama').value.trim(),
-    nip:document.getElementById('eNip').value.trim(),
+    nip:nipVal||null,
     jabatan_id:document.getElementById('eJabatan').value||null,
     email:document.getElementById('eEmail').value.trim()
   }).eq('id',CU.id);
   setBtn(btn,false,'<i class="fas fa-save"></i> Simpan');
-  if(error){toast('Gagal: '+error.message,'err');return;}
+  if(error){showInlineAlert('saveProAlert','Gagal menyimpan: '+error.message,'err');return;}
   const{data:np}=await sb.from('profiles').select('*,jabatan(nama)').eq('id',CU.id).single();
   CP=np;
   sessionStorage.setItem('currentProfile', JSON.stringify(np));
-  setSidebar(np);toast('Profil diperbarui ✓','ok');loadProfil();showPage('profil');
+  setSidebar(np);
+  showInlineAlert('saveProAlert','✓ Profil berhasil diperbarui!','ok');
+  loadProfil();
+  setTimeout(()=>showPage('profil'),1500);
+}
+
+function showInlineAlert(elId,msg,type){
+  const el=document.getElementById(elId);
+  if(!el)return;
+  const cls={ok:'alert-success',err:'alert-danger',warn:'alert-warn',info:'alert-info'};
+  const ico={ok:'fa-check-circle',err:'fa-times-circle',warn:'fa-exclamation-triangle',info:'fa-info-circle'};
+  el.className='alert-box '+( cls[type]||'alert-warn');
+  el.innerHTML='<i class="fas '+(ico[type]||'fa-exclamation-triangle')+'"></i><div>'+msg+'</div>';
+  el.style.display='flex';
+  if(type==='ok') setTimeout(()=>{el.style.display='none';},4000);
 }
 
 // ═══════════════════════════════
@@ -2397,26 +2429,27 @@ function konfirmHapusDokAdmin(btn){
   const id=btn.dataset.id;
   const r2=btn.dataset.r2||'';
   const nama=decodeURIComponent(btn.dataset.nama||'');
-  confirm_('del','Hapus Dokumen?',`Hapus <strong>${nama}</strong>?<br><small style="opacity:.7">File juga akan dihapus dari R2.</small>`,()=>delDokAdmin(id,r2));
+  confirm_('del','Hapus Dokumen?',`Hapus <strong>${nama}</strong>? Data akan dihapus dari catatan.`,()=>delDokAdmin(id,r2));
 }
 
-async function delDok(id){
+async function delDok(id, isAdmin=false){
   // Ambil r2_key dulu sebelum hapus dari database
   const{data:dok,error:fetchErr}=await sb.from('dokumen').select('r2_key,nama_file').eq('id',id).single();
   if(fetchErr){toast('Gagal: '+fetchErr.message,'err');return;}
   // Hapus dari database
   const{error:dbErr}=await sb.from('dokumen').delete().eq('id',id);
   if(dbErr){toast('Gagal hapus: '+dbErr.message,'err');return;}
-  // Hapus dari R2
-  if(dok && dok.r2_key){
+  // Hapus dari R2 hanya jika bukan admin
+  if(!isAdmin && dok && dok.r2_key){
     try{
       await r2Delete(dok.r2_key);
     }catch(e){
-      console.warn('R2 delete warning (file mungkin sudah tidak ada):',e.message);
+      console.warn('R2 delete warning:',e.message);
     }
   }
   toast('Dokumen berhasil dihapus ✓','ok');
-  loadDokUser(selKatId,dukPage);
+  if(isAdmin){ loadDokAdmin(dakPage); }
+  else { loadDokUser(selKatId,dukPage); }
 }
 
 function getR2Url(r2Key){
@@ -2602,6 +2635,7 @@ async function doUpload(){
     setPrg(100,'Selesai!');
     document.getElementById('upPrgBar').classList.add('done');
     toast('Dokumen berhasil diupload ✓','ok');
+    showInlineAlert('upSuccessAlert','✓ Dokumen berhasil diupload! File tersimpan di Dokumen Saya.','ok');
     clearUpFile();
     document.getElementById('upKat').value='';
     document.getElementById('upKet').value='';
@@ -2886,14 +2920,14 @@ function loadDaftarPegawaiForm(){
   }
 }
 
-function resetDaftarPegawai(){
+function resetDaftarPegawai(keepAlert=false){
   ['dpNama','dpNip','dpEmail','dpPass','dpPass2'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.value='';
   });
   document.getElementById('dpJabatan').value='';
   document.getElementById('dpNipCount').textContent='0/18';
   document.getElementById('dpNipCount').style.color='var(--muted)';
-  hideDpAlert();
+  if(!keepAlert) hideDpAlert();
 }
 
 function showDpAlert(msg,type){
@@ -2982,7 +3016,7 @@ async function doDaftarPegawaiAdmin(){
       showDpAlert('Akun dibuat tapi profil gagal disimpan: '+rpcErr.message+'. Cari user di Approval dan approve manual.','warn');
     } else {
       showDpAlert(`✓ <strong>${nama}</strong> berhasil didaftarkan dan langsung aktif!<br>Email: <strong>${email}</strong> · Password sudah ditentukan.`,'ok');
-      resetDaftarPegawai();
+      resetDaftarPegawai(true); // keepAlert=true agar pesan sukses tetap tampil
       loadDash();
     }
   }catch(e){
@@ -3125,6 +3159,7 @@ async function doUploadAdmin(){
     setPrgAdmin(100,'Selesai!');
     document.getElementById('upAdminPrgBar').classList.add('done');
     toast(`Dokumen berhasil diupload atas nama ${upAdminPegSelected?.nama||'pegawai'} ✓`,'ok');
+    showInlineAlert('upAdminSuccessAlert',`✓ Dokumen berhasil diupload atas nama <strong>${upAdminPegSelected?.nama||'pegawai'}</strong>!`,'ok');
     clearUpAdminFile();
     clearUpAdminPeg();
     document.getElementById('upAdminKat').value='';
@@ -3167,21 +3202,22 @@ function loadProfilAdmin(){
 
 async function saveProAdmin(){
   const nama =document.getElementById('eAdminNama').value.trim();
-  const nip  =document.getElementById('eAdminNip').value.trim();
+  const nip  =document.getElementById('eAdminNip').value.replace(/[^0-9]/g,'');
   const email=document.getElementById('eAdminEmail').value.trim();
-  if(!nama){toast('Nama tidak boleh kosong!','warn');return;}
+  if(!nama){showInlineAlert('saveAdminProAlert','Nama tidak boleh kosong!','warn');return;}
+  if(nip && nip.length!==18){showInlineAlert('saveAdminProAlert','NIP harus tepat 18 digit angka (sekarang '+nip.length+' digit).','warn');return;}
   const btn=document.getElementById('btnSaveAdminPro');
   setBtn(btn,true);
   const{error}=await sb.from('profiles').update({
     nama_lengkap:nama, nip:nip||null, email:email||CP.email
   }).eq('id',CU.id);
   setBtn(btn,false,'<i class="fas fa-save"></i> Simpan');
-  if(error){toast('Gagal: '+error.message,'err');return;}
+  if(error){showInlineAlert('saveAdminProAlert','Gagal menyimpan: '+error.message,'err');return;}
   const{data:np}=await sb.from('profiles').select('*,jabatan(nama)').eq('id',CU.id).single();
   CP=np;
   sessionStorage.setItem('currentProfile',JSON.stringify(np));
   setSidebar(np);
-  toast('Profil admin diperbarui ✓','ok');
+  showInlineAlert('saveAdminProAlert','✓ Profil admin berhasil diperbarui!','ok');
 }
 
 // ═══════════════════════════════
