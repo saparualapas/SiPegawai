@@ -329,7 +329,7 @@ tbody td.wrap{white-space:normal;min-width:140px;}
         <div class="auth-tab active" onclick="switchAuth('login')">Masuk</div>
         <div class="auth-tab" onclick="switchAuth('reg')">Daftar</div>
       </div>
-      <div class="form-group"><label class="form-label">Email</label><input class="form-control" type="email" id="lEmail" placeholder="email@instansi.go.id" onkeydown="if(event.key==='Enter')doLogin()"/></div>
+      <div class="form-group"><label class="form-label">Email atau NIP</label><input class="form-control" id="lEmail" placeholder="email@instansi.go.id atau 18 digit NIP" onkeydown="if(event.key==='Enter')doLogin()" autocomplete="username"/></div>
       <div class="form-group"><label class="form-label">Password</label><div class="pw-wrap"><input class="form-control" type="password" id="lPass" placeholder="Password" onkeydown="if(event.key==='Enter')doLogin()"/><button type="button" class="pw-toggle" onclick="togglePw('lPass')" tabindex="-1"><i class="fas fa-eye" id="eye_lPass"></i></button></div></div>
       <div style="text-align:right;margin-bottom:.4rem"><button class="btn-link" onclick="switchAuth('forgot')">Lupa password?</button></div>
       <button class="btn-main" id="btnLogin" onclick="doLogin()"><i class="fas fa-sign-in-alt"></i> Masuk</button>
@@ -577,11 +577,12 @@ tbody td.wrap{white-space:normal;min-width:140px;}
     <!-- EDIT PROFIL ADMIN -->
     <div id="pageEditProfilAdmin" style="display:none">
       <div class="topbar"><div><div class="page-title">Edit Profil & Password</div><div class="page-sub">Perbarui data diri dan password admin</div></div></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.375rem;max-width:860px">
+      <div class="grid-2col" style="max-width:860px;width:100%">
         <div class="card"><div class="card-hd"><span class="card-title"><i class="fas fa-user" style="color:var(--accent);margin-right:.4rem"></i>Data Diri</span></div><div class="card-body">
-          <div class="form-row"><div class="form-group"><label class="form-label">Nama Lengkap</label><input class="form-control" id="eAdminNama"/></div><div class="form-group"><label class="form-label">NIP</label><input class="form-control" id="eAdminNip" style="font-family:'JetBrains Mono',monospace;font-size:.79rem"/></div></div>
+          <div class="form-group"><label class="form-label">Nama Lengkap</label><input class="form-control" id="eAdminNama"/></div>
+          <div class="form-group"><label class="form-label">NIP</label><input class="form-control" id="eAdminNip" style="font-family:'JetBrains Mono',monospace;font-size:.79rem"/></div>
           <div class="form-group"><label class="form-label">Email</label><input class="form-control" type="email" id="eAdminEmail"/></div>
-          <div style="display:flex;gap:.7rem"><button class="btn-s" style="flex:1;justify-content:center" onclick="loadProfilAdmin()"><i class="fas fa-undo"></i> Reset</button><button class="btn-p" style="flex:2;justify-content:center" id="btnSaveAdminPro" onclick="saveProAdmin()"><i class="fas fa-save"></i> Simpan</button></div>
+          <button class="btn-p" style="width:100%;justify-content:center" id="btnSaveAdminPro" onclick="saveProAdmin()"><i class="fas fa-save"></i> Simpan Perubahan</button>
         </div></div>
         <div class="card"><div class="card-hd"><span class="card-title"><i class="fas fa-key" style="color:var(--warn);margin-right:.4rem"></i>Ubah Password</span></div><div class="card-body">
           <div class="form-group"><label class="form-label">Password Lama</label><div class="pw-wrap"><input class="form-control" type="password" id="eAdminOP" placeholder="Password saat ini"/><button type="button" class="pw-toggle" onclick="togglePw('eAdminOP')" tabindex="-1"><i class="fas fa-eye" id="eye_eAdminOP"></i></button></div></div>
@@ -813,6 +814,38 @@ tbody td.wrap{white-space:normal;min-width:140px;}
     <div class="modal-ft">
       <button class="btn-s" onclick="closeM('mEditDok')">Batal</button>
       <button class="btn-p" id="btnSaveEditDok" onclick="saveEditDok()"><i class="fas fa-save"></i> Simpan</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="mEditDokAdmin">
+  <div class="modal-box" style="max-width:460px">
+    <div class="modal-hd">
+      <div class="modal-ttl"><i class="fas fa-edit" style="color:var(--accent)"></i>Edit Dokumen</div>
+      <button class="modal-x" onclick="closeM('mEditDokAdmin')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-bd">
+      <input type="hidden" id="editAdminDokId"/>
+      <div class="form-group">
+        <label class="form-label">Nama File</label>
+        <div style="background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:.62rem 1rem;font-size:.875rem;color:var(--muted);display:flex;align-items:center;gap:.6rem">
+          <i class="fas fa-file" style="color:var(--accent)"></i>
+          <span id="editAdminDokNama" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
+        </div>
+        <div style="font-size:.69rem;color:var(--muted);margin-top:.3rem"><i class="fas fa-info-circle"></i> Nama file tidak dapat diubah</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Kategori *</label>
+        <select class="form-control" id="editAdminDokKat"><option value="">Pilih kategori...</option></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Keterangan</label>
+        <input class="form-control" id="editAdminDokKet" placeholder="cth: SK Pengangkatan 2024"/>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn-s" onclick="closeM('mEditDokAdmin')">Batal</button>
+      <button class="btn-p" id="btnSaveEditDokAdmin" onclick="saveEditDokAdmin()"><i class="fas fa-save"></i> Simpan</button>
     </div>
   </div>
 </div>
@@ -1078,12 +1111,43 @@ function switchAuth(v){
 }
 
 async function doLogin(){
-  const email=document.getElementById('lEmail').value.trim(),pass=document.getElementById('lPass').value;
-  if(!email||!pass){showErr('lErr','lErrTxt','Email dan password wajib diisi!');return;}
+  const input=document.getElementById('lEmail').value.trim();
+  const pass=document.getElementById('lPass').value;
+  if(!input||!pass){showErr('lErr','lErrTxt','Email/NIP dan password wajib diisi!');return;}
   const btn=document.getElementById('btnLogin');setBtn(btn,true);
+
+  let email=input;
+
+  // Deteksi apakah input adalah NIP (18 digit angka)
+  const isNip=/^\d{18}$/.test(input);
+  if(isNip){
+    // Gunakan RPC SECURITY DEFINER agar bisa query profiles tanpa login dulu
+    try{
+      const{data:nipData,error:nipErr}=await sb.rpc('get_email_by_nip',{p_nip:input});
+      if(nipErr||!nipData){
+        setBtn(btn,false,'<i class="fas fa-sign-in-alt"></i> Masuk');
+        showErr('lErr','lErrTxt','NIP tidak ditemukan atau akun belum terdaftar.');
+        return;
+      }
+      email=nipData;
+    }catch(e){
+      setBtn(btn,false,'<i class="fas fa-sign-in-alt"></i> Masuk');
+      showErr('lErr','lErrTxt','Gagal mencari NIP. Coba login dengan email.');
+      return;
+    }
+  }
+
   const{data,error}=await sb.auth.signInWithPassword({email,password:pass});
   setBtn(btn,false,'<i class="fas fa-sign-in-alt"></i> Masuk');
-  if(error){showErr('lErr','lErrTxt',error.message.includes('Invalid')?'Email atau password salah!':error.message.includes('confirmed')?'Email belum diverifikasi.':error.message);return;}
+  if(error){
+    const msg=error.message;
+    showErr('lErr','lErrTxt',
+      msg.includes('Invalid')?`${isNip?'NIP':'Email'} atau password salah!`
+      :msg.includes('confirmed')?'Email belum diverifikasi.'
+      :msg
+    );
+    return;
+  }
   await loadSession(data.user);
 }
 
@@ -1138,51 +1202,6 @@ async function doReg(){
   if(!nip){showErr('rErr','rErrTxt','NIP wajib diisi.');return;}
   if(nip.length!==18){showErr('rErr','rErrTxt',`NIP harus 18 digit angka (sekarang ${nip.length} digit).`);return;}
 
-  // Validasi format NIP PNS Indonesia:
-  // 8 digit = tgl lahir (YYYYMMDD) + 8 digit = tgl CPNS (YYYYMMDD) + 1 digit gender (1/2) + 3 digit urut
-  (function validateNIP(){
-    const tglLahir  = nip.slice(0,8);   // YYYYMMDD
-    const tglCPNS   = nip.slice(8,16);  // YYYYMMDD
-    const gender    = nip.slice(16,17); // 1 atau 2
-    // Cek tahun lahir masuk akal (1940–2005)
-    const thnLahir  = parseInt(tglLahir.slice(0,4));
-    const thnCPNS   = parseInt(tglCPNS.slice(0,4));
-    const blnLahir  = parseInt(tglLahir.slice(4,6));
-    const blnCPNS   = parseInt(tglCPNS.slice(4,6));
-    const tglLahirN = parseInt(tglLahir.slice(6,8));
-    const tglCPNSN  = parseInt(tglCPNS.slice(6,8));
-    if(thnLahir<1940||thnLahir>2005){
-      showErr('rErr','rErrTxt','NIP tidak valid: 8 digit pertama adalah tahun lahir (1940–2005). Periksa NIP Anda pada SK pengangkatan.');
-      return false;
-    }
-    if(blnLahir<1||blnLahir>12){
-      showErr('rErr','rErrTxt','NIP tidak valid: bulan lahir (digit 5–6) harus antara 01–12.');
-      return false;
-    }
-    if(tglLahirN<1||tglLahirN>31){
-      showErr('rErr','rErrTxt','NIP tidak valid: tanggal lahir (digit 7–8) harus antara 01–31.');
-      return false;
-    }
-    if(thnCPNS<1970||thnCPNS>2030){
-      showErr('rErr','rErrTxt','NIP tidak valid: 8 digit berikutnya adalah tahun CPNS (1970–2030). Periksa NIP Anda.');
-      return false;
-    }
-    if(blnCPNS<1||blnCPNS>12){
-      showErr('rErr','rErrTxt','NIP tidak valid: bulan CPNS (digit 13–14) harus antara 01–12.');
-      return false;
-    }
-    if(tglCPNSN<1||tglCPNSN>31){
-      showErr('rErr','rErrTxt','NIP tidak valid: tanggal CPNS (digit 15–16) harus antara 01–31.');
-      return false;
-    }
-    if(gender!=='1'&&gender!=='2'){
-      showErr('rErr','rErrTxt','NIP tidak valid: digit ke-17 harus 1 (pria) atau 2 (wanita).');
-      return false;
-    }
-    return true;
-  })();
-  // Cek apakah ada error dari validasi NIP di atas
-  if(document.getElementById('rErr').style.display!=='none') return;
   if(!jabId){showErr('rErr','rErrTxt','Pilih jabatan terlebih dahulu.');return;}
   if(!email){showErr('rErr','rErrTxt','Email wajib diisi.');return;}
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){showErr('rErr','rErrTxt','Format email tidak valid. Contoh: nama@instansi.go.id');return;}
@@ -1191,16 +1210,6 @@ async function doReg(){
   if(pass!==pass2){showErr('rErr','rErrTxt','Konfirmasi password tidak cocok.');return;}
 
   const btn=document.getElementById('btnReg');setBtn(btn,true);
-
-  // ── LAPIS 5: Cek server-side rate limit via RPC ──
-  try{
-    const{data:rlCheck,error:rlErr}=await sb.rpc('cek_boleh_daftar',{p_email:email});
-    if(!rlErr && rlCheck && rlCheck.boleh===false){
-      setBtn(btn,false,'<i class="fas fa-user-plus"></i> Daftar Sekarang');
-      showErr('rErr','rErrTxt',rlCheck.pesan||'Terlalu banyak percobaan. Coba lagi nanti.');
-      return;
-    }
-  }catch(e){ /* RPC belum ada, lanjut tanpa server check */ }
 
   const siteUrl=window.location.origin+window.location.pathname;
   const{data,error}=await sb.auth.signUp({email,password:pass,options:{emailRedirectTo:siteUrl}});
@@ -1862,8 +1871,8 @@ async function loadDash(){
       <td style="font-size:.82rem">${p.jabatan?.nama||'—'}</td>
       <td style="font-size:.77rem;color:var(--muted);white-space:nowrap">${fmtD(p.created_at)}</td>
       <td><div style="display:flex;gap:.35rem;flex-wrap:nowrap">
-        <button class="btn-ok" onclick="confirm_('ok','Setujui Akun?','Setujui akun <strong>${(p.nama_lengkap||p.id.slice(0,8)).replace(/'/g,"\\'")}?</strong>',()=>approveU('${p.id}'))"><i class="fas fa-check"></i> Setujui</button>
-        <button class="btn-del" onclick="confirm_('del','Tolak Akun?','Tolak akun ini?',()=>rejectU('${p.id}'))"><i class="fas fa-times"></i> Tolak</button>
+        <button class="btn-ok" data-id="${p.id}" data-nama="${encodeURIComponent(p.nama_lengkap||p.id.slice(0,8))}" onclick="konfirmSetujui(this)"><i class="fas fa-check"></i> Setujui</button>
+        <button class="btn-del" data-id="${p.id}" data-nama="${encodeURIComponent(p.nama_lengkap||p.id.slice(0,8))}" onclick="konfirmTolak(this)"><i class="fas fa-times"></i> Tolak</button>
       </div></td>
     </tr>`).join('')+'</tbody></table></div>';
 }
@@ -1892,15 +1901,30 @@ async function loadApproval(p=1){
 function renderApproval(data){
   if(!data.length){document.getElementById('approvalList').innerHTML='<div class="empty"><i class="fas fa-users"></i><p>Tidak ada data.</p></div>';return;}
   document.getElementById('approvalList').innerHTML=`<table><thead><tr><th>Pegawai</th><th>NIP</th><th>Jabatan</th><th>Email</th><th>Status</th><th>Terdaftar</th><th>Aksi</th></tr></thead><tbody>`+
-    data.map(p=>`<tr><td><div class="av-wrap"><div class="av">${ini(p.nama_lengkap)}</div><div class="emp-name">${p.nama_lengkap||'—'}</div></div></td>
+    data.map(p=>{
+      // Gunakan data-id agar tidak ada masalah karakter khusus di onclick
+      const safeName=encodeURIComponent(p.nama_lengkap||'');
+      return `<tr><td><div class="av-wrap"><div class="av">${ini(p.nama_lengkap)}</div><div class="emp-name">${p.nama_lengkap||'—'}</div></div></td>
     <td><span class="emp-nip">${p.nip||'—'}</span></td><td>${p.jabatan?.nama||'—'}</td><td style="font-size:.79rem">${p.email||'—'}</td>
     <td><span class="chip chip-${p.status_akun}">${p.status_akun}</span></td>
     <td style="font-size:.77rem;color:var(--muted)">${fmtD(p.created_at)}</td>
     <td><div style="display:flex;gap:.35rem">
-      ${p.status_akun!=='approved'?`<button class="btn-ok" onclick="confirm_('ok','Setujui?','Setujui akun <strong>${(p.nama_lengkap||'').replace(/'/g,"\'")}?</strong>',()=>approveU('${p.id}'))"><i class="fas fa-check"></i></button>`:''}
-      ${p.status_akun!=='rejected'?`<button class="btn-del" onclick="confirm_('del','Nonaktifkan?','Akun <strong>${(p.nama_lengkap||'').replace(/'/g,"\'")}?</strong> akan dinonaktifkan.',()=>rejectU('${p.id}'))"><i class="fas fa-ban"></i></button>`:''}
+      ${p.status_akun!=='approved'?`<button class="btn-ok" data-id="${p.id}" data-nama="${safeName}" onclick="konfirmSetujui(this)"><i class="fas fa-check"></i></button>`:''}
+      ${p.status_akun!=='rejected'?`<button class="btn-del" data-id="${p.id}" data-nama="${safeName}" onclick="konfirmTolak(this)"><i class="fas fa-ban"></i></button>`:''}
       <button class="btn-icon" onclick="openMPeg('${p.id}')"><i class="fas fa-eye"></i></button>
-      </div></td></tr>`).join('')+'</tbody></table>';
+      </div></td></tr>`;
+    }).join('')+'</tbody></table>';
+}
+
+function konfirmSetujui(btn){
+  const id=btn.dataset.id;
+  const nama=decodeURIComponent(btn.dataset.nama||'');
+  confirm_('ok','Setujui?',`Setujui akun <strong>${nama||id.slice(0,8)}</strong>?`,()=>approveU(id));
+}
+function konfirmTolak(btn){
+  const id=btn.dataset.id;
+  const nama=decodeURIComponent(btn.dataset.nama||'');
+  confirm_('del','Nonaktifkan?',`Akun <strong>${nama||id.slice(0,8)}</strong> akan dinonaktifkan.`,()=>rejectU(id));
 }
 
 function filterApproval(){
@@ -2138,7 +2162,11 @@ async function loadDokAdmin(p=1){
     <td style="font-size:.79rem">${uploadedByAdmin?`<span style="color:var(--accent);font-weight:600"><i class="fas fa-user-shield" style="font-size:.7rem"></i> ${uploader.nama_lengkap||'Admin'}</span>`:'<span style="color:var(--muted)">Pegawai</span>'}</td>
     <td style="font-size:.77rem;color:var(--muted)">${fmtSz(d.ukuran_file)}</td>
     <td style="font-size:.77rem;color:var(--muted)">${fmtD(d.uploaded_at)}</td>
-    <td><button class="btn-ok" onclick="adminOpenDok('${d.r2_key}','${(d.nama_file||'').replace(/'/g,"\\'")}')"><i class="fas fa-download"></i> Buka</button></td></tr>`;
+    <td style="white-space:nowrap">
+      <button class="btn-ok" data-r2="${d.r2_key||''}" data-nama="${encodeURIComponent(d.nama_file||''|| '')}" onclick="adminOpenDok(this.dataset.r2,decodeURIComponent(this.dataset.nama))"><i class="fas fa-download"></i> Buka</button>
+      <button class="btn-icon" data-id="${d.id}" data-nama="${encodeURIComponent(d.nama_file||'')}" data-kat="${d.kategori_id||''}" data-ket="${encodeURIComponent(d.keterangan||'')}" onclick="openEditDokAdmin(this.dataset.id,decodeURIComponent(this.dataset.nama),this.dataset.kat,decodeURIComponent(this.dataset.ket))"><i class="fas fa-edit" style="color:var(--accent)"></i></button>
+      <button class="btn-icon" data-id="${d.id}" data-r2="${d.r2_key||''}" data-nama="${encodeURIComponent(d.nama_file||'')}" onclick="konfirmHapusDokAdmin(this)"><i class="fas fa-trash" style="color:var(--danger)"></i></button>
+    </td></tr>`;
   }).join('');
   pgn('dokAdminPgn',p,dakTotal,'loadDokAdmin');
 }
@@ -2152,6 +2180,50 @@ function filterDokAdmin(){
   dakF.pegQ=(document.getElementById('dokAdminPegQ')?.value||'').trim();
   // Kategori dropdown: langsung query. Text input: tunggu 350ms setelah berhenti ketik
   dakFilterTimer=setTimeout(()=>loadDokAdmin(1), 350);
+}
+
+// ── Edit dokumen oleh admin ──
+function openEditDokAdmin(id, namaFile, katId, keterangan){
+  document.getElementById('editAdminDokId').value = id;
+  document.getElementById('editAdminDokNama').textContent = namaFile;
+  document.getElementById('editAdminDokKet').value = keterangan || '';
+  const sel = document.getElementById('editAdminDokKat');
+  sel.innerHTML = '<option value="">Pilih kategori...</option>' +
+    allKategori.map(k=>`<option value="${k.id}"${k.id===katId?' selected':''}>${k.nama}</option>`).join('');
+  openM('mEditDokAdmin');
+}
+
+async function saveEditDokAdmin(){
+  const id    = document.getElementById('editAdminDokId').value;
+  const katId = document.getElementById('editAdminDokKat').value;
+  const ket   = document.getElementById('editAdminDokKet').value.trim();
+  if(!katId){ toast('Pilih kategori terlebih dahulu!','warn'); return; }
+  const btn = document.getElementById('btnSaveEditDokAdmin');
+  setBtn(btn, true);
+  const katNama = allKategori.find(k=>k.id===katId)?.nama || null;
+  const{error} = await sb.from('dokumen').update({
+    kategori_id   : katId,
+    jenis_dokumen : katNama,
+    keterangan    : ket || null,
+  }).eq('id', id);
+  setBtn(btn, false, '<i class="fas fa-save"></i> Simpan');
+  if(error){ toast('Gagal menyimpan: '+error.message,'err'); return; }
+  closeM('mEditDokAdmin');
+  toast('Dokumen berhasil diperbarui ✓','ok');
+  loadDokAdmin(dakPage);
+}
+
+async function delDokAdmin(id, r2Key){
+  // Hapus dari database dulu
+  const{error:dbErr}=await sb.from('dokumen').delete().eq('id',id);
+  if(dbErr){ toast('Gagal hapus: '+dbErr.message,'err'); return; }
+  // Hapus file dari R2
+  if(r2Key){
+    try{ await r2Delete(r2Key); }
+    catch(e){ console.warn('R2 delete warning:',e.message); }
+  }
+  toast('Dokumen berhasil dihapus ✓','ok');
+  loadDokAdmin(dakPage);
 }
 
 async function adminOpenDok(r2Key, nama){
@@ -2267,9 +2339,9 @@ async function loadDokUser(katId=null,p=1){
         </div>
       </div>
       <div style="display:flex;gap:.35rem;flex-shrink:0">
-        <button class="btn-ok" onclick="openDokNewTab('${d.r2_key}','${d.nama_file.replace(/'/g,"\\'")}')" title="Buka/Download"><i class="fas fa-download"></i> Buka</button>
-        <button class="btn-icon" onclick="openEditDok('${d.id}','${d.nama_file.replace(/'/g,"\\'")}','${d.kategori_id||''}','${(d.keterangan||'').replace(/'/g,"\\'")}')" title="Edit"><i class="fas fa-edit" style="color:var(--accent)"></i></button>
-        <button class="btn-icon" onclick="confirm_('del','Hapus Dokumen?','Hapus <strong>${d.nama_file}</strong>?',()=>delDok('${d.id}'))" title="Hapus"><i class="fas fa-trash" style="color:var(--danger)"></i></button>
+        <button class="btn-ok" data-r2="${d.r2_key}" data-nama="${encodeURIComponent(d.nama_file)}" onclick="openDokNewTab(this.dataset.r2,decodeURIComponent(this.dataset.nama))" title="Buka/Download"><i class="fas fa-download"></i> Buka</button>
+        <button class="btn-icon" data-id="${d.id}" data-nama="${encodeURIComponent(d.nama_file)}" data-kat="${d.kategori_id||''}" data-ket="${encodeURIComponent(d.keterangan||'')}" onclick="openEditDok(this.dataset.id,decodeURIComponent(this.dataset.nama),this.dataset.kat,decodeURIComponent(this.dataset.ket))" title="Edit"><i class="fas fa-edit" style="color:var(--accent)"></i></button>
+        <button class="btn-icon" data-id="${d.id}" data-nama="${encodeURIComponent(d.nama_file)}" onclick="konfirmHapusDok(this)" title="Hapus"><i class="fas fa-trash" style="color:var(--danger)"></i></button>
       </div>
     </div>`).join('');
   pgn('dokUserPgn',p,dukTotal,'loadDokUserPage');
@@ -2315,6 +2387,19 @@ async function saveEditDok(){
   toast('Dokumen berhasil diperbarui ✓','ok');
   loadDokUser(selKatId, dukPage);
 }
+function konfirmHapusDok(btn){
+  const id=btn.dataset.id;
+  const nama=decodeURIComponent(btn.dataset.nama||'');
+  confirm_('del','Hapus Dokumen?',`Hapus <strong>${nama}</strong>?`,()=>delDok(id));
+}
+
+function konfirmHapusDokAdmin(btn){
+  const id=btn.dataset.id;
+  const r2=btn.dataset.r2||'';
+  const nama=decodeURIComponent(btn.dataset.nama||'');
+  confirm_('del','Hapus Dokumen?',`Hapus <strong>${nama}</strong>?<br><small style="opacity:.7">File juga akan dihapus dari R2.</small>`,()=>delDokAdmin(id,r2));
+}
+
 async function delDok(id){
   // Ambil r2_key dulu sebelum hapus dari database
   const{data:dok,error:fetchErr}=await sb.from('dokumen').select('r2_key,nama_file').eq('id',id).single();
