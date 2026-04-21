@@ -8,7 +8,6 @@
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
 :root{
   --navy:#0a2342;--navy2:#0d2d57;--navy3:#143d6e;--navy-l:#e8f0fa;--navy-ll:#f0f5fc;
@@ -35,64 +34,6 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
 /* HONEYPOT - sembunyikan dari user asli, bot akan isi */
 .hp-field{position:absolute;left:-9999px;top:-9999px;opacity:0;pointer-events:none;height:0;overflow:hidden;}
 
-/* ── DOK ADMIN: TWO-PANEL LAYOUT ─────────────────── */
-.dak-layout{display:grid;grid-template-columns:280px 1fr;gap:1.25rem;align-items:start;}
-.dak-panel-left{position:sticky;top:1rem;}
-/* Panel kanan wajib min-width:0 agar tidak bocor keluar grid */
-.dak-panel-right{min-width:0;overflow:hidden;}
-.dak-peg-card-wrap{overflow:hidden;}
-.dak-peg-scroll{max-height:calc(100vh - 300px);overflow-y:auto;padding:.4rem .5rem .5rem;}
-.dak-peg-scroll::-webkit-scrollbar{width:4px;}
-.dak-peg-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
-
-/* Tabel dokumen admin — scroll horizontal HANYA di dalam tbl-wrap */
-#pageDokAdmin .card{overflow:hidden;}
-#pageDokAdmin .tbl-wrap{
-  overflow-x:auto;
-  overflow-y:visible;
-  -webkit-overflow-scrolling:touch;
-  /* Scrollbar tipis agar tidak mengganggu UI */
-  scrollbar-width:thin;
-  scrollbar-color:var(--border) transparent;
-}
-#pageDokAdmin .tbl-wrap::-webkit-scrollbar{height:5px;}
-#pageDokAdmin .tbl-wrap::-webkit-scrollbar-track{background:transparent;}
-#pageDokAdmin .tbl-wrap::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
-#pageDokAdmin .tbl-wrap table{
-  min-width:820px;
-  width:100%;
-}
-#pageDokAdmin .tbl-scroll-hint{
-  display:flex !important;
-}
-
-/* Kartu pegawai di panel kiri */
-.dak-peg-item{display:flex;align-items:center;gap:.65rem;padding:.55rem .65rem;border-radius:10px;cursor:pointer;transition:all .15s;border:1.5px solid transparent;margin-bottom:.15rem;}
-.dak-peg-item:hover{background:var(--navy-ll);border-color:var(--border);}
-.dak-peg-item.active{background:var(--navy);border-color:var(--navy);}
-.dak-peg-item.active .dak-pi-name{color:#fff;}
-.dak-peg-item.active .dak-pi-nip{color:rgba(255,255,255,.55);}
-.dak-peg-item.active .av{background:rgba(255,255,255,.18);color:#fff;}
-.dak-peg-item.active .dak-pi-badge{background:rgba(255,255,255,.2);color:#fff;}
-.dak-pi-name{font-size:.82rem;font-weight:700;color:var(--navy);line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.dak-pi-nip{font-size:.67rem;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:.05rem;}
-.dak-pi-badge{font-size:.67rem;color:var(--muted);background:var(--surface2);border-radius:10px;padding:.1rem .45rem;flex-shrink:0;margin-left:auto;}
-
-/* Info bar pegawai terpilih */
-.dak-info-bar{display:flex;align-items:center;justify-content:space-between;gap:.875rem;background:var(--surface);border:1.5px solid var(--accent-l);border-radius:14px;padding:.875rem 1.125rem;margin-bottom:1rem;box-shadow:var(--shadow);flex-wrap:wrap;}
-
-/* Nama file terpotong di tabel */
-.dok-nama-wrap{display:flex;align-items:center;gap:.6rem;min-width:0;}
-.dok-nama-txt{font-weight:600;font-size:.84rem;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px;}
-
-@media(max-width:900px){
-  .dak-layout{grid-template-columns:1fr;}
-  .dak-panel-left{position:static;}
-  .dak-panel-right{min-width:0;overflow:hidden;}
-  .dak-peg-scroll{max-height:180px;}
-  /* Tabel dokumen admin: tetap bisa scroll di HP */
-  #pageDokAdmin .tbl-wrap table{min-width:680px;}
-}
 /* HONEYPOT */
 .hp-field{position:absolute;left:-9999px;top:-9999px;opacity:0;pointer-events:none;height:0;overflow:hidden;}
 
@@ -555,72 +496,9 @@ tbody td.wrap{white-space:normal;min-width:140px;}
 
     <!-- SEMUA DOKUMEN ADMIN -->
     <div id="pageDokAdmin" style="display:none">
-      <div class="topbar"><div><div class="page-title">Semua Dokumen</div><div class="page-sub" id="dakSubtitle">Pilih pegawai untuk melihat dokumennya</div></div></div>
-
-      <div class="dak-layout">
-        <!-- PANEL KIRI -->
-        <div class="dak-panel-left">
-          <div class="card dak-peg-card-wrap">
-            <div class="card-hd">
-              <span class="card-title"><i class="fas fa-users" style="color:var(--accent);margin-right:.4rem"></i>Pegawai</span>
-              <span id="dakPegTotal" style="font-size:.72rem;color:var(--muted)"></span>
-            </div>
-            <div style="padding:.6rem .75rem;border-bottom:1px solid var(--border)">
-              <div class="srch"><i class="fas fa-search"></i><input type="text" id="dakPegSearch" placeholder="Cari pegawai..." oninput="filterDakPeg()"/></div>
-            </div>
-            <div id="dakPegList" class="dak-peg-scroll">
-              <div class="loading"><div class="spinner"></div>Memuat...</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- PANEL KANAN -->
-        <div class="dak-panel-right">
-          <!-- Info pegawai terpilih -->
-          <div id="dakPegInfo" class="dak-info-bar" style="display:none">
-            <div style="display:flex;align-items:center;gap:.875rem;min-width:0">
-              <div class="av" id="dakPegAv" style="width:42px;height:42px;border-radius:11px;font-size:.9rem;flex-shrink:0">?</div>
-              <div style="min-width:0">
-                <div style="font-size:.95rem;font-weight:800;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="dakPegNama">—</div>
-                <div style="font-size:.73rem;color:var(--muted);margin-top:.1rem">
-                  <span id="dakPegNip" style="font-family:'JetBrains Mono',monospace"></span>
-                  <span style="margin:0 .3rem">·</span>
-                  <span id="dakPegJab"></span>
-                </div>
-              </div>
-            </div>
-            <div style="display:flex;align-items:center;gap:.5rem;flex-shrink:0">
-              <span id="dakPegDokCount" class="chip chip-navy"></span>
-              <button class="btn-s" style="font-size:.74rem;padding:.32rem .7rem;white-space:nowrap" onclick="clearDakPeg()">
-                <i class="fas fa-times"></i> Semua Pegawai
-              </button>
-            </div>
-          </div>
-
-          <!-- Filter -->
-          <div class="toolbar">
-            <div class="srch"><i class="fas fa-search"></i><input type="text" id="dokAdminQ" placeholder="Cari nama file..." oninput="filterDokAdmin()"/></div>
-            <select class="fsel" id="dokAdminKatF" onchange="filterDokAdmin()"><option value="">Semua Kategori</option></select>
-          </div>
-
-          <!-- Tabel dokumen -->
-          <div class="card">
-            <div class="tbl-scroll-hint"><i class="fas fa-arrows-alt-h"></i> Geser ke samping untuk melihat semua kolom</div>
-            <div class="tbl-wrap">
-              <table>
-                <thead><tr><th>File</th><th>Kategori</th><th>Keterangan</th><th>Diupload Oleh</th><th>Ukuran</th><th>Diupload</th><th>Aksi</th></tr></thead>
-                <tbody id="dokAdminList"></tbody>
-              </table>
-              <div id="dokAdminSkel"></div>
-              <div id="dokAdminEmpty" class="empty" style="display:none">
-                <i class="fas fa-folder-open"></i>
-                <p id="dokAdminEmptyTxt">Pilih pegawai di kiri untuk melihat dokumennya.</p>
-              </div>
-              <div id="dokAdminPgn" class="pgn" style="display:none"></div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <div class="topbar"><div><div class="page-title">Semua Dokumen</div></div></div>
+      <div class="toolbar"><div class="srch"><i class="fas fa-search"></i><input type="text" id="dokAdminQ" placeholder="Cari nama file..." oninput="filterDokAdmin()"/></div><div class="srch" style="max-width:210px"><i class="fas fa-user"></i><input type="text" id="dokAdminPegQ" placeholder="Cari nama pegawai..." oninput="filterDokAdmin()"/></div><select class="fsel" id="dokAdminKatF" onchange="filterDokAdmin()"><option value="">Semua Kategori</option></select></div>
+      <div class="card"><div class="tbl-scroll-hint"><i class="fas fa-arrows-alt-h"></i> Geser ke samping untuk melihat semua kolom</div><div class="tbl-wrap"><table><thead><tr><th>File</th><th>Kategori</th><th>Keterangan</th><th>Milik Pegawai</th><th>Diupload Oleh</th><th>Ukuran</th><th>Diupload</th><th>Aksi</th></tr></thead><tbody id="dokAdminList"></tbody></table><div id="dokAdminSkel"></div><div id="dokAdminEmpty" class="empty" style="display:none"><i class="fas fa-folder-open"></i><p>Belum ada dokumen.</p></div><div id="dokAdminPgn" class="pgn" style="display:none"></div></div></div>
     </div>
 
     <!-- JABATAN -->
@@ -781,47 +659,6 @@ tbody td.wrap{white-space:normal;min-width:140px;}
             <button class="btn-p" onclick="exportFullJSON()" id="btnExportJSON" style="width:100%;justify-content:center;background:linear-gradient(135deg,var(--purple),#6d28d9)">
               <i class="fas fa-archive"></i> Download Full Backup (.json)
             </button>
-          </div>
-        </div>
-
-        <!-- Backup File R2 -->
-        <div class="card" style="grid-column:1/-1">
-          <div class="card-hd"><span class="card-title"><i class="fas fa-cloud-download-alt" style="color:var(--warn);margin-right:.4rem"></i>Backup File Dokumen dari R2</span></div>
-          <div class="card-body">
-            <div id="r2BackupStat" style="font-size:.82rem;color:var(--muted);margin-bottom:.75rem">—</div>
-            <!-- Progress bar -->
-            <div id="r2BackupPrgWrap" style="display:none;margin-bottom:.875rem">
-              <div style="display:flex;justify-content:space-between;font-size:.79rem;margin-bottom:.35rem">
-                <span id="r2BackupPrgLabel">Mempersiapkan...</span>
-                <span id="r2BackupPrgPct">0%</span>
-              </div>
-              <div class="progress-wrap"><div class="progress-fill" id="r2BackupPrgBar" style="width:0%"></div></div>
-              <div id="r2BackupPrgDetail" style="font-size:.72rem;color:var(--muted);margin-top:.3rem"></div>
-            </div>
-            <div style="display:flex;gap:.7rem;flex-wrap:wrap">
-              <button class="btn-p" onclick="backupR2Files()" id="btnBackupR2" style="flex:1;min-width:200px;justify-content:center;background:linear-gradient(135deg,#d97706,#b45309)">
-                <i class="fas fa-cloud-download-alt"></i> Download Semua File R2 (.zip)
-              </button>
-              <button class="btn-s" onclick="backupR2ByPegawai()" id="btnBackupR2Peg" style="flex:1;min-width:200px;justify-content:center">
-                <i class="fas fa-user-circle"></i> Download per Pegawai (.zip)
-              </button>
-            </div>
-            <!-- Pilih pegawai (muncul saat klik "per Pegawai") -->
-            <div id="r2BackupPegWrap" style="display:none;margin-top:.875rem">
-              <div class="form-group" style="margin-bottom:.5rem">
-                <label class="form-label">Pilih Pegawai</label>
-                <select class="form-control" id="r2BackupPegSel">
-                  <option value="">-- Pilih pegawai --</option>
-                </select>
-              </div>
-              <div id="r2BackupNoDokWarn" class="alert-warn alert-box" style="display:none;margin-bottom:.5rem">
-                <i class="fas fa-exclamation-triangle"></i>
-                <div>Pegawai ini <strong>belum memiliki dokumen</strong> yang tersimpan. Tidak ada file yang bisa didownload.</div>
-              </div>
-              <button class="btn-p" onclick="doBackupR2PerPegawai()" id="btnDoBackupR2Peg" style="justify-content:center">
-                <i class="fas fa-download"></i> Download File Pegawai Ini
-              </button>
-            </div>
           </div>
         </div>
 
@@ -2279,176 +2116,90 @@ async function openMPeg(id){
 // ═══════════════════════════════
 //  SEMUA DOKUMEN ADMIN
 // ═══════════════════════════════
-// ── SEMUA DOKUMEN ADMIN — TWO-PANEL ─────────────────
-let dakPage=1,dakTotal=0,dakF={q:'',katId:'',userId:null};
-let dakPegData=[], dakFilterTimer=null;
-
-// ─ Panel kiri: muat daftar pegawai ─
-async function loadDakPegawaiList(){
-  const listEl=document.getElementById('dakPegList');
-  if(!listEl) return;
-  listEl.innerHTML='<div class="loading"><div class="spinner"></div>Memuat...</div>';
-
-  const{data:pegs}=await sb.from('profiles')
-    .select('id,nama_lengkap,nip,jabatan(nama)')
-    .eq('role','user').eq('status_akun','approved')
-    .order('nama_lengkap');
-
-  // Hitung dokumen per pegawai
-  const{data:cnts}=await sb.from('dokumen').select('user_id');
-  const cntMap={};
-  (cnts||[]).forEach(d=>{ cntMap[d.user_id]=(cntMap[d.user_id]||0)+1; });
-
-  dakPegData=(pegs||[]).map(p=>({...p,dok:cntMap[p.id]||0}));
-
-  const total=document.getElementById('dakPegTotal');
-  if(total) total.textContent=dakPegData.length+' pegawai';
-
-  renderDakPegList(dakPegData);
-}
-
-function renderDakPegList(list){
-  const listEl=document.getElementById('dakPegList');
-  if(!listEl) return;
-  if(!list.length){
-    listEl.innerHTML='<div style="padding:.875rem;text-align:center;font-size:.8rem;color:var(--muted)">Tidak ada hasil.</div>';
-    return;
-  }
-  listEl.innerHTML=list.map(p=>`
-    <div class="dak-peg-item${dakF.userId===p.id?' active':''}" data-id="${p.id}" onclick="selectDakPeg('${p.id}')">
-      <div class="av" style="width:34px;height:34px;border-radius:8px;font-size:.74rem;flex-shrink:0">${ini(p.nama_lengkap)}</div>
-      <div style="min-width:0;flex:1">
-        <div class="dak-pi-name">${p.nama_lengkap||'—'}</div>
-        <div class="dak-pi-nip">${p.nip||'—'}</div>
-      </div>
-      <span class="dak-pi-badge">${p.dok}</span>
-    </div>`).join('');
-}
-
-function filterDakPeg(){
-  const q=(document.getElementById('dakPegSearch')?.value||'').toLowerCase().trim();
-  renderDakPegList(!q ? dakPegData : dakPegData.filter(p=>
-    (p.nama_lengkap||'').toLowerCase().includes(q)||(p.nip||'').includes(q)
-  ));
-}
-
-// ─ Pilih pegawai → tampil dokumennya ─
-function selectDakPeg(userId){
-  dakF.userId=userId;
-  document.querySelectorAll('.dak-peg-item').forEach(el=>
-    el.classList.toggle('active', el.dataset.id===userId));
-
-  const peg=dakPegData.find(p=>p.id===userId);
-  if(peg){
-    const infoBar=document.getElementById('dakPegInfo');
-    if(infoBar) infoBar.style.display='flex';
-    el('dakPegAv').textContent=ini(peg.nama_lengkap);
-    el('dakPegNama').textContent=peg.nama_lengkap||'—';
-    el('dakPegNip').textContent=peg.nip||'—';
-    el('dakPegJab').textContent=peg.jabatan?.nama||'—';
-    el('dakPegDokCount').textContent=peg.dok+' dokumen';
-    el('dakSubtitle').textContent='Dokumen milik '+peg.nama_lengkap;
-  }
-  el('dokAdminQ').value='';
-  dakF.q=''; dakF.katId='';
-  if(el('dokAdminKatF')) el('dokAdminKatF').value='';
-  loadDokAdmin(1);
-}
-
-// ─ Reset ke state awal ─
-function clearDakPeg(){
-  dakF.userId=null;
-  document.querySelectorAll('.dak-peg-item').forEach(el=>el.classList.remove('active'));
-  const infoBar=document.getElementById('dakPegInfo');
-  if(infoBar) infoBar.style.display='none';
-  el('dakSubtitle').textContent='Pilih pegawai untuk melihat dokumennya';
-  el('dokAdminList').innerHTML='';
-  el('dokAdminSkel').innerHTML='';
-  el('dokAdminPgn').style.display='none';
-  const emptyEl=el('dokAdminEmpty');
-  el('dokAdminEmptyTxt').textContent='Pilih pegawai di kiri untuk melihat dokumennya.';
-  emptyEl.style.display='block';
-  el('dokAdminQ').value='';
-  dakF.q=''; dakF.katId='';
-}
-
-function el(id){ return document.getElementById(id); }
-
-// ─ Load dokumen panel kanan ─
+let dakPage=1,dakTotal=0,dakF={q:'',katId:'',pegQ:''};
 async function loadDokAdmin(p=1){
   dakPage=p;
-  const listEl=el('dokAdminList'), emptyEl=el('dokAdminEmpty');
-  const skelEl=el('dokAdminSkel'), pgnEl=el('dokAdminPgn');
-  listEl.innerHTML=''; emptyEl.style.display='none';
+
+  // Reset UI state sebelum query — cegah empty muncul bersamaan dengan data
+  const listEl=document.getElementById('dokAdminList');
+  const emptyEl=document.getElementById('dokAdminEmpty');
+  const skelEl=document.getElementById('dokAdminSkel');
+  const pgnEl=document.getElementById('dokAdminPgn');
+  listEl.innerHTML='';
+  emptyEl.style.display='none';
   if(pgnEl) pgnEl.style.display='none';
-
-  if(!dakF.userId){
-    el('dokAdminEmptyTxt').textContent='Pilih pegawai di kiri untuk melihat dokumennya.';
-    emptyEl.style.display='block'; return;
-  }
-
   skel('dokAdminSkel');
+
+  // Guard: pastikan session aktif
   const{data:{session:s}}=await sb.auth.getSession();
   if(!s){ toast('Sesi habis, silakan login ulang.','warn'); skelEl.innerHTML=''; return; }
 
-  const from=(p-1)*PS, to=from+PS-1;
-  let q=sb.from('dokumen')
-    .select('*,kategori_dokumen:kategori_id(nama)',{count:'exact'})
-    .eq('user_id',dakF.userId);
+  const from=(p-1)*PS,to=from+PS-1;
+  let q=sb.from('dokumen').select('*,kategori_dokumen:kategori_id(nama)',{count:'exact'});
   if(dakF.katId) q=q.eq('kategori_id',dakF.katId);
   if(dakF.q) q=q.ilike('nama_file','%'+dakF.q+'%');
 
+  // Filter nama pegawai: cari user_id yang nama_lengkapnya cocok dulu
+  if(dakF.pegQ){
+    const{data:pegMatch}=await sb.from('profiles')
+      .select('id')
+      .ilike('nama_lengkap','%'+dakF.pegQ+'%');
+    const matchIds=(pegMatch||[]).map(x=>x.id);
+    if(matchIds.length===0){
+      skelEl.innerHTML='';
+      emptyEl.style.display='block';
+      return;
+    }
+    q=q.in('user_id',matchIds);
+  }
+
   const{data,count}=await q.order('uploaded_at',{ascending:false}).range(from,to);
   dakTotal=count||0;
-  skelEl.innerHTML=''; emptyEl.style.display='none';
+  skelEl.innerHTML='';
+  emptyEl.style.display='none';
 
   if(!data||!data.length){
-    el('dokAdminEmptyTxt').textContent='Tidak ada dokumen yang cocok.';
-    emptyEl.style.display='block'; return;
+    emptyEl.style.display='block';
+    return;
   }
 
-  // Uploader info (jika diupload admin)
-  const uploaderIds=[...new Set(data.map(d=>d.uploaded_by).filter(id=>id&&id!==dakF.userId))];
-  const profMap={};
-  if(uploaderIds.length){
-    const{data:ups}=await sb.from('profiles').select('id,nama_lengkap').in('id',uploaderIds);
-    (ups||[]).forEach(p=>{ profMap[p.id]=p; });
-  }
+  // Ambil data profiles untuk user_id dan uploaded_by secara terpisah
+  const allUserIds=[...new Set([
+    ...data.map(d=>d.user_id).filter(Boolean),
+    ...data.map(d=>d.uploaded_by).filter(Boolean)
+  ])];
+  const{data:profData}=await sb.from('profiles').select('id,nama_lengkap,nip').in('id',allUserIds);
+  const profMap={};(profData||[]).forEach(p=>{ profMap[p.id]=p; });
 
   listEl.innerHTML=data.map(d=>{
-    const uploader=d.uploaded_by&&d.uploaded_by!==d.user_id?profMap[d.uploaded_by]:null;
-    const namaEnc=encodeURIComponent(d.nama_file||'');
+    const owner=profMap[d.user_id]||{};
+    const uploader=d.uploaded_by?profMap[d.uploaded_by]:null;
+    const uploadedByAdmin=uploader&&d.uploaded_by!==d.user_id;
     return `<tr>
-      <td style="max-width:220px">
-        <div class="dok-nama-wrap">
-          <div class="doc-ico" style="background:${dBg(d.nama_file)};color:${dClr(d.nama_file)};width:30px;height:30px;border-radius:7px;flex-shrink:0;display:grid;place-items:center"><i class="fas ${dIco(d.nama_file)}"></i></div>
-          <span class="dok-nama-txt" title="${d.nama_file||''}">${d.nama_file||'—'}</span>
-        </div>
-      </td>
-      <td><span class="chip chip-navy" style="white-space:nowrap">${d.kategori_dokumen?.nama||'—'}</span></td>
-      <td style="font-size:.82rem;color:var(--muted);max-width:160px"><span style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${d.keterangan||'—'}</span></td>
-      <td style="font-size:.79rem;white-space:nowrap">${uploader
-        ?`<span style="color:var(--accent);font-weight:600"><i class="fas fa-user-shield" style="font-size:.7rem"></i> ${uploader.nama_lengkap||'Admin'}</span>`
-        :'<span style="color:var(--muted)">Pegawai</span>'}</td>
-      <td style="font-size:.77rem;color:var(--muted);white-space:nowrap">${fmtSz(d.ukuran_file)}</td>
-      <td style="font-size:.77rem;color:var(--muted);white-space:nowrap">${fmtD(d.uploaded_at)}</td>
-      <td style="white-space:nowrap">
-        <button class="btn-ok" data-r2="${d.r2_key||''}" data-nama="${namaEnc}" onclick="adminOpenDok(this.dataset.r2,decodeURIComponent(this.dataset.nama))"><i class="fas fa-download"></i> Buka</button>
-        <button class="btn-icon" data-id="${d.id}" data-nama="${namaEnc}" data-kat="${d.kategori_id||''}" data-ket="${encodeURIComponent(d.keterangan||'')}" onclick="openEditDokAdmin(this.dataset.id,decodeURIComponent(this.dataset.nama),this.dataset.kat,decodeURIComponent(this.dataset.ket))"><i class="fas fa-edit" style="color:var(--accent)"></i></button>
-        <button class="btn-icon" data-id="${d.id}" data-r2="${d.r2_key||''}" data-nama="${namaEnc}" onclick="konfirmHapusDokAdmin(this)"><i class="fas fa-trash" style="color:var(--danger)"></i></button>
-      </td></tr>`;
+    <td><div style="display:flex;align-items:center;gap:.6rem"><div class="doc-ico" style="background:${dBg(d.nama_file)};color:${dClr(d.nama_file)};width:30px;height:30px;border-radius:7px"><i class="fas ${dIco(d.nama_file)}"></i></div><span style="font-weight:600;font-size:.84rem;color:var(--navy)">${d.nama_file}</span></div></td>
+    <td><span class="chip chip-navy">${d.kategori_dokumen?.nama||'—'}</span></td>
+    <td style="font-size:.82rem;color:var(--muted);max-width:180px"><span style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${d.keterangan||'—'}</span></td>
+    <td><div class="emp-name">${owner.nama_lengkap||'—'}</div><div class="emp-nip">${owner.nip||''}</div></td>
+    <td style="font-size:.79rem">${uploadedByAdmin?`<span style="color:var(--accent);font-weight:600"><i class="fas fa-user-shield" style="font-size:.7rem"></i> ${uploader.nama_lengkap||'Admin'}</span>`:'<span style="color:var(--muted)">Pegawai</span>'}</td>
+    <td style="font-size:.77rem;color:var(--muted)">${fmtSz(d.ukuran_file)}</td>
+    <td style="font-size:.77rem;color:var(--muted)">${fmtD(d.uploaded_at)}</td>
+    <td style="white-space:nowrap">
+      <button class="btn-ok" data-r2="${d.r2_key||''}" data-nama="${encodeURIComponent(d.nama_file||''|| '')}" onclick="adminOpenDok(this.dataset.r2,decodeURIComponent(this.dataset.nama))"><i class="fas fa-download"></i> Buka</button>
+      <button class="btn-icon" data-id="${d.id}" data-nama="${encodeURIComponent(d.nama_file||'')}" data-kat="${d.kategori_id||''}" data-ket="${encodeURIComponent(d.keterangan||'')}" onclick="openEditDokAdmin(this.dataset.id,decodeURIComponent(this.dataset.nama),this.dataset.kat,decodeURIComponent(this.dataset.ket))"><i class="fas fa-edit" style="color:var(--accent)"></i></button>
+      <button class="btn-icon" data-id="${d.id}" data-r2="${d.r2_key||''}" data-nama="${encodeURIComponent(d.nama_file||'')}" onclick="konfirmHapusDokAdmin(this)"><i class="fas fa-trash" style="color:var(--danger)"></i></button>
+    </td></tr>`;
   }).join('');
-
   pgn('dokAdminPgn',p,dakTotal,'loadDokAdmin');
-  // Perbarui badge jumlah
-  const peg=dakPegData.find(p=>p.id===dakF.userId);
-  if(peg){ peg.dok=dakTotal; el('dakPegDokCount').textContent=dakTotal+' dokumen'; }
 }
 
+// Debounce filter agar tidak query terlalu sering saat mengetik
+let dakFilterTimer=null;
 function filterDokAdmin(){
   clearTimeout(dakFilterTimer);
-  dakF.q=el('dokAdminQ')?.value.trim()||'';
-  dakF.katId=el('dokAdminKatF')?.value||'';
+  dakF.q=document.getElementById('dokAdminQ').value.trim();
+  dakF.katId=document.getElementById('dokAdminKatF').value;
+  dakF.pegQ=(document.getElementById('dokAdminPegQ')?.value||'').trim();
+  // Kategori dropdown: langsung query. Text input: tunggu 350ms setelah berhenti ketik
   dakFilterTimer=setTimeout(()=>loadDokAdmin(1), 350);
 }
 
@@ -2729,7 +2480,7 @@ async function getSignedUrl(r2Key){
   const sp='X-Amz-Algorithm=AWS4-HMAC-SHA256'
     +'&X-Amz-Credential='+credential
     +'&X-Amz-Date='+dts
-    +'&X-Amz-Expires=7200'
+    +'&X-Amz-Expires=3600'
     +'&X-Amz-SignedHeaders=host';
   // Canonical request dengan \\n literal
   const NL='\n';
@@ -2959,11 +2710,13 @@ async function signR2({method,ep,path,qp={},hdrs={},body=''}){
 let backupHistory=[];
 
 async function loadBackupPage(){
+  // Load statistik paralel
   const[{count:dokCount},{count:pegCount}]=await Promise.all([
     sb.from('dokumen').select('*',{count:'exact',head:true}),
     sb.from('profiles').select('*',{count:'exact',head:true}).neq('role','admin')
   ]);
 
+  // Hitung total ukuran dokumen
   const{data:sizeData}=await sb.from('dokumen').select('ukuran_file');
   const totalBytes=(sizeData||[]).reduce((s,d)=>s+(d.ukuran_file||0),0);
 
@@ -2972,39 +2725,7 @@ async function loadBackupPage(){
   document.getElementById('backupPegStat').innerHTML=
     `<i class="fas fa-users" style="color:var(--navy)"></i> <strong>${pegCount||0}</strong> pegawai terdaftar`;
 
-  // Stat R2
-  const r2Configured = R2.accountId && R2.accessKey && R2.secretKey && R2.bucket;
-  document.getElementById('r2BackupStat').innerHTML = r2Configured
-    ? `<i class="fas fa-cloud" style="color:var(--warn)"></i> <strong>${dokCount||0}</strong> file tersimpan di R2 &nbsp;·&nbsp; Total ukuran: <strong>${fmtSz(totalBytes)}</strong> &nbsp;·&nbsp; <span style="color:var(--accent2)">R2 terkonfigurasi ✓</span>`
-    : `<i class="fas fa-exclamation-triangle" style="color:var(--danger)"></i> <span style="color:var(--danger)">R2 belum dikonfigurasi — backup tidak tersedia</span>`;
-
-  // Isi dropdown pegawai untuk backup per pegawai
-  // Load pegawai + jumlah dokumen masing-masing
-  const{data:pegList}=await sb.from('profiles').select('id,nama_lengkap,nip').eq('role','user').eq('status_akun','approved').order('nama_lengkap');
-  const{data:dokPerPegRaw}=await sb.from('dokumen').select('user_id');
-  // Hitung dokumen per pegawai
-  const dokPerPeg={};
-  (dokPerPegRaw||[]).forEach(d=>{ dokPerPeg[d.user_id]=(dokPerPeg[d.user_id]||0)+1; });
-  const sel=document.getElementById('r2BackupPegSel');
-  if(sel){
-    sel.innerHTML='<option value="">-- Pilih pegawai --</option>'+
-      (pegList||[]).map(p=>{
-        const jml=dokPerPeg[p.id]||0;
-        const label=jml>0
-          ?`${p.nama_lengkap} (${p.nip||'—'}) — ${jml} dokumen`
-          :`${p.nama_lengkap} (${p.nip||'—'}) — Belum ada dokumen`;
-        return `<option value="${p.id}" data-count="${jml}">${label}</option>`;
-      }).join('');
-
-    // Tambah event listener untuk tampilkan peringatan jika 0 dokumen
-    sel.onchange=function(){
-      const opt=this.selectedOptions[0];
-      const count=parseInt(opt?.dataset?.count||'0');
-      const warn=document.getElementById('r2BackupNoDokWarn');
-      if(warn) warn.style.display=(count===0&&this.value)?'flex':'none';
-    };
-  }
-
+  // Status bar
   const lastBackup=sessionStorage.getItem('lastBackupTime');
   const bar=document.getElementById('backupStatusBar');
   if(lastBackup){
@@ -3013,6 +2734,7 @@ async function loadBackupPage(){
     bar.innerHTML=`<div class="alert-warn alert-box"><i class="fas fa-exclamation-triangle"></i><div>Belum ada backup pada sesi ini. Disarankan melakukan export data secara berkala (minimal 1x sebulan).</div></div>`;
   }
 
+  // Update last JSON label
   const lj=sessionStorage.getItem('lastFullBackup');
   document.getElementById('backupJSONlast').innerHTML=lj
     ?`<i class="fas fa-check-circle" style="color:var(--accent2)"></i> Terakhir backup: <strong>${lj}</strong>`
@@ -3062,8 +2784,8 @@ function renderBackupHistory(){
     el.innerHTML='<div style="color:var(--muted);font-size:.82rem;text-align:center;padding:.5rem 0"><i class="fas fa-info-circle"></i> Belum ada export dilakukan pada sesi ini.</div>';
     return;
   }
-  const icons={dok:'fa-file-csv',peg:'fa-users',json:'fa-archive',r2:'fa-cloud-download-alt',r2peg:'fa-user-circle'};
-  const colors={dok:'var(--accent2)',peg:'var(--navy)',json:'var(--purple)',r2:'var(--warn)',r2peg:'var(--warn)'};
+  const icons={dok:'fa-file-csv',peg:'fa-users',json:'fa-archive'};
+  const colors={dok:'var(--accent2)',peg:'var(--navy)',json:'var(--purple)'};
   el.innerHTML=`<table><thead><tr><th>Waktu</th><th>Tipe</th><th>File</th><th>Jumlah Data</th></tr></thead><tbody>`+
     backupHistory.map(h=>`<tr>
       <td style="font-size:.79rem;color:var(--muted)">${h.time}</td>
@@ -3192,214 +2914,6 @@ async function exportFullJSON(){
     toast('Backup gagal: '+e.message,'err');
   }
   setBtn(btn,false,'<i class="fas fa-archive"></i> Download Full Backup (.json)');
-}
-
-// ═══════════════════════════════
-//  BACKUP FILE R2
-// ═══════════════════════════════
-
-function setR2BackupPrg(pct, label, detail=''){
-  document.getElementById('r2BackupPrgBar').style.width=pct+'%';
-  document.getElementById('r2BackupPrgPct').textContent=pct+'%';
-  document.getElementById('r2BackupPrgLabel').textContent=label;
-  if(detail!==undefined) document.getElementById('r2BackupPrgDetail').textContent=detail;
-}
-
-function backupR2ByPegawai(){
-  const wrap=document.getElementById('r2BackupPegWrap');
-  wrap.style.display=wrap.style.display==='none'?'block':'none';
-}
-
-async function doBackupR2PerPegawai(){
-  if(!R2.accountId||!R2.accessKey||!R2.secretKey||!R2.bucket){
-    toast('R2 belum dikonfigurasi!','err');return;
-  }
-  const sel=document.getElementById('r2BackupPegSel');
-  const pegId=sel.value;
-  const pegNama=sel.selectedOptions[0]?.text||'pegawai';
-  if(!pegId){toast('Pilih pegawai terlebih dahulu!','warn');return;}
-  const btn=document.getElementById('btnDoBackupR2Peg');
-  setBtn(btn,true);
-  const{data:docs,error}=await sb.from('dokumen')
-    .select('nama_file,r2_key,kategori_dokumen:kategori_id(nama),profiles:user_id(nama_lengkap)')
-    .eq('user_id',pegId).order('uploaded_at',{ascending:false});
-  setBtn(btn,false,'<i class="fas fa-download"></i> Download File Pegawai Ini');
-  if(error){toast('Gagal mengambil data: '+error.message,'err');return;}
-  if(!docs||!docs.length){
-    // Tampilkan keterangan tidak ada dokumen di UI
-    const prgWrap=document.getElementById('r2BackupPrgWrap');
-    prgWrap.style.display='block';
-    setR2BackupPrg(0,'Tidak ada dokumen');
-    document.getElementById('r2BackupPrgDetail').textContent='Pegawai '+pegNama.split('(')[0].trim()+' belum memiliki dokumen yang tersimpan di R2.';
-    document.getElementById('r2BackupPrgLabel').innerHTML='<span style="color:var(--warn)"><i class="fas fa-info-circle"></i> Pegawai ini belum memiliki dokumen</span>';
-    setTimeout(()=>{
-      prgWrap.style.display='none';
-      setR2BackupPrg(0,'');
-    },4000);
-    return;
-  }
-  const safeName=pegNama.split('(')[0].trim().replace(/[^a-zA-Z0-9_\-]/g,'_');
-  await _doR2Zip(docs,`backup_${safeName}_${new Date().toISOString().slice(0,10)}.zip`,'r2peg',pegNama.split('(')[0].trim());
-}
-
-async function backupR2Files(){
-  if(!R2.accountId||!R2.accessKey||!R2.secretKey||!R2.bucket){
-    toast('R2 belum dikonfigurasi! Buka Pengaturan terlebih dahulu.','err');return;
-  }
-  const btn=document.getElementById('btnBackupR2');
-  setBtn(btn,true);
-  const{data:docs,error}=await sb.from('dokumen')
-    .select('nama_file,r2_key,kategori_dokumen:kategori_id(nama),profiles:user_id(nama_lengkap)')
-    .order('profiles(nama_lengkap)',{ascending:true});
-  setBtn(btn,false,'<i class="fas fa-cloud-download-alt"></i> Download Semua File R2 (.zip)');
-  if(error){toast('Gagal mengambil data: '+error.message,'err');return;}
-  if(!docs||!docs.length){toast('Belum ada dokumen yang tersimpan di database.','warn');return;}
-  const valid=docs.filter(d=>d.r2_key);
-  if(!valid.length){toast('Semua dokumen tidak memiliki r2_key yang valid.','err');return;}
-  const ts=new Date().toISOString().slice(0,10);
-  toast(`Memulai download ${valid.length} file...`,'info');
-  await _doR2Zip(docs,`backup_r2_semua_${ts}.zip`,'r2','Semua');
-}
-
-async function _doR2Zip(docs, zipFilename, logType, label){
-  if(!R2.accountId||!R2.accessKey||!R2.secretKey||!R2.bucket){
-    toast('R2 belum dikonfigurasi!','err');return;
-  }
-  if(typeof JSZip==='undefined'){
-    toast('JSZip belum termuat. Coba refresh halaman.','err');return;
-  }
-  const btnAll=document.getElementById('btnBackupR2');
-  const btnPeg=document.getElementById('btnBackupR2Peg');
-  const btnDoPeg=document.getElementById('btnDoBackupR2Peg');
-  [btnAll,btnPeg,btnDoPeg].forEach(b=>{if(b)b.disabled=true;});
-  const prgWrap=document.getElementById('r2BackupPrgWrap');
-  prgWrap.style.display='block';
-  setR2BackupPrg(0,'Mempersiapkan...');
-
-  const zip=new JSZip();
-  const total=docs.length;
-  let done=0, failed=0, ok=0;
-  const failedFiles=[];
-
-  // Helper: fetch dengan retry (3x) dan timeout
-  async function fetchWithRetry(url, retries=3){
-    for(let i=0;i<retries;i++){
-      try{
-        const ctrl=new AbortController();
-        const timer=setTimeout(()=>ctrl.abort(),60000); // 60s timeout per file
-        const res=await fetch(url,{signal:ctrl.signal});
-        clearTimeout(timer);
-        if(!res.ok) throw new Error('HTTP '+res.status);
-        return res;
-      }catch(e){
-        if(i===retries-1) throw e;
-        // Tunggu sebentar sebelum retry
-        await new Promise(r=>setTimeout(r,1500*(i+1)));
-      }
-    }
-  }
-
-  for(const doc of docs){
-    if(!doc.r2_key){
-      failed++;done++;
-      failedFiles.push(doc.nama_file||'?');
-      continue;
-    }
-    try{
-      const pct=Math.round((done/total)*88);
-      setR2BackupPrg(
-        pct,
-        `Mengunduh ${done+1} dari ${total}...`,
-        `${doc.profiles?.nama_lengkap||'—'} › ${doc.nama_file||doc.r2_key}`
-      );
-
-      // Generate fresh signed URL setiap file agar tidak expired
-      const url=await getSignedUrl(doc.r2_key);
-
-      // Fetch dengan retry
-      const res=await fetchWithRetry(url);
-      const blob=await res.blob();
-
-      // Validasi blob tidak kosong
-      if(!blob||blob.size===0) throw new Error('File kosong dari R2');
-
-      // Struktur folder: NamaPegawai/KategoriDokumen/NamaFile
-      const pegFolder=(doc.profiles?.nama_lengkap||'Tidak_Diketahui').replace(/[\/\?%*:|"<>]/g,'_');
-      const katFolder=(doc.kategori_dokumen?.nama||'Lainnya').replace(/[\/\?%*:|"<>]/g,'_');
-      const namaFile=(doc.nama_file||doc.r2_key.split('/').pop()||'file').replace(/[\/\?%*:|"<>]/g,'_');
-
-      // Tambah ke zip dalam folder terstruktur
-      zip.folder(pegFolder).folder(katFolder).file(namaFile, blob, {binary:true});
-      ok++;
-
-    }catch(e){
-      console.warn('Skip file:',doc.nama_file, e.message);
-      failed++;
-      failedFiles.push((doc.nama_file||doc.r2_key)+' ('+e.message+')');
-    }
-    done++;
-  }
-
-  // Jika tidak ada file yang berhasil didownload
-  if(ok===0){
-    setR2BackupPrg(0,'Tidak ada file yang berhasil diunduh');
-    toast('Tidak ada file yang berhasil diunduh dari R2. Cek konfigurasi CORS dan API Token.','err');
-    if(failedFiles.length){
-      console.error('Semua file gagal:',failedFiles);
-    }
-    [btnAll,btnPeg,btnDoPeg].forEach(b=>{if(b)b.disabled=false;});
-    setTimeout(()=>{
-      prgWrap.style.display='none';
-      setR2BackupPrg(0,'');
-    },4000);
-    return;
-  }
-
-  // Tambah file README.txt di dalam zip
-  const ts=new Date().toLocaleString('id-ID');
-    zip.file('README.txt','Backup SiPegawai - Lapas Kelas III Saparua\nWaktu backup: '+ts+'\nTotal file berhasil: '+ok+'\nTotal file gagal: '+failed+(failedFiles.length?'\nFile gagal: '+failedFiles.join(', '):''));
-
-  setR2BackupPrg(90,'Membuat file ZIP...');
-  try{
-    const content=await zip.generateAsync(
-      {type:'blob',compression:'DEFLATE',compressionOptions:{level:3}},
-      meta=>{ setR2BackupPrg(90+Math.round(meta.percent*0.09),'Mengompresi...',meta.percent.toFixed(0)+'%'); }
-    );
-
-    // Validasi ZIP tidak kosong
-    if(content.size<22){
-      throw new Error('ZIP kosong — tidak ada file yang berhasil dikemas');
-    }
-
-    const a=document.createElement('a');
-    a.href=URL.createObjectURL(content);
-    a.download=zipFilename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(()=>URL.revokeObjectURL(a.href),1000);
-
-    setR2BackupPrg(100,'Selesai!','');
-    document.getElementById('r2BackupPrgBar').classList.add('done');
-    addBackupLog(logType, zipFilename, ok);
-    const msg=failed>0
-      ? `Backup selesai: ${ok} berhasil didownload, ${failed} file gagal (lihat console)`
-      : `Backup R2 selesai — ${ok} file berhasil dikemas ✓`;
-    toast(msg, failed>0?'warn':'ok');
-    if(failedFiles.length) console.warn('File yang gagal:',failedFiles);
-
-  }catch(e){
-    toast('Gagal membuat ZIP: '+e.message,'err');
-    console.error('ZIP error:',e);
-    setR2BackupPrg(0,'Gagal: '+e.message);
-  }
-
-  setTimeout(()=>{
-    prgWrap.style.display='none';
-    document.getElementById('r2BackupPrgBar').classList.remove('done');
-    setR2BackupPrg(0,'');
-  },4000);
-  [btnAll,btnPeg,btnDoPeg].forEach(b=>{if(b)b.disabled=false;});
 }
 
 // ═══════════════════════════════
@@ -3730,7 +3244,7 @@ const PAGES=['Dash','Approval','DaftarPegawai','Pegawai','DokAdmin','UploadAdmin
 const PAGE_LOADERS={
   dash:loadDash, approval:()=>loadApproval(1), pegawai:()=>loadPeg(1),
   daftarPegawai:()=>{ loadDaftarPegawaiForm(); },
-  dokAdmin:()=>{ clearDakPeg(); loadDakPegawaiList(); }, jabatan:()=>loadJabPage(1),
+  dokAdmin:()=>loadDokAdmin(1), jabatan:()=>loadJabPage(1),
   uploadAdmin:()=>loadUploadAdminPage(),
   kategori:()=>loadKatPage(1),
   profil:loadProfil, editProfil:loadProfil,
