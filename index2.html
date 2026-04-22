@@ -515,7 +515,6 @@ tbody td.wrap{white-space:normal;min-width:140px;}
       <a class="nav-item" onclick="showPage('dokUser')"><i class="fas fa-file-alt"></i>Dokumen Saya</a>
       <a class="nav-item" onclick="showPage('upload')"><i class="fas fa-cloud-upload-alt"></i>Upload Dokumen</a>
       <a class="nav-item" onclick="showPage('editProfil')"><i class="fas fa-edit"></i>Edit Profil & Password</a>
-      <a class="nav-item" onclick="showPage('backupUser')"><i class="fas fa-cloud-download-alt"></i>Backup File Saya</a>
     </div>
     <div class="sb-user">
       <div class="sb-user-card">
@@ -789,8 +788,6 @@ tbody td.wrap{white-space:normal;min-width:140px;}
         <div class="card" style="grid-column:1/-1">
           <div class="card-hd"><span class="card-title"><i class="fas fa-cloud-download-alt" style="color:var(--warn);margin-right:.4rem"></i>Backup File Dokumen dari R2</span></div>
           <div class="card-body">
-            <div class="alert-warn alert-box" style="margin-bottom:.875rem"><i class="fas fa-exclamation-triangle"></i><div>Proses ini akan mengunduh <strong>semua file dokumen</strong> dari Cloudflare R2 dan mengemas menjadi satu file <strong>.zip</strong>. Durasi tergantung jumlah dan ukuran file. Jangan tutup halaman selama proses berjalan.</div></div>
-            <div class="alert-info alert-box" style="margin-bottom:.875rem"><i class="fas fa-info-circle"></i><div>Pastikan <strong>CORS di bucket R2</strong> sudah mengizinkan <code>AllowedOrigins: ["*"]</code> agar file bisa diunduh. Jika zip kosong atau gagal, cek konfigurasi CORS di Cloudflare Dashboard → R2 → sipegawai-lapas → Settings → CORS Policy.</div></div>
             <div id="r2BackupStat" style="font-size:.82rem;color:var(--muted);margin-bottom:.75rem">—</div>
             <!-- Progress bar -->
             <div id="r2BackupPrgWrap" style="display:none;margin-bottom:.875rem">
@@ -907,66 +904,6 @@ tbody td.wrap{white-space:normal;min-width:140px;}
     </div>
 
     <!-- UPLOAD -->
-    <!-- BACKUP FILE USER -->
-    <div id="pageBackupUser" style="display:none">
-      <div class="topbar">
-        <div>
-          <div class="page-title">Backup File Saya</div>
-          <div class="page-sub">Download semua dokumen milik Anda dari R2 dalam satu file .zip</div>
-        </div>
-      </div>
-
-      <div style="max-width:680px">
-        <div class="card">
-          <div class="card-hd">
-            <span class="card-title"><i class="fas fa-cloud-download-alt" style="color:var(--warn);margin-right:.4rem"></i>Download File Dokumen Saya</span>
-          </div>
-          <div class="card-body">
-            <div class="alert-info alert-box" style="margin-bottom:1rem">
-              <i class="fas fa-info-circle"></i>
-              <div>Semua file dokumen milik Anda akan diunduh dari Cloudflare R2 dan dikemas menjadi satu file <strong>.zip</strong>. Jangan tutup halaman selama proses berjalan.</div>
-            </div>
-            <div class="alert-warn alert-box" style="margin-bottom:1rem">
-              <i class="fas fa-exclamation-triangle"></i>
-              <div>Fitur ini membutuhkan koneksi internet stabil. Durasi tergantung jumlah dan ukuran file dokumen Anda.</div>
-            </div>
-
-            <!-- Statistik dokumen user -->
-            <div id="userBackupStat" style="font-size:.84rem;color:var(--muted);margin-bottom:1rem;padding:.75rem 1rem;background:var(--surface2);border-radius:10px">
-              <i class="fas fa-spinner fa-spin"></i> Memuat statistik...
-            </div>
-
-            <!-- Progress bar -->
-            <div id="userBackupPrgWrap" style="display:none;margin-bottom:1rem">
-              <div style="display:flex;justify-content:space-between;font-size:.79rem;margin-bottom:.35rem">
-                <span id="userBackupPrgLabel">Mempersiapkan...</span>
-                <span id="userBackupPrgPct">0%</span>
-              </div>
-              <div class="progress-wrap">
-                <div class="progress-fill" id="userBackupPrgBar" style="width:0%"></div>
-              </div>
-              <div id="userBackupPrgDetail" style="font-size:.72rem;color:var(--muted);margin-top:.3rem"></div>
-            </div>
-
-            <button class="btn-p" id="btnUserBackup" onclick="doUserBackupR2()" style="width:100%;justify-content:center;background:linear-gradient(135deg,#d97706,#b45309)">
-              <i class="fas fa-cloud-download-alt"></i> Download Semua File Saya (.zip)
-            </button>
-            <div id="userBackupResult" style="margin-top:.75rem"></div>
-          </div>
-        </div>
-
-        <!-- Info tambahan -->
-        <div class="card" style="margin-top:1rem">
-          <div class="card-hd"><span class="card-title"><i class="fas fa-question-circle" style="color:var(--accent);margin-right:.4rem"></i>Informasi</span></div>
-          <div class="card-body" style="font-size:.84rem;color:var(--muted);line-height:1.7">
-            <p><i class="fas fa-folder" style="color:var(--accent);margin-right:.4rem"></i>File akan dikelompokkan berdasarkan <strong>kategori dokumen</strong> di dalam ZIP.</p>
-            <p style="margin-top:.5rem"><i class="fas fa-file-alt" style="color:var(--accent2);margin-right:.4rem"></i>Hanya file yang pernah Anda upload yang akan diunduh.</p>
-            <p style="margin-top:.5rem"><i class="fas fa-shield-alt" style="color:var(--warn);margin-right:.4rem"></i>File diunduh langsung dari penyimpanan cloud yang aman.</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <div id="pageUpload" style="display:none">
       <div class="topbar"><div><div class="page-title">Upload Dokumen</div></div></div>
       <div style="max-width:520px"><div class="card card-body">
@@ -1708,7 +1645,7 @@ async function enterApp(prof){
     showPage(startPage);
   } else {
     const savedPage=sessionStorage.getItem('activePage');
-    const userPages=['profil','editProfil','dokUser','upload','backupUser'];
+    const userPages=['profil','editProfil','dokUser','upload'];
     const startPage=(savedPage&&userPages.includes(savedPage))?savedPage:'profil';
     showPage(startPage);
   }
@@ -3021,216 +2958,6 @@ async function signR2({method,ep,path,qp={},hdrs={},body=''}){
 // ═══════════════════════════════
 let backupHistory=[];
 
-// ══════════════════════════════════════
-//  USER BACKUP - Download file sendiri
-// ══════════════════════════════════════
-
-async function loadUserBackupPage(){
-  // Load R2 dari cache
-  if(!R2.accountId){
-    const cached=localStorage.getItem('r2cfg');
-    if(cached){try{R2={...R2,...JSON.parse(cached)};}catch(e){}}
-  }
-
-  const stat=document.getElementById('userBackupStat');
-  if(!stat) return;
-
-  // Cek R2 configured
-  if(!R2.accountId||!R2.accessKey||!R2.secretKey||!R2.bucket){
-    stat.innerHTML='<span style="color:var(--danger)"><i class="fas fa-exclamation-circle"></i> R2 belum dikonfigurasi oleh admin. Hubungi administrator.</span>';
-    document.getElementById('btnUserBackup').disabled=true;
-    return;
-  }
-
-  // Ambil statistik dokumen milik user ini
-  const{data:docs,error}=await sb.from('dokumen')
-    .select('nama_file,ukuran_file,kategori_dokumen:kategori_id(nama)')
-    .eq('user_id',CU.id);
-
-  if(error){
-    stat.innerHTML='<span style="color:var(--danger)"><i class="fas fa-exclamation-circle"></i> Gagal memuat data: '+error.message+'</span>';
-    return;
-  }
-
-  const totalDok=docs?.length||0;
-  const totalSize=(docs||[]).reduce((s,d)=>s+(d.ukuran_file||0),0);
-
-  if(totalDok===0){
-    stat.innerHTML='<i class="fas fa-info-circle" style="color:var(--muted)"></i> Anda belum memiliki dokumen yang tersimpan.';
-    document.getElementById('btnUserBackup').disabled=true;
-    document.getElementById('btnUserBackup').style.opacity='0.5';
-    return;
-  }
-
-  stat.innerHTML=
-    '<i class="fas fa-file-alt" style="color:var(--accent2)"></i> '
-    +'<strong>'+totalDok+'</strong> dokumen &nbsp;·&nbsp; '
-    +'Total ukuran: <strong>'+fmtSz(totalSize)+'</strong> &nbsp;·&nbsp; '
-    +'<span style="color:var(--accent2)">R2 terkonfigurasi ✓</span>';
-  document.getElementById('btnUserBackup').disabled=false;
-  document.getElementById('btnUserBackup').style.opacity='1';
-}
-
-function setUserBackupPrg(pct, label, detail=''){
-  const bar=document.getElementById('userBackupPrgBar');
-  const pct_el=document.getElementById('userBackupPrgPct');
-  const lbl=document.getElementById('userBackupPrgLabel');
-  const det=document.getElementById('userBackupPrgDetail');
-  if(bar) bar.style.width=pct+'%';
-  if(pct_el) pct_el.textContent=pct+'%';
-  if(lbl) lbl.textContent=label;
-  if(det) det.textContent=detail;
-}
-
-async function doUserBackupR2(){
-  // Load R2
-  if(!R2.accountId){
-    const cached=localStorage.getItem('r2cfg');
-    if(cached){try{R2={...R2,...JSON.parse(cached)};}catch(e){}}
-  }
-  if(!R2.accountId||!R2.accessKey||!R2.secretKey||!R2.bucket){
-    toast('R2 belum dikonfigurasi oleh admin!','err');return;
-  }
-  if(typeof JSZip==='undefined'){
-    toast('JSZip belum termuat. Coba refresh halaman.','err');return;
-  }
-
-  const btn=document.getElementById('btnUserBackup');
-  setBtn(btn,true);
-
-  // Ambil semua dokumen milik user ini
-  const{data:docs,error}=await sb.from('dokumen')
-    .select('nama_file,r2_key,ukuran_file,kategori_dokumen:kategori_id(nama)')
-    .eq('user_id',CU.id)
-    .order('uploaded_at',{ascending:true});
-
-  if(error){
-    toast('Gagal mengambil data dokumen: '+error.message,'err');
-    setBtn(btn,false,'<i class="fas fa-cloud-download-alt"></i> Download Semua File Saya (.zip)');
-    return;
-  }
-  if(!docs||!docs.length){
-    toast('Anda belum memiliki dokumen.','warn');
-    setBtn(btn,false,'<i class="fas fa-cloud-download-alt"></i> Download Semua File Saya (.zip)');
-    return;
-  }
-
-  const prgWrap=document.getElementById('userBackupPrgWrap');
-  const resultEl=document.getElementById('userBackupResult');
-  prgWrap.style.display='block';
-  resultEl.innerHTML='';
-  setUserBackupPrg(0,'Mempersiapkan...');
-
-  const zip=new JSZip();
-  const total=docs.length;
-  let done=0, ok=0, failed=0;
-  const failedFiles=[];
-
-  // Helper fetch dengan retry
-  async function fetchFile(url, retries=3){
-    for(let i=0;i<retries;i++){
-      try{
-        const ctrl=new AbortController();
-        const timer=setTimeout(()=>ctrl.abort(),60000);
-        const res=await fetch(url,{signal:ctrl.signal});
-        clearTimeout(timer);
-        if(!res.ok) throw new Error('HTTP '+res.status);
-        return res;
-      }catch(e){
-        if(i===retries-1) throw e;
-        await new Promise(r=>setTimeout(r,1500*(i+1)));
-      }
-    }
-  }
-
-  for(const doc of docs){
-    if(!doc.r2_key){
-      failed++;done++;
-      failedFiles.push(doc.nama_file||'?');
-      continue;
-    }
-    try{
-      const pct=Math.round((done/total)*88);
-      setUserBackupPrg(pct,
-        'Mengunduh '+( done+1)+' dari '+total+'...',
-        doc.nama_file||doc.r2_key
-      );
-
-      // Generate fresh signed URL
-      const url=await getSignedUrl(doc.r2_key);
-      const res=await fetchFile(url);
-      const blob=await res.blob();
-
-      if(!blob||blob.size===0) throw new Error('File kosong');
-
-      // Folder berdasarkan kategori
-      const katFolder=(doc.kategori_dokumen?.nama||'Lainnya').replace(/[\/\?%*:|"<>]/g,'_');
-      const namaFile=(doc.nama_file||doc.r2_key.split('/').pop()||'file').replace(/[\/\?%*:|"<>]/g,'_');
-      zip.folder(katFolder).file(namaFile, blob, {binary:true});
-      ok++;
-
-    }catch(e){
-      console.warn('Skip file:',doc.nama_file, e.message);
-      failed++;
-      failedFiles.push((doc.nama_file||'?')+' ('+e.message+')');
-    }
-    done++;
-  }
-
-  if(ok===0){
-    setUserBackupPrg(0,'Tidak ada file yang berhasil diunduh');
-    resultEl.innerHTML='<div class="alert-danger alert-box" style="margin-top:.5rem"><i class="fas fa-times-circle"></i><div>Tidak ada file yang berhasil diunduh. Pastikan aplikasi diakses melalui server (bukan file://) dan CORS R2 sudah dikonfigurasi.</div></div>';
-    prgWrap.style.display='none';
-    setBtn(btn,false,'<i class="fas fa-cloud-download-alt"></i> Download Semua File Saya (.zip)');
-    return;
-  }
-
-  setUserBackupPrg(90,'Membuat file ZIP...');
-
-  try{
-    const pegNama=(CP?.nama_lengkap||'pegawai').replace(/[^a-zA-Z0-9_]/g,'_');
-    const ts=new Date().toISOString().slice(0,10);
-    const zipFilename='backup_'+pegNama+'_'+ts+'.zip';
-
-    const content=await zip.generateAsync(
-      {type:'blob',compression:'DEFLATE',compressionOptions:{level:3}},
-      meta=>{ setUserBackupPrg(90+Math.round(meta.percent*0.09),'Mengompresi...',meta.percent.toFixed(0)+'%'); }
-    );
-
-    if(content.size<22) throw new Error('ZIP kosong');
-
-    const a=document.createElement('a');
-    a.href=URL.createObjectURL(content);
-    a.download=zipFilename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(()=>URL.revokeObjectURL(a.href),1000);
-
-    setUserBackupPrg(100,'Selesai!','');
-    document.getElementById('userBackupPrgBar').classList.add('done');
-
-    const msg=failed>0
-      ?ok+' file berhasil, '+failed+' file gagal didownload'
-      :'Semua '+ok+' file berhasil dikemas! ✓';
-    const type=failed>0?'warn':'ok';
-    resultEl.innerHTML='<div class="alert-'+(type==='ok'?'success':'warn')+' alert-box" style="margin-top:.5rem"><i class="fas fa-'+(type==='ok'?'check-circle':'exclamation-triangle')+'"></i><div>'+msg+'</div></div>';
-    toast(msg, type);
-
-  }catch(e){
-    toast('Gagal membuat ZIP: '+e.message,'err');
-    resultEl.innerHTML='<div class="alert-danger alert-box" style="margin-top:.5rem"><i class="fas fa-times-circle"></i><div>Gagal membuat ZIP: '+e.message+'</div></div>';
-    setUserBackupPrg(0,'Gagal');
-  }
-
-  setTimeout(()=>{
-    prgWrap.style.display='none';
-    document.getElementById('userBackupPrgBar').classList.remove('done');
-    setUserBackupPrg(0,'');
-  },4000);
-  setBtn(btn,false,'<i class="fas fa-cloud-download-alt"></i> Download Semua File Saya (.zip)');
-}
-
 async function loadBackupPage(){
   const[{count:dokCount},{count:pegCount}]=await Promise.all([
     sb.from('dokumen').select('*',{count:'exact',head:true}),
@@ -3999,7 +3726,7 @@ async function saveProAdmin(){
 // ═══════════════════════════════
 //  NAVIGATION
 // ═══════════════════════════════
-const PAGES=['Dash','Approval','DaftarPegawai','Pegawai','DokAdmin','UploadAdmin','Jabatan','Kategori','Setting','Backup','Profil','EditProfil','EditProfilAdmin','DokUser','Upload','BackupUser'];
+const PAGES=['Dash','Approval','DaftarPegawai','Pegawai','DokAdmin','UploadAdmin','Jabatan','Kategori','Setting','Backup','Profil','EditProfil','EditProfilAdmin','DokUser','Upload'];
 const PAGE_LOADERS={
   dash:loadDash, approval:()=>loadApproval(1), pegawai:()=>loadPeg(1),
   daftarPegawai:()=>{ loadDaftarPegawaiForm(); },
@@ -4008,7 +3735,6 @@ const PAGE_LOADERS={
   kategori:()=>loadKatPage(1),
   profil:loadProfil, editProfil:loadProfil,
   editProfilAdmin:loadProfilAdmin,
-  backupUser:()=>loadUserBackupPage(),
   dokUser:()=>loadDokUser(selKatId,1),
   setting:()=>{ loadR2(); },
   backup:()=>{ loadBackupPage(); },
