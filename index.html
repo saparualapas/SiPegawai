@@ -749,48 +749,11 @@ tbody td.wrap{white-space:normal;min-width:140px;}
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.375rem;max-width:1000px">
 
-        <!-- Export Dokumen -->
-        <div class="card">
-          <div class="card-hd"><span class="card-title"><i class="fas fa-file-csv" style="color:var(--accent2);margin-right:.4rem"></i>Export Manifest Dokumen</span></div>
-          <div class="card-body">
-            <div class="alert-info alert-box" style="margin-bottom:.875rem"><i class="fas fa-info-circle"></i><div>File CSV berisi daftar lengkap semua dokumen beserta <strong>r2_key</strong>-nya. Simpan file ini — dibutuhkan untuk recovery jika R2 bermasalah.</div></div>
-            <div id="backupDokStat" style="font-size:.82rem;color:var(--muted);margin-bottom:.75rem">Memuat statistik...</div>
-            <button class="btn-p" onclick="exportDokumenCSV()" id="btnExportDok" style="width:100%;justify-content:center">
-              <i class="fas fa-download"></i> Download Manifest Dokumen (.csv)
-            </button>
-          </div>
-        </div>
-
-        <!-- Export Pegawai -->
-        <div class="card">
-          <div class="card-hd"><span class="card-title"><i class="fas fa-users" style="color:var(--navy);margin-right:.4rem"></i>Export Data Pegawai</span></div>
-          <div class="card-body">
-            <div class="alert-info alert-box" style="margin-bottom:.875rem"><i class="fas fa-info-circle"></i><div>File CSV berisi data profil semua pegawai: nama, NIP, jabatan, email, dan status akun.</div></div>
-            <div id="backupPegStat" style="font-size:.82rem;color:var(--muted);margin-bottom:.75rem">Memuat statistik...</div>
-            <button class="btn-p" onclick="exportPegawaiCSV()" id="btnExportPeg" style="width:100%;justify-content:center">
-              <i class="fas fa-download"></i> Download Data Pegawai (.csv)
-            </button>
-          </div>
-        </div>
-
-        <!-- Export Backup Lengkap JSON -->
-        <div class="card">
-          <div class="card-hd"><span class="card-title"><i class="fas fa-archive" style="color:var(--purple);margin-right:.4rem"></i>Full Backup JSON</span></div>
-          <div class="card-body">
-            <div class="alert-info alert-box" style="margin-bottom:.875rem"><i class="fas fa-info-circle"></i><div>Backup lengkap semua data (pegawai, dokumen, jabatan, kategori) dalam satu file JSON. Ideal untuk arsip berkala.</div></div>
-            <div style="font-size:.82rem;color:var(--muted);margin-bottom:.75rem" id="backupJSONlast">—</div>
-            <button class="btn-p" onclick="exportFullJSON()" id="btnExportJSON" style="width:100%;justify-content:center;background:linear-gradient(135deg,var(--purple),#6d28d9)">
-              <i class="fas fa-archive"></i> Download Full Backup (.json)
-            </button>
-          </div>
-        </div>
-
-        <!-- Backup File R2 -->
+         <!-- Backup File -->
         <div class="card" style="grid-column:1/-1">
-          <div class="card-hd"><span class="card-title"><i class="fas fa-cloud-download-alt" style="color:var(--warn);margin-right:.4rem"></i>Backup File Dokumen dari R2</span></div>
+          <div class="card-hd"><span class="card-title"><i class="fas fa-cloud-download-alt" style="color:var(--warn);margin-right:.4rem"></i>Backup File Dokumen</span></div>
           <div class="card-body">
-            <div class="alert-warn alert-box" style="margin-bottom:.875rem"><i class="fas fa-exclamation-triangle"></i><div>Proses ini akan mengunduh <strong>semua file dokumen</strong> dari Cloudflare R2 dan mengemas menjadi satu file <strong>.zip</strong>. Durasi tergantung jumlah dan ukuran file. Jangan tutup halaman selama proses berjalan.</div></div>
-            <div class="alert-info alert-box" style="margin-bottom:.875rem"><i class="fas fa-info-circle"></i><div>Pastikan <strong>CORS di bucket R2</strong> sudah mengizinkan <code>AllowedOrigins: ["*"]</code> agar file bisa diunduh. Jika zip kosong atau gagal, cek konfigurasi CORS di Cloudflare Dashboard → R2 → sipegawai-lapas → Settings → CORS Policy.</div></div>
+            <div class="alert-warn alert-box" style="margin-bottom:.875rem"><i class="fas fa-exclamation-triangle"></i><div>Proses ini akan mengunduh <strong>semua file dokumen</strong> dan mengemas menjadi satu file <strong>.zip</strong>. Durasi tergantung jumlah dan ukuran file. Jangan tutup halaman selama proses berjalan.</div></div>
             <div id="r2BackupStat" style="font-size:.82rem;color:var(--muted);margin-bottom:.75rem">—</div>
             <!-- Progress bar -->
             <div id="r2BackupPrgWrap" style="display:none;margin-bottom:.875rem">
@@ -825,6 +788,42 @@ tbody td.wrap{white-space:normal;min-width:140px;}
                 <i class="fas fa-download"></i> Download File Pegawai Ini
               </button>
             </div>
+          </div>
+        </div>
+
+        <!-- Export Dokumen -->
+        <div class="card">
+          <div class="card-hd"><span class="card-title"><i class="fas fa-file-csv" style="color:var(--accent2);margin-right:.4rem"></i>Export Manifest Dokumen</span></div>
+          <div class="card-body">
+            <div class="alert-info alert-box" style="margin-bottom:.875rem"><i class="fas fa-info-circle"></i><div>File CSV berisi daftar lengkap semua dokumen beserta <strong>r2_key</strong>-nya. Simpan file ini — dibutuhkan untuk recovery jika R2 bermasalah.</div></div>
+            <div id="backupDokStat" style="font-size:.82rem;color:var(--muted);margin-bottom:.75rem">Memuat statistik...</div>
+            <button class="btn-p" onclick="exportDokumenCSV()" id="btnExportDok" style="width:100%;justify-content:center">
+              <i class="fas fa-download"></i> Download Manifest Dokumen (.csv)
+            </button>
+          </div>
+        </div>
+
+        <!-- Export Pegawai -->
+        <div class="card">
+          <div class="card-hd"><span class="card-title"><i class="fas fa-users" style="color:var(--navy);margin-right:.4rem"></i>Export Data Pegawai</span></div>
+          <div class="card-body">
+            <div class="alert-info alert-box" style="margin-bottom:.875rem"><i class="fas fa-info-circle"></i><div>File CSV berisi data profil semua pegawai: nama, NIP, jabatan, email, dan status akun.</div></div>
+            <div id="backupPegStat" style="font-size:.82rem;color:var(--muted);margin-bottom:.75rem">Memuat statistik...</div>
+            <button class="btn-p" onclick="exportPegawaiCSV()" id="btnExportPeg" style="width:100%;justify-content:center">
+              <i class="fas fa-download"></i> Download Data Pegawai (.csv)
+            </button>
+          </div>
+        </div>
+
+        <!-- Export Backup Lengkap JSON -->
+        <div class="card">
+          <div class="card-hd"><span class="card-title"><i class="fas fa-archive" style="color:var(--purple);margin-right:.4rem"></i>Full Backup JSON</span></div>
+          <div class="card-body">
+            <div class="alert-info alert-box" style="margin-bottom:.875rem"><i class="fas fa-info-circle"></i><div>Backup lengkap semua data (pegawai, dokumen, jabatan, kategori) dalam satu file JSON. Ideal untuk arsip berkala.</div></div>
+            <div style="font-size:.82rem;color:var(--muted);margin-bottom:.75rem" id="backupJSONlast">—</div>
+            <button class="btn-p" onclick="exportFullJSON()" id="btnExportJSON" style="width:100%;justify-content:center;background:linear-gradient(135deg,var(--purple),#6d28d9)">
+              <i class="fas fa-archive"></i> Download Full Backup (.json)
+            </button>
           </div>
         </div>
 
@@ -912,7 +911,7 @@ tbody td.wrap{white-space:normal;min-width:140px;}
       <div class="topbar">
         <div>
           <div class="page-title">Backup File Saya</div>
-          <div class="page-sub">Download semua dokumen milik Anda dari R2 dalam satu file .zip</div>
+          <div class="page-sub">Download semua dokumen milik Anda dalam satu file .zip</div>
         </div>
       </div>
 
@@ -924,7 +923,7 @@ tbody td.wrap{white-space:normal;min-width:140px;}
           <div class="card-body">
             <div class="alert-info alert-box" style="margin-bottom:1rem">
               <i class="fas fa-info-circle"></i>
-              <div>Semua file dokumen milik Anda akan diunduh dari Cloudflare R2 dan dikemas menjadi satu file <strong>.zip</strong>. Jangan tutup halaman selama proses berjalan.</div>
+              <div>Jangan tutup halaman selama proses berjalan.</div>
             </div>
             <div class="alert-warn alert-box" style="margin-bottom:1rem">
               <i class="fas fa-exclamation-triangle"></i>
