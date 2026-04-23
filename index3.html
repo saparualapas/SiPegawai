@@ -359,38 +359,6 @@ tbody td.wrap{white-space:normal;min-width:140px;}
 @media(max-width:900px){.hamburger{display:flex;}}
 .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(10,35,66,.5);z-index:99;}
 .sidebar-overlay.show{display:block;}
-/* FOOTER */
-#appFooter{
-  margin-left:250px;
-  background:var(--surface);
-  border-top:1.5px solid var(--border);
-  padding:.7rem 2rem;
-  font-size:.74rem;
-  color:var(--muted);
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  flex-wrap:wrap;
-  gap:.5rem;
-  position:sticky;
-  bottom:0;
-  z-index:50;
-}
-.footer-left{display:flex;align-items:center;gap:.5rem;}
-.footer-icon{width:22px;height:22px;background:var(--navy);border-radius:6px;display:grid;place-items:center;flex-shrink:0;}
-.footer-right{display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;}
-.footer-sep{color:var(--border);}
-@media(max-width:900px){
-  #appFooter{
-    margin-left:0;
-    padding:.6rem 1rem;
-    flex-direction:column;
-    gap:.3rem;
-    text-align:center;
-    justify-content:center;
-  }
-  .footer-left,.footer-right{justify-content:center;}
-}
 </style>
 </head>
 <body>
@@ -781,10 +749,9 @@ tbody td.wrap{white-space:normal;min-width:140px;}
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.375rem;max-width:1000px">
 
-
-           <!-- Backup File R2 -->
+         <!-- Backup File -->
         <div class="card" style="grid-column:1/-1">
-          <div class="card-hd"><span class="card-title"><i class="fas fa-cloud-download-alt" style="color:var(--warn);margin-right:.4rem"></i>Backup File Dokumen dari R2</span></div>
+          <div class="card-hd"><span class="card-title"><i class="fas fa-cloud-download-alt" style="color:var(--warn);margin-right:.4rem"></i>Backup File Dokumen</span></div>
           <div class="card-body">
             <div class="alert-warn alert-box" style="margin-bottom:.875rem"><i class="fas fa-exclamation-triangle"></i><div>Proses ini akan mengunduh <strong>semua file dokumen</strong> dan mengemas menjadi satu file <strong>.zip</strong>. Durasi tergantung jumlah dan ukuran file. Jangan tutup halaman selama proses berjalan.</div></div>
             <div id="r2BackupStat" style="font-size:.82rem;color:var(--muted);margin-bottom:.75rem">—</div>
@@ -888,10 +855,7 @@ tbody td.wrap{white-space:normal;min-width:140px;}
       <!-- Riwayat Backup -->
       <div style="max-width:1000px;margin-top:1.375rem">
         <div class="card">
-          <div class="card-hd">
-              <span class="card-title"><i class="fas fa-history" style="color:var(--muted);margin-right:.4rem"></i>Riwayat Export</span>
-              <button class="btn-s" onclick="clearBackupHistory()" style="font-size:.72rem;padding:.25rem .6rem;color:var(--danger);border-color:var(--danger-l)"><i class="fas fa-trash"></i> Hapus Riwayat</button>
-            </div>
+          <div class="card-hd"><span class="card-title"><i class="fas fa-history" style="color:var(--muted);margin-right:.4rem"></i>Riwayat Export Sesi Ini</span></div>
           <div class="card-body" id="backupHistory">
             <div style="color:var(--muted);font-size:.82rem;text-align:center;padding:.5rem 0"><i class="fas fa-info-circle"></i> Belum ada export dilakukan pada sesi ini.</div>
           </div>
@@ -947,7 +911,7 @@ tbody td.wrap{white-space:normal;min-width:140px;}
       <div class="topbar">
         <div>
           <div class="page-title">Backup File Saya</div>
-          <div class="page-sub">Download semua dokumen milik Anda dari R2 dalam satu file .zip</div>
+          <div class="page-sub">Download semua dokumen milik Anda dalam satu file .zip</div>
         </div>
       </div>
 
@@ -959,7 +923,7 @@ tbody td.wrap{white-space:normal;min-width:140px;}
           <div class="card-body">
             <div class="alert-info alert-box" style="margin-bottom:1rem">
               <i class="fas fa-info-circle"></i>
-              <div>Semua file dokumen milik Anda akan diunduh dari Cloudflare R2 dan dikemas menjadi satu file <strong>.zip</strong>. Jangan tutup halaman selama proses berjalan.</div>
+              <div>Jangan tutup halaman selama proses berjalan.</div>
             </div>
             <div class="alert-warn alert-box" style="margin-bottom:1rem">
               <i class="fas fa-exclamation-triangle"></i>
@@ -1242,9 +1206,6 @@ async function doIdleLogout(){
   await sb.auth.signOut();
   sessionStorage.clear();
   CU=null;CP=null;selKatId=null;R2={accountId:'',bucket:'',accessKey:'',secretKey:''};
-  // Sembunyikan footer
-  const fEl=document.getElementById('appFooter');
-  if(fEl) fEl.style.display='none';
   document.getElementById('pageApp').style.display='none';
   document.getElementById('pageAuth').style.display='flex';
   document.getElementById('navAdmin').style.display='none';
@@ -1732,20 +1693,6 @@ async function enterApp(prof){
   // Baru tampilkan app
   document.getElementById('pageApp').style.display='block';
   setSidebar(prof);
-
-  // Tampilkan footer dan set tahun dinamis
-  const footerEl=document.getElementById('appFooter');
-  if(footerEl){
-    footerEl.style.display='flex';
-    const yearEl=document.getElementById('footerYear');
-    if(yearEl){
-      const now=new Date().getFullYear();
-      const start=2026;
-      // © 2026 selalu ada, tambah " – tahun sekarang" jika tahun sudah berganti
-      yearEl.textContent='© '+start+(now>start?' – '+now:'');
-    }
-  }
-
   // Mulai deteksi idle setelah masuk app
   startIdleDetection();
   // Load R2 dari sessionStorage cache dulu (cepat), lalu dari DB (lengkap)
@@ -1779,8 +1726,6 @@ function konfirmLogout(){
 }
 
 async function doLogout(){
-  const footer=document.getElementById('appFooter');
-  if(footer) footer.style.display='none';
   if(polling){clearInterval(polling);polling=null;}
   stopIdleDetection();
   await sb.auth.signOut();
@@ -3073,12 +3018,7 @@ async function signR2({method,ep,path,qp={},hdrs={},body=''}){
 // ═══════════════════════════════
 //  BACKUP & EXPORT
 // ═══════════════════════════════
-let backupHistory=(()=>{
-  try{
-    const saved=localStorage.getItem('sipeg_backupHistory');
-    return saved?JSON.parse(saved):[];
-  }catch(e){return [];}
-})();
+let backupHistory=[];
 
 // ══════════════════════════════════════
 //  USER BACKUP - Download file sendiri
@@ -3291,8 +3231,6 @@ async function doUserBackupR2(){
 }
 
 async function loadBackupPage(){
-  // Render riwayat dari localStorage saat page dibuka
-  renderBackupHistory();
   const[{count:dokCount},{count:pegCount}]=await Promise.all([
     sb.from('dokumen').select('*',{count:'exact',head:true}),
     sb.from('profiles').select('*',{count:'exact',head:true}).neq('role','admin')
@@ -3384,27 +3322,16 @@ function addBackupLog(type,filename,count){
   const now=new Date().toLocaleString('id-ID',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
   sessionStorage.setItem('lastBackupTime',now);
   backupHistory.unshift({type,filename,count,time:now});
-  // Simpan ke localStorage agar tidak hilang saat refresh (max 50 entri)
-  if(backupHistory.length>50) backupHistory=backupHistory.slice(0,50);
-  try{ localStorage.setItem('sipeg_backupHistory',JSON.stringify(backupHistory)); }catch(e){}
   renderBackupHistory();
   // Update status bar
   document.getElementById('backupStatusBar').innerHTML=
     `<div class="alert-box" style="background:var(--accent2-l);border:1px solid #6ee7b7;border-radius:12px;padding:.65rem 1rem;display:flex;align-items:center;gap:.6rem;font-size:.82rem;color:#065f46"><i class="fas fa-check-circle" style="color:var(--accent2)"></i><div>Terakhir export: <strong>${now}</strong>. Simpan file backup di tempat aman!</div></div>`;
 }
 
-function clearBackupHistory(){
-  if(!confirm('Hapus semua riwayat export?')) return;
-  backupHistory=[];
-  localStorage.removeItem('sipeg_backupHistory');
-  renderBackupHistory();
-  toast('Riwayat export dihapus','ok');
-}
-
 function renderBackupHistory(){
   const el=document.getElementById('backupHistory');
   if(!backupHistory.length){
-    el.innerHTML='<div style="color:var(--muted);font-size:.82rem;text-align:center;padding:.5rem 0"><i class="fas fa-info-circle"></i> Belum ada riwayat export.</div>';
+    el.innerHTML='<div style="color:var(--muted);font-size:.82rem;text-align:center;padding:.5rem 0"><i class="fas fa-info-circle"></i> Belum ada export dilakukan pada sesi ini.</div>';
     return;
   }
   const icons={dok:'fa-file-csv',peg:'fa-users',json:'fa-archive',r2:'fa-cloud-download-alt',r2peg:'fa-user-circle'};
@@ -4242,8 +4169,6 @@ setTimeout(()=>{
     console.warn('Force hiding splash after timeout');
     splash.style.display='none';
     if(!document.getElementById('pageApp').style.display||document.getElementById('pageApp').style.display==='none'){
-      const fEl=document.getElementById('appFooter');
-      if(fEl) fEl.style.display='none';
       document.getElementById('pageAuth').style.display='flex';
       switchAuth('login');
     }
@@ -4252,21 +4177,5 @@ setTimeout(()=>{
 
 init();
 </script>
-
-<!-- FOOTER -->
-<footer id="appFooter" style="display:none">
-  <div class="footer-left">
-    <div class="footer-icon">
-      <i class="fas fa-users" style="color:#fff;font-size:.6rem"></i>
-    </div>
-    <span><strong style="color:var(--navy)">SiPegawai</strong> &mdash; Sistem Informasi Pegawai Lapas Kelas III Saparua</span>
-  </div>
-  <div class="footer-right">
-     <span><strong style="color:var(--navy)">Design By <a href="#" style="text-decoration: none; color: blue;">Ulis Leuwol</a></strong></span>
-    <span class="footer-sep">|</span>
-    <span id="footerYear"></span>
-  </div>
-</footer>
-
 </body>
 </html>
