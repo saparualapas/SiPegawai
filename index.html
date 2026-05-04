@@ -2892,17 +2892,16 @@ async function openDokNewTab(r2Key, nama){
   try{
     toast('Menyiapkan file...','info');
     const token=await getWorkerToken();
-    const res=await fetch(`${WORKER_URL}/file/${encodeURIComponent(r2Key)}`,{
+    // Encode tiap segmen path, bukan seluruh key sekaligus
+    const encodedKey=r2Key.split('/').map(encodeURIComponent).join('/');
+    const res=await fetch(`${WORKER_URL}/file/${encodedKey}`,{
       headers:{'Authorization':`Bearer ${token}`}
     });
     if(!res.ok){const d=await res.json().catch(()=>({}));throw new Error(d.error||`Gagal (${res.status})`);}
     const blob=await res.blob();
-    const a=document.createElement('a');
-    a.href=URL.createObjectURL(blob);
-    a.target='_blank';
-    a.download=nama||r2Key.split('/').pop();
-    document.body.appendChild(a);a.click();
-    setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(a.href);},1000);
+    const objUrl=URL.createObjectURL(blob);
+    window.open(objUrl,'_blank');
+    setTimeout(()=>URL.revokeObjectURL(objUrl),60000);
   }catch(e){toast('Gagal membuka file: '+e.message,'err');}
 }
 
@@ -3084,38 +3083,42 @@ function setPrg(p,l){document.getElementById('upPrgBar').style.width=p+'%';docum
 
 // Upload via Cloudflare Worker (bisa beda akun R2)
 async function r2Put(ep,bucket,key,body,ct){
-  // Ambil JWT token user yang sedang login
   const{data:{session}}=await sb.auth.getSession();
   const token=session?.access_token||'';
   if(!token) throw new Error('Sesi tidak aktif, silakan login ulang.');
 
-  const res=await fetch(`${WORKER_URL}/upload/${key}`,{
+  // PENTING: jangan set Content-Length — browser memblok header ini
+  // Key harus di-encode agar karakter spesial aman di URL
+  const encodedKey=key.split('/').map(encodeURIComponent).join('/');
+
+  const res=await fetch(`${WORKER_URL}/upload/${encodedKey}`,{
     method:'PUT',
     headers:{
       'Authorization':`Bearer ${token}`,
-      'Content-Type':ct,
-      'Content-Length':String(body.byteLength||body.size||0),
+      'Content-Type':ct||'application/octet-stream',
+      // Content-Length TIDAK diset — browser otomatis isi dari body
     },
     body,
   });
 
   if(!res.ok){
     const data=await res.json().catch(()=>({}));
-    // Khusus error storage penuh (413)
     if(res.status===413) throw new Error(data.error||'Penyimpanan penuh.');
     throw new Error(data.error||`Upload gagal (${res.status})`);
   }
+  return await res.json();
 }
 async function r2Delete(key){
   const{data:{session}}=await sb.auth.getSession();
   const token=session?.access_token||'';
   if(!token) throw new Error('Sesi tidak aktif.');
 
-  const res=await fetch(`${WORKER_URL}/file/${key}`,{
+  const encodedKey=key.split('/').map(encodeURIComponent).join('/');
+  const res=await fetch(`${WORKER_URL}/file/${encodedKey}`,{
     method:'DELETE',
     headers:{'Authorization':`Bearer ${token}`},
   });
-  if(!res.ok && res.status!==204){
+  if(!res.ok && res.status!==204 && res.status!==404){
     const data=await res.json().catch(()=>({}));
     throw new Error(data.error||`Hapus gagal (${res.status})`);
   }
