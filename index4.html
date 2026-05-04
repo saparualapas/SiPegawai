@@ -93,17 +93,6 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
   /* Tabel dokumen admin: tetap bisa scroll di HP */
   #pageDokAdmin .tbl-wrap table{min-width:680px;}
 }
-/* STORAGE BAR */
-.storage-wrap{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1rem 1.25rem;margin-bottom:1.25rem;box-shadow:var(--shadow);}
-.storage-bar-bg{background:var(--surface2);border-radius:99px;height:10px;overflow:hidden;margin:.5rem 0 .3rem;}
-.storage-bar-fill{height:100%;border-radius:99px;transition:width .6s cubic-bezier(.4,0,.2,1);}
-.storage-bar-fill.safe{background:linear-gradient(90deg,var(--accent2),#34d399);}
-.storage-bar-fill.warn{background:linear-gradient(90deg,var(--warn),#f59e0b);}
-.storage-bar-fill.danger{background:linear-gradient(90deg,var(--danger),#f87171);}
-.storage-meta{display:flex;justify-content:space-between;align-items:center;font-size:.75rem;color:var(--muted);}
-.storage-limit-warn{display:flex;align-items:center;gap:.5rem;background:#fef3c7;border:1px solid #f59e0b;border-radius:10px;padding:.55rem .875rem;margin-top:.6rem;font-size:.8rem;color:#92400e;font-weight:600;}
-.storage-limit-danger{display:flex;align-items:center;gap:.5rem;background:#fde8e8;border:1px solid var(--danger);border-radius:10px;padding:.55rem .875rem;margin-top:.6rem;font-size:.8rem;color:var(--danger);font-weight:600;}
-
 /* HONEYPOT */
 .hp-field{position:absolute;left:-9999px;top:-9999px;opacity:0;pointer-events:none;height:0;overflow:hidden;}
 
@@ -579,20 +568,6 @@ tbody td.wrap{white-space:normal;min-width:140px;}
         <div class="stat-card"><div class="stat-ico" style="background:var(--navy-l);color:var(--navy)"><i class="fas fa-users"></i></div><div><div class="stat-lbl">Total Pegawai</div><div class="stat-val" id="stTotal">—</div></div></div>
         <div class="stat-card"><div class="stat-ico" style="background:var(--warn-l);color:#92400e"><i class="fas fa-user-clock"></i></div><div><div class="stat-lbl">Menunggu Approval</div><div class="stat-val" id="stPending">—</div></div></div>
         <div class="stat-card"><div class="stat-ico" style="background:var(--accent2-l);color:var(--accent2)"><i class="fas fa-file-alt"></i></div><div><div class="stat-lbl">Total Dokumen</div><div class="stat-val" id="stDok">—</div></div></div>
-      </div>
-      <!-- STORAGE BAR -->
-      <div class="storage-wrap" id="storageWrap" style="display:none">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.2rem">
-          <span style="font-size:.82rem;font-weight:700;color:var(--navy)"><i class="fas fa-database" style="margin-right:.4rem;color:var(--accent)"></i>Penggunaan Penyimpanan R2</span>
-          <span style="font-size:.82rem;font-weight:700;color:var(--navy)" id="storageText">—</span>
-        </div>
-        <div class="storage-bar-bg"><div class="storage-bar-fill safe" id="storageBar" style="width:0%"></div></div>
-        <div class="storage-meta">
-          <span id="storageUsed">—</span>
-          <span id="storagePct">—</span>
-          <span id="storageLimit">Batas: 8 GB</span>
-        </div>
-        <div id="storageAlert"></div>
       </div>
       <div class="card"><div class="card-hd"><span class="card-title"><i class="fas fa-user-clock" style="color:#92400e;margin-right:.45rem"></i>Pendaftaran Menunggu</span><button class="btn-s" style="font-size:.77rem;padding:.32rem .7rem" onclick="showPage('approval')">Lihat Semua →</button></div><div id="dashPendingList"><div class="loading"><div class="spinner"></div>Memuat...</div></div></div>
     </div>
@@ -1170,8 +1145,6 @@ tbody td.wrap{white-space:normal;min-width:140px;}
 // ═══════════════════════════════
 const SB_URL='https://guxxelwwalcwhpeujnqj.supabase.co';
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd1eHhlbHd3YWxjd2hwZXVqbnFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxNDMxNzcsImV4cCI6MjA4OTcxOTE3N30.1Mc2r-5c5wvDTrWHoBI6lCE6RxPoqwddJTh87WUmHjY';
-// URL Cloudflare Worker — ganti setelah deploy Worker
-const WORKER_URL='https://sipegawai-r2-proxy.saparualapas.workers.dev/';
 
 // Buat storage key unik per tab agar session tidak shared antar tab
 const TAB_KEY = 'sb_tab_' + (sessionStorage.getItem('tabId') || (()=>{
@@ -2178,8 +2151,6 @@ async function loadDash(){
   document.getElementById('stPending').textContent=pend||0;
   document.getElementById('stDok').textContent=dok||0;
   badges(pend);
-  // Load storage usage (async, tidak blokir UI)
-  loadStorageUsage();
   const{data:rec}=await sb.from('profiles').select('*,jabatan(nama)').eq('status_akun','pending').order('created_at',{ascending:false}).limit(5);
   const box=document.getElementById('dashPendingList');
   if(!rec||!rec.length){box.innerHTML='<div class="empty"><i class="fas fa-check-circle"></i><p>Tidak ada pendaftaran pending.</p></div>';return;}
@@ -2647,22 +2618,8 @@ async function adminOpenDok(r2Key, nama){
   if(!r2Key){toast('File tidak ditemukan!','err');return;}
   try{
     toast('Menyiapkan file...','info');
-    const token=await getWorkerToken();
-    const res=await fetch(`${WORKER_URL}/file/${r2Key}`,{
-      headers:{'Authorization':`Bearer ${token}`}
-    });
-    if(!res.ok){
-      const d=await res.json().catch(()=>({}));
-      throw new Error(d.error||`Gagal (${res.status})`);
-    }
-    const blob=await res.blob();
-    const a=document.createElement('a');
-    a.href=URL.createObjectURL(blob);
-    a.target='_blank';
-    a.download=nama||r2Key.split('/').pop();
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(a.href);},1000);
+    const url=await getSignedUrl(r2Key);
+    window.open(url,'_blank');
   }catch(e){
     console.error('adminOpenDok error:',e);
     toast('Gagal membuka file: '+e.message,'err');
@@ -2867,8 +2824,6 @@ async function delDok(id, isAdmin=false){
     catch(e){ console.warn('R2 delete warning:',e.message); }
   }
   showAlertBanner('Dokumen/data telah terhapus','ok');
-  // Refresh storage usage setelah hapus (async, tidak blokir UI)
-  loadStorageUsage();
   if(isAdmin){ loadDokAdmin(dakPage); }
   else { loadDokUser(selKatId,dukPage); }
 }
@@ -2878,34 +2833,45 @@ function getR2Url(r2Key){
   return `https://${R2.accountId}.r2.cloudflarestorage.com/${R2.bucket}/${r2Key}`;
 }
 
-// ── Ambil file via Worker (tidak perlu R2 key di browser) ──
-async function getWorkerToken(){
-  const{data:{session}}=await sb.auth.getSession();
-  const token=session?.access_token||'';
-  if(!token) throw new Error('Sesi tidak aktif, silakan login ulang.');
-  return token;
+async function getSignedUrl(r2Key){
+  const ep='https://'+R2.accountId+'.r2.cloudflarestorage.com';
+  const path='/'+R2.bucket+'/'+r2Key;
+  const now=new Date();
+  const ds=String(now.getUTCFullYear())+p2(now.getUTCMonth()+1)+p2(now.getUTCDate());
+  const dts=ds+'T'+p2(now.getUTCHours())+p2(now.getUTCMinutes())+p2(now.getUTCSeconds())+'Z';
+  const region='auto',svc='s3';
+  const cs=ds+'/'+region+'/'+svc+'/aws4_request';
+  const host=R2.accountId+'.r2.cloudflarestorage.com';
+  const credential=encodeURIComponent(R2.accessKey+'/'+cs);
+  const sp='X-Amz-Algorithm=AWS4-HMAC-SHA256'
+    +'&X-Amz-Credential='+credential
+    +'&X-Amz-Date='+dts
+    +'&X-Amz-Expires=7200'
+    +'&X-Amz-SignedHeaders=host';
+  // Canonical request dengan \\n literal
+  const NL='\n';
+  const canonHeaders='host:'+host+NL;
+  const cr='GET'+NL+path+NL+sp+NL+canonHeaders+NL+'host'+NL+'UNSIGNED-PAYLOAD';
+  const sts='AWS4-HMAC-SHA256'+NL+dts+NL+cs+NL+await sha256h(cr);
+  let sv=await hmac('AWS4'+R2.secretKey,ds);
+  sv=await hmac(sv,region);sv=await hmac(sv,svc);sv=await hmac(sv,'aws4_request');
+  const sig=toHex(await hmac(sv,sts));
+  return ep+path+'?'+sp+'&X-Amz-Signature='+sig;
 }
 
-// Buka/download file lewat Worker — aman, beda akun R2 pun bisa
+
+// Buka dokumen di tab baru (bisa dilihat dulu, lalu download)
 async function openDokNewTab(r2Key, nama){
   if(!r2Key){toast('File tidak ditemukan!','err');return;}
   try{
     toast('Menyiapkan file...','info');
-    const token=await getWorkerToken();
-    const res=await fetch(`${WORKER_URL}/file/${encodeURIComponent(r2Key)}`,{
-      headers:{'Authorization':`Bearer ${token}`}
-    });
-    if(!res.ok){const d=await res.json().catch(()=>({}));throw new Error(d.error||`Gagal (${res.status})`);}
-    const blob=await res.blob();
-    const a=document.createElement('a');
-    a.href=URL.createObjectURL(blob);
-    a.target='_blank';
-    a.download=nama||r2Key.split('/').pop();
-    document.body.appendChild(a);a.click();
-    setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(a.href);},1000);
-  }catch(e){toast('Gagal membuka file: '+e.message,'err');}
+    const url=await getSignedUrl(r2Key);
+    window.open(url,'_blank');
+  }catch(e){
+    console.error('openDokNewTab error:',e);
+    toast('Gagal membuka file: '+e.message,'err');
+  }
 }
-
 
 
 // ═══════════════════════════════
@@ -3004,27 +2970,10 @@ async function doUpload(){
 
   const btn=document.getElementById('btnUpload');
   setBtn(btn,true);
-
-  // Cek storage sebelum upload — presisi dari DB
-  setPrg(5,'Memeriksa kapasitas penyimpanan...');
-  document.getElementById('upPrgWrap').style.display='block';
-  try{
-    const storCheck=await cekStorageCukup(upFile.size);
-    if(!storCheck.ok){
-      toast(storCheck.msg,'err');
-      showInlineAlert('upSuccessAlert',storCheck.msg,'err');
-      setPrg(0,'');
-      document.getElementById('upPrgWrap').style.display='none';
-      setBtn(btn,false,'<i class="fas fa-upload"></i> Upload Dokumen');
-      return;
-    }
-  }catch(e){
-    console.warn('Storage check error (lanjut upload):', e.message);
-  }
-
   const safeFileName=upFile.name.replace(/[^a-zA-Z0-9._-]/g,'_');
   const r2Key=`${CU.id}/${Date.now()}_${safeFileName}`;
   const ep=`https://${R2.accountId}.r2.cloudflarestorage.com`;
+  document.getElementById('upPrgWrap').style.display='block';
   setPrg(10,'Menyiapkan file...');
 
   try{
@@ -3082,42 +3031,26 @@ async function doUpload(){
 }
 function setPrg(p,l){document.getElementById('upPrgBar').style.width=p+'%';document.getElementById('upPrgPct').textContent=p+'%';document.getElementById('upPrgLabel').textContent=l;}
 
-// Upload via Cloudflare Worker (bisa beda akun R2)
+// R2 AWS Sig V4
 async function r2Put(ep,bucket,key,body,ct){
-  // Ambil JWT token user yang sedang login
-  const{data:{session}}=await sb.auth.getSession();
-  const token=session?.access_token||'';
-  if(!token) throw new Error('Sesi tidak aktif, silakan login ulang.');
-
-  const res=await fetch(`${WORKER_URL}/upload/${key}`,{
-    method:'PUT',
-    headers:{
-      'Authorization':`Bearer ${token}`,
-      'Content-Type':ct,
-      'Content-Length':String(body.byteLength||body.size||0),
-    },
-    body,
-  });
-
-  if(!res.ok){
-    const data=await res.json().catch(()=>({}));
-    // Khusus error storage penuh (413)
-    if(res.status===413) throw new Error(data.error||'Penyimpanan penuh.');
-    throw new Error(data.error||`Upload gagal (${res.status})`);
+  const path=`/${bucket}/${key}`;
+  // Jangan include content-type di signed headers - ini penyebab 403
+  const{headers}=await signR2({method:'PUT',ep,path,hdrs:{},body});
+  const r=await fetch(`${ep}${path}`,{method:'PUT',headers:{...headers,'Content-Type':ct},body});
+  if(!r.ok){
+    const t=await r.text().catch(()=>'');
+    console.error('R2 response:',r.status,t);
+    throw new Error(`R2 ${r.status}: ${t.substring(0,200)}`);
   }
 }
 async function r2Delete(key){
-  const{data:{session}}=await sb.auth.getSession();
-  const token=session?.access_token||'';
-  if(!token) throw new Error('Sesi tidak aktif.');
-
-  const res=await fetch(`${WORKER_URL}/file/${key}`,{
-    method:'DELETE',
-    headers:{'Authorization':`Bearer ${token}`},
-  });
-  if(!res.ok && res.status!==204){
-    const data=await res.json().catch(()=>({}));
-    throw new Error(data.error||`Hapus gagal (${res.status})`);
+  const ep=`https://${R2.accountId}.r2.cloudflarestorage.com`;
+  const path=`/${R2.bucket}/${key}`;
+  const{headers}=await signR2({method:'DELETE',ep,path,hdrs:{},body:''});
+  const r=await fetch(`${ep}${path}`,{method:'DELETE',headers});
+  if(!r.ok && r.status!==204 && r.status!==200){
+    const t=await r.text().catch(()=>'');
+    throw new Error(`R2 DELETE ${r.status}: ${t.substring(0,200)}`);
   }
 }
 async function hmac(k,d){const ck=await crypto.subtle.importKey('raw',typeof k==='string'?new TextEncoder().encode(k):k,{name:'HMAC',hash:'SHA-256'},false,['sign']);return new Uint8Array(await crypto.subtle.sign('HMAC',ck,new TextEncoder().encode(d)));}
@@ -3365,10 +3298,8 @@ async function loadBackupPage(){
     sb.from('profiles').select('*',{count:'exact',head:true}).neq('role','admin')
   ]);
 
-  // Gunakan getStorageUsed() untuk perhitungan presisi (paginasi semua row)
-  const totalBytes=await getStorageUsed();
-  currentStorageBytes=totalBytes;
-  renderStorageBar(totalBytes); // Sinkronkan storage bar di dashboard
+  const{data:sizeData}=await sb.from('dokumen').select('ukuran_file');
+  const totalBytes=(sizeData||[]).reduce((s,d)=>s+(d.ukuran_file||0),0);
 
   document.getElementById('backupDokStat').innerHTML=
     `<i class="fas fa-file-alt" style="color:var(--accent2)"></i> <strong>${dokCount||0}</strong> dokumen terdaftar &nbsp;·&nbsp; Total: <strong>${fmtSz(totalBytes)}</strong>`;
@@ -4050,19 +3981,6 @@ async function doUploadAdmin(){
   if(!R2.accountId||!R2.accessKey||!R2.secretKey||!R2.bucket){toast('R2 belum dikonfigurasi!','err');return;}
   const btn=document.getElementById('btnUploadAdmin');
   setBtn(btn,true);
-
-  // Cek storage sebelum upload admin
-  try{
-    const storCheck=await cekStorageCukup(upAdminFile.size);
-    if(!storCheck.ok){
-      toast(storCheck.msg,'err');
-      setBtn(btn,false,'<i class="fas fa-upload"></i> Upload Dokumen');
-      return;
-    }
-  }catch(e){
-    console.warn('Storage check error (lanjut upload):', e.message);
-  }
-
   const safeFileName=upAdminFile.name.replace(/[^a-zA-Z0-9._-]/g,'_');
   const r2Key=`${pegId}/${Date.now()}_${safeFileName}`;
   const ep=`https://${R2.accountId}.r2.cloudflarestorage.com`;
@@ -4148,92 +4066,6 @@ async function saveProAdmin(){
   sessionStorage.setItem('currentProfile',JSON.stringify(np));
   setSidebar(np);
   showInlineAlert('saveAdminProAlert','✓ Profil admin berhasil diperbarui!','ok');
-}
-
-// ═══════════════════════════════
-//  STORAGE TRACKING (8 GB LIMIT)
-// ═══════════════════════════════
-const STORAGE_LIMIT_BYTES = 8 * 1024 * 1024 * 1024; // 8 GB tepat
-const STORAGE_WARN_BYTES  = 7 * 1024 * 1024 * 1024; // Peringatan mulai 7 GB
-let   currentStorageBytes = 0; // cache, diupdate setiap loadDash + upload/hapus
-
-// Hitung total storage dari kolom ukuran_file di database
-// (presisi 100% karena ukuran_file diisi saat upload dari upFile.size — byte eksak)
-async function getStorageUsed(){
-  // Ambil SEMUA ukuran_file sekaligus (tidak pakai pagination)
-  // Supabase mengembalikan max 1000 row per request, pakai range
-  let total=0, from=0, done=false;
-  while(!done){
-    const{data,error}=await sb.from('dokumen')
-      .select('ukuran_file')
-      .range(from, from+999);
-    if(error) throw error;
-    if(!data||data.length===0){done=true;break;}
-    data.forEach(d=>{ total+=(d.ukuran_file||0); });
-    if(data.length<1000) done=true;
-    else from+=1000;
-  }
-  return total; // bytes
-}
-
-async function loadStorageUsage(){
-  try{
-    const used=await getStorageUsed();
-    currentStorageBytes=used;
-    renderStorageBar(used);
-  }catch(e){
-    console.warn('Storage usage error:', e.message);
-  }
-}
-
-function renderStorageBar(usedBytes){
-  const wrap=document.getElementById('storageWrap');
-  if(!wrap) return;
-  wrap.style.display='block';
-
-  const pct=Math.min((usedBytes/STORAGE_LIMIT_BYTES)*100, 100);
-  const bar=document.getElementById('storageBar');
-  const alert=document.getElementById('storageAlert');
-
-  // Update bar width dan warna
-  bar.style.width=pct.toFixed(2)+'%';
-  bar.className='storage-bar-fill';
-  if(pct>=100)      bar.classList.add('danger');
-  else if(pct>=87.5) bar.classList.add('warn');  // 87.5% = 7GB dari 8GB
-  else               bar.classList.add('safe');
-
-  // Update teks
-  document.getElementById('storageUsed').textContent='Terpakai: '+fmtSz(usedBytes);
-  document.getElementById('storagePct').textContent=pct.toFixed(1)+'%';
-  document.getElementById('storageText').textContent=fmtSz(usedBytes)+' / 8 GB';
-
-  // Alert peringatan
-  if(usedBytes>=STORAGE_LIMIT_BYTES){
-    alert.innerHTML='<div class="storage-limit-danger"><i class="fas fa-ban"></i>Penyimpanan PENUH — Upload baru tidak diizinkan. Hapus beberapa dokumen untuk memberi ruang.</div>';
-  } else if(usedBytes>=STORAGE_WARN_BYTES){
-    const sisa=fmtSz(STORAGE_LIMIT_BYTES-usedBytes);
-    alert.innerHTML=`<div class="storage-limit-warn"><i class="fas fa-exclamation-triangle"></i>Peringatan: Sisa ruang hanya <strong>${sisa}</strong>. Segera hapus dokumen yang tidak diperlukan.</div>`;
-  } else {
-    alert.innerHTML='';
-  }
-}
-
-// Cek apakah masih ada ruang untuk file berukuran tertentu
-// Return: { ok: bool, message: string }
-async function cekStorageCukup(fileSize){
-  // Refresh storage data sebelum cek (akurat)
-  const used=await getStorageUsed();
-  currentStorageBytes=used;
-  renderStorageBar(used); // update UI
-
-  if(used>=STORAGE_LIMIT_BYTES){
-    return{ok:false,msg:'Penyimpanan penuh ('+fmtSz(used)+' / 8 GB). Tidak dapat mengupload dokumen baru.'};
-  }
-  const sisa=STORAGE_LIMIT_BYTES-used;
-  if(fileSize>sisa){
-    return{ok:false,msg:`Ruang tidak cukup. File ini ${fmtSz(fileSize)} tapi hanya tersisa ${fmtSz(sisa)}.`};
-  }
-  return{ok:true,msg:''};
 }
 
 // ═══════════════════════════════

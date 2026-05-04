@@ -1,0 +1,26 @@
+# ============================================================
+#  wrangler.toml — SiPegawai R2 Proxy Worker
+#  Deploy: npx wrangler deploy
+#  Install wrangler: npm install -g wrangler
+#  Login: npx wrangler login
+# ============================================================
+
+name            = "sipegawai-r2-proxy"
+main            = "r2-proxy-worker.js"
+compatibility_date = "2024-01-01"
+
+# Variabel publik (tidak rahasia)
+[vars]
+R2_ACCOUNT_ID  = "GANTI_DENGAN_ACCOUNT_ID_PEMILIK_BUCKET"
+R2_BUCKET      = "sipegawai-lapas"
+ALLOWED_ORIGIN = "https://sipegawai.saparualapas.workers.dev"
+SUPABASE_URL   = "https://guxxelwwalcwhpeujnqj.supabase.co"
+
+# ⚠ JANGAN taruh secret di sini!
+# Jalankan perintah ini satu per satu di terminal:
+#
+#   npx wrangler secret put R2_ACCESS_KEY
+#   npx wrangler secret put R2_SECRET_KEY
+#   npx wrangler secret put SUPABASE_KEY
+#
+# Lalu paste nilainya saat diminta.
