@@ -3123,6 +3123,11 @@ async function r2Delete(key){
     throw new Error(data.error||`Hapus gagal (${res.status})`);
   }
 }
+async function getSignedUrl(key){
+  // Gunakan Worker sebagai proxy — tidak perlu signed URL langsung ke R2
+  const encodedKey=key.split('/').map(encodeURIComponent).join('/');
+  return `${WORKER_URL}/file/${encodedKey}`;
+}
 async function hmac(k,d){const ck=await crypto.subtle.importKey('raw',typeof k==='string'?new TextEncoder().encode(k):k,{name:'HMAC',hash:'SHA-256'},false,['sign']);return new Uint8Array(await crypto.subtle.sign('HMAC',ck,new TextEncoder().encode(d)));}
 async function sha256h(d){const b=typeof d==='string'?new TextEncoder().encode(d):d;return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',b))).map(x=>x.toString(16).padStart(2,'0')).join('');}
 function toHex(a){return Array.from(a).map(b=>b.toString(16).padStart(2,'0')).join('');}
@@ -3257,11 +3262,13 @@ async function doUserBackupR2(){
 
   // Helper fetch dengan retry
   async function fetchFile(url, retries=3){
+    const{data:{session}}=await sb.auth.getSession();
+    const tok=session?.access_token||'';
     for(let i=0;i<retries;i++){
       try{
         const ctrl=new AbortController();
         const timer=setTimeout(()=>ctrl.abort(),60000);
-        const res=await fetch(url,{signal:ctrl.signal});
+        const res=await fetch(url,{signal:ctrl.signal,headers:tok?{'Authorization':`Bearer ${tok}`}:{}});
         clearTimeout(timer);
         if(!res.ok) throw new Error('HTTP '+res.status);
         return res;
@@ -3700,11 +3707,13 @@ async function _doR2Zip(docs, zipFilename, logType, label){
 
   // Helper: fetch dengan retry (3x) dan timeout
   async function fetchWithRetry(url, retries=3){
+    const{data:{session}}=await sb.auth.getSession();
+    const tok=session?.access_token||'';
     for(let i=0;i<retries;i++){
       try{
         const ctrl=new AbortController();
         const timer=setTimeout(()=>ctrl.abort(),60000); // 60s timeout per file
-        const res=await fetch(url,{signal:ctrl.signal});
+        const res=await fetch(url,{signal:ctrl.signal,headers:tok?{'Authorization':`Bearer ${tok}`}:{}});
         clearTimeout(timer);
         if(!res.ok) throw new Error('HTTP '+res.status);
         return res;
