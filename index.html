@@ -794,7 +794,14 @@ tbody td.wrap{white-space:normal;min-width:140px;}
         <!-- GOOGLE DRIVE CONFIG -->
         <div class="card" style="margin-top:1.25rem"><div class="card-hd"><span class="card-title"><i class="fab fa-google-drive" style="color:#0F9D58;margin-right:.4rem"></i>Google Drive (Overflow Storage)</span></div><div class="card-body">
           <div class="alert-info alert-box" style="margin-bottom:.875rem"><i class="fas fa-info-circle"></i><div>Gunakan <strong>Service Account</strong> dari Google Cloud Console. File akan otomatis disimpan ke Drive saat R2 penuh, dan tetap bisa dibuka dari website.</div></div>
-          <div class="form-group"><label class="form-label">Service Account JSON <span style="font-size:.72rem;color:var(--muted)">(paste isi file .json)</span></label><textarea class="form-control" id="driveJson" rows="4" style="font-family:'JetBrains Mono',monospace;font-size:.72rem;resize:vertical" placeholder='{"type":"service_account","project_id":"...","client_email":"...","private_key":"-----BEGIN RSA PRIVATE KEY-----\n..."}'></textarea></div>
+          <div class="form-group"><label class="form-label">Konfigurasi Drive JSON <span style="font-size:.72rem;color:var(--muted)">(format OAuth2 — lihat panduan di bawah)</span></label><textarea class="form-control" id="driveJson" rows="5" style="font-family:'JetBrains Mono',monospace;font-size:.72rem;resize:vertical" placeholder='{"type":"oauth2","client_id":"xxxxx.apps.googleusercontent.com","client_secret":"GOCSPX-xxxxx","refresh_token":"1//xxxxx"}'></textarea>
+          <div style="margin-top:.4rem;font-size:.72rem;color:var(--muted);line-height:1.6">
+            <strong>Cara dapat refresh_token:</strong><br>
+            1. Buka <a href="https://console.cloud.google.com" target="_blank" style="color:var(--accent)">Google Cloud Console</a> → OAuth 2.0 Client IDs → buat credentials type <strong>Web application</strong><br>
+            2. Tambah <code style="background:var(--surface2);padding:.1rem .3rem;border-radius:3px">https://developers.google.com/oauthplayground</code> ke Authorized redirect URIs<br>
+            3. Buka <a href="https://developers.google.com/oauthplayground" target="_blank" style="color:var(--accent)">OAuth Playground</a> → klik ⚙️ → centang "Use your own OAuth credentials" → masukkan client_id & client_secret<br>
+            4. Pilih scope <strong>https://www.googleapis.com/auth/drive</strong> → Authorize → Exchange → copy refresh_token
+          </div></div>
           <div class="form-group"><label class="form-label">Folder ID Google Drive <span style="font-size:.72rem;color:var(--muted)">(dari URL: drive.google.com/drive/folders/<strong>ID_INI</strong>)</span></label><input class="form-control" id="driveFolderId" style="font-family:'JetBrains Mono',monospace;font-size:.79rem" placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms"/></div>
           <div class="form-group"><label class="form-label">Batas Penyimpanan Drive</label>
             <div style="display:flex;gap:.5rem;align-items:center">
@@ -2300,40 +2307,58 @@ async function getDriveUsedBytes(){
   return data.reduce((s,d)=>s+(d.ukuran_file||0),0);
 }
 
-// ── Google Drive JWT & Token ──────────────────────────
+// ── Google Drive OAuth2 Token (pakai refresh_token dari akun Google biasa) ──
 async function getDriveToken(){
-  if(!DRIVE.serviceAccountJson) throw new Error('Drive belum dikonfigurasi');
   let sa;
-  try{ sa=JSON.parse(DRIVE.serviceAccountJson); }catch(e){ throw new Error('Service Account JSON tidak valid'); }
+  try{ sa=JSON.parse(DRIVE.serviceAccountJson); }catch(e){ throw new Error('Konfigurasi Drive tidak valid'); }
 
-  const now=Math.floor(Date.now()/1000);
-  const header=btoa(JSON.stringify({alg:'RS256',typ:'JWT'})).replace(/=/g,'').replace(/\+/g,'-').replace(/\//g,'_');
-  const claim=btoa(JSON.stringify({
-    iss:sa.client_email,
-    scope:'https://www.googleapis.com/auth/drive',
-    aud:'https://oauth2.googleapis.com/token',
-    exp:now+3600, iat:now
-  })).replace(/=/g,'').replace(/\+/g,'-').replace(/\//g,'_');
+  // Support dua mode: OAuth2 refresh_token (direkomendasikan) atau Service Account
+  if(sa.type==='oauth2'){
+    // Mode OAuth2: pakai client_id + client_secret + refresh_token
+    const res=await fetch('https://oauth2.googleapis.com/token',{
+      method:'POST',
+      headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body:new URLSearchParams({
+        client_id:sa.client_id,
+        client_secret:sa.client_secret,
+        refresh_token:sa.refresh_token,
+        grant_type:'refresh_token'
+      })
+    });
+    const data=await res.json();
+    if(!data.access_token) throw new Error(data.error_description||'Gagal dapat Drive token');
+    return data.access_token;
+  }
 
-  const unsigned=`${header}.${claim}`;
-  // Import private key
-  const pemKey=sa.private_key.replace(/\\n/g,'\n');
-  const pemBody=pemKey.replace(/-----BEGIN RSA PRIVATE KEY-----|-----END RSA PRIVATE KEY-----|-----BEGIN PRIVATE KEY-----|-----END PRIVATE KEY-----|\n/g,'');
-  const binaryKey=Uint8Array.from(atob(pemBody),c=>c.charCodeAt(0));
-  const cryptoKey=await crypto.subtle.importKey('pkcs8',binaryKey,{name:'RSASSA-PKCS1-v1_5',hash:'SHA-256'},false,['sign']);
-  const sig=await crypto.subtle.sign('RSASSA-PKCS1-v1_5',cryptoKey,new TextEncoder().encode(unsigned));
-  const sigB64=btoa(String.fromCharCode(...new Uint8Array(sig))).replace(/=/g,'').replace(/\+/g,'-').replace(/\//g,'_');
-  const jwt=`${unsigned}.${sigB64}`;
+  // Mode Service Account (untuk Shared Drive / Google Workspace)
+  if(sa.type==='service_account'){
+    const now=Math.floor(Date.now()/1000);
+    const header=btoa(JSON.stringify({alg:'RS256',typ:'JWT'})).replace(/=/g,'').replace(/\+/g,'-').replace(/\//g,'_');
+    const claim=btoa(JSON.stringify({
+      iss:sa.client_email,
+      scope:'https://www.googleapis.com/auth/drive',
+      aud:'https://oauth2.googleapis.com/token',
+      exp:now+3600, iat:now
+    })).replace(/=/g,'').replace(/\+/g,'-').replace(/\//g,'_');
+    const unsigned=`${header}.${claim}`;
+    const pemKey=sa.private_key.replace(/\\n/g,'\n');
+    const pemBody=pemKey.replace(/-----BEGIN RSA PRIVATE KEY-----|-----END RSA PRIVATE KEY-----|-----BEGIN PRIVATE KEY-----|-----END PRIVATE KEY-----|\n/g,'');
+    const binaryKey=Uint8Array.from(atob(pemBody),c=>c.charCodeAt(0));
+    const cryptoKey=await crypto.subtle.importKey('pkcs8',binaryKey,{name:'RSASSA-PKCS1-v1_5',hash:'SHA-256'},false,['sign']);
+    const sig=await crypto.subtle.sign('RSASSA-PKCS1-v1_5',cryptoKey,new TextEncoder().encode(unsigned));
+    const sigB64=btoa(String.fromCharCode(...new Uint8Array(sig))).replace(/=/g,'').replace(/\+/g,'-').replace(/\//g,'_');
+    const jwt=`${unsigned}.${sigB64}`;
+    const res=await fetch('https://oauth2.googleapis.com/token',{
+      method:'POST',
+      headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body:`grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=${jwt}`
+    });
+    const data=await res.json();
+    if(!data.access_token) throw new Error(data.error_description||'Gagal dapat Drive token');
+    return data.access_token;
+  }
 
-  // Exchange JWT for access token
-  const res=await fetch('https://oauth2.googleapis.com/token',{
-    method:'POST',
-    headers:{'Content-Type':'application/x-www-form-urlencoded'},
-    body:`grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=${jwt}`
-  });
-  const data=await res.json();
-  if(!data.access_token) throw new Error(data.error_description||'Gagal dapat Drive token');
-  return data.access_token;
+  throw new Error('Tipe konfigurasi tidak dikenal. Gunakan format oauth2 atau service_account.');
 }
 
 // ── Upload file ke Google Drive ────────────────────────
