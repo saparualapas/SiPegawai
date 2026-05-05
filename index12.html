@@ -102,8 +102,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
 .storage-bar-fill.danger{background:linear-gradient(90deg,var(--danger),#f87171);}
 .storage-meta{display:flex;justify-content:space-between;align-items:center;font-size:.75rem;color:var(--muted);}
 .storage-limit-warn{display:flex;align-items:center;gap:.5rem;background:#fef3c7;border:1px solid #f59e0b;border-radius:10px;padding:.55rem .875rem;margin-top:.6rem;font-size:.8rem;color:#92400e;font-weight:600;}
-.storage-limit-danger{display:flex;align-items:center;gap:.5rem;background:#fee2e2;border:2px solid var(--danger);border-radius:10px;padding:.65rem 1rem;margin-top:.6rem;font-size:.85rem;color:#991b1b;font-weight:700;animation:storageShake .45s ease;}
-@keyframes storageShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+.storage-limit-danger{display:flex;align-items:center;gap:.5rem;background:#fde8e8;border:1px solid var(--danger);border-radius:10px;padding:.55rem .875rem;margin-top:.6rem;font-size:.8rem;color:var(--danger);font-weight:600;}
 
 /* ACTION SPLASH — overlay loading saat proses CRUD */
 #actionSplash{
@@ -3489,32 +3488,24 @@ async function doUpload(){
   const btn=document.getElementById('btnUpload');
   setBtn(btn,true);
 
-  // Cek storage sebelum upload — WAJIB lulus, tidak boleh di-skip
+  // Cek storage sebelum upload — presisi dari DB
   setPrg(5,'Memeriksa kapasitas penyimpanan...');
   document.getElementById('upPrgWrap').style.display='block';
   let storTarget='r2';
-  let storCheck;
   try{
-    storCheck=await cekStorageCukup(upFile.size);
+    const storCheck=await cekStorageCukup(upFile.size);
+    if(!storCheck.ok){
+      toast(storCheck.msg,'err');
+      showInlineAlert('upSuccessAlert',storCheck.msg,'err');
+      setPrg(0,'');
+      document.getElementById('upPrgWrap').style.display='none';
+      setBtn(btn,false,'<i class="fas fa-upload"></i> Upload Dokumen');
+      return;
+    }
+    storTarget=storCheck.target||'r2';
   }catch(e){
-    // Jika cek storage gagal karena error jaringan/DB — TOLAK upload untuk keamanan
-    const errMsg='Gagal memeriksa kapasitas penyimpanan: '+e.message+'. Upload ditolak untuk keamanan.';
-    toast(errMsg,'err');
-    showStorageBlockAlert(errMsg);
-    setPrg(0,'');
-    document.getElementById('upPrgWrap').style.display='none';
-    setBtn(btn,false,'<i class="fas fa-upload"></i> Upload Dokumen');
-    return;
+    console.warn('Storage check error (lanjut upload):', e.message);
   }
-  if(!storCheck.ok){
-    toast(storCheck.msg,'err');
-    showStorageBlockAlert(storCheck.msg);
-    setPrg(0,'');
-    document.getElementById('upPrgWrap').style.display='none';
-    setBtn(btn,false,'<i class="fas fa-upload"></i> Upload Dokumen');
-    return;
-  }
-  storTarget=storCheck.target||'r2';
 
   const safeFileName=upFile.name.replace(/[^a-zA-Z0-9._-]/g,'_');
   const r2Key=`${CU.id}/${Date.now()}_${safeFileName}`;
@@ -3591,47 +3582,6 @@ async function doUpload(){
   setBtn(btn,false,'<i class="fas fa-upload"></i> Upload Dokumen');
 }
 function setPrg(p,l){document.getElementById('upPrgBar').style.width=p+'%';document.getElementById('upPrgPct').textContent=p+'%';document.getElementById('upPrgLabel').textContent=l;}
-
-// Tampilkan alert merah besar saat storage penuh — tidak bisa di-dismiss sampai ada ruang
-// Cek storage saat buka halaman Upload — tampilkan banner jika penuh
-async function checkStorageOnUploadPage(){
-  try{
-    if(!DRIVE.serviceAccountJson) await ensureDriveConfig();
-    const r2Used=await getStorageUsed();
-    currentStorageBytes=r2Used;
-    const r2LimitBytes=R2_LIMIT_BYTES;
-    const driveGb=(DRIVE.limitGb&&DRIVE.limitGb>0)?DRIVE.limitGb:10;
-    const driveLimitBytes=driveGb*1024*1024*1024;
-    const r2Full=(r2Used>=r2LimitBytes);
-
-    if(r2Full){
-      if(DRIVE.configured && DRIVE.autoOverflow){
-        const driveUsed=await getDriveStorageUsedFromDB();
-        if(driveUsed>=driveLimitBytes){
-          // Semua penuh — nonaktifkan tombol upload
-          showStorageBlockAlert(`🚫 Semua penyimpanan penuh! R2: ${fmtSz(r2Used)}/${fmtSz(r2LimitBytes)}, Drive: ${fmtSz(driveUsed)}/${fmtSz(driveLimitBytes)}. Hapus dokumen lama untuk memberi ruang.`);
-          const btnUp=document.getElementById('btnUpload');
-          if(btnUp){btnUp.disabled=true;btnUp.style.opacity='0.4';btnUp.title='Penyimpanan penuh';}
-          return;
-        }
-      } else if(!DRIVE.configured || !DRIVE.autoOverflow){
-        showStorageBlockAlert(`🚫 Penyimpanan R2 penuh (${fmtSz(r2Used)}/${fmtSz(r2LimitBytes)}). Upload tidak tersedia.`);
-        const btnUp=document.getElementById('btnUpload');
-        if(btnUp){btnUp.disabled=true;btnUp.style.opacity='0.4';btnUp.title='Penyimpanan penuh';}
-        return;
-      }
-    }
-    // Storage OK — pastikan tombol aktif
-    const btnUp=document.getElementById('btnUpload');
-    if(btnUp){btnUp.disabled=false;btnUp.style.opacity='';btnUp.title='';}
-  }catch(e){ console.warn('checkStorageOnUploadPage error:',e.message); }
-}
-
-function showStorageBlockAlert(msg){
-  showInlineAlert('upSuccessAlert',msg,'err');
-  const alertEl=document.getElementById('storageAlert');
-  if(alertEl) alertEl.innerHTML=`<div class="storage-limit-danger"><i class="fas fa-ban"></i>${msg}</div>`;
-}
 
 // Upload via Cloudflare Worker (bisa beda akun R2)
 async function r2Put(ep,bucket,key,body,ct){
@@ -4651,24 +4601,19 @@ async function doUploadAdmin(){
   const btn=document.getElementById('btnUploadAdmin');
   setBtn(btn,true);
 
-  // Cek storage sebelum upload admin — WAJIB lulus, tidak boleh di-skip
+  // Cek storage sebelum upload admin
   let adminStorTarget='r2';
-  let adminStorCheck;
   try{
-    adminStorCheck=await cekStorageCukup(upAdminFile.size);
+    const storCheck=await cekStorageCukup(upAdminFile.size);
+    if(!storCheck.ok){
+      toast(storCheck.msg,'err');
+      setBtn(btn,false,'<i class="fas fa-upload"></i> Upload Dokumen');
+      return;
+    }
+    adminStorTarget=storCheck.target||'r2';
   }catch(e){
-    const errMsg='Gagal memeriksa kapasitas penyimpanan: '+e.message+'. Upload ditolak untuk keamanan.';
-    toast(errMsg,'err');
-    setBtn(btn,false,'<i class="fas fa-upload"></i> Upload Dokumen');
-    return;
+    console.warn('Storage check error (lanjut upload):', e.message);
   }
-  if(!adminStorCheck.ok){
-    toast(adminStorCheck.msg,'err');
-    showInlineAlert('upAdminSuccessAlert',adminStorCheck.msg,'err');
-    setBtn(btn,false,'<i class="fas fa-upload"></i> Upload Dokumen');
-    return;
-  }
-  adminStorTarget=adminStorCheck.target||'r2';
 
   const safeFileName=upAdminFile.name.replace(/[^a-zA-Z0-9._-]/g,'_');
   const r2Key=`${pegId}/${Date.now()}_${safeFileName}`;
@@ -4863,17 +4808,12 @@ function renderStorageBar(usedBytes){
 
 // Cek storage sebelum upload — cek R2 DAN Drive secara ketat
 async function cekStorageCukup(fileSize){
-  // Pastikan DRIVE config termuat agar limitGb akurat
-  if(!DRIVE.serviceAccountJson) await ensureDriveConfig();
-
   const r2Used=await getStorageUsed();
   currentStorageBytes=r2Used;
   renderStorageBar(r2Used);
 
   const r2LimitBytes=R2_LIMIT_BYTES;
-  // Pastikan limitGb valid — jika 0/NaN, pakai 10 GB sebagai default aman
-  const driveGb=(DRIVE.limitGb && DRIVE.limitGb>0) ? DRIVE.limitGb : 10;
-  const driveLimitBytes=driveGb*1024*1024*1024;
+  const driveLimitBytes=DRIVE.limitGb*1024*1024*1024;
   const r2Sisa=r2LimitBytes-r2Used;
   const r2Full=(r2Sisa<=0);
   const r2TakCukup=(fileSize>r2Sisa);
@@ -4888,19 +4828,19 @@ async function cekStorageCukup(fileSize){
     const driveUsed=await getDriveStorageUsedFromDB();
     const driveSisa=driveLimitBytes-driveUsed;
     if(driveSisa<=0){
-      return{ok:false,target:null,msg:`🚫 Penyimpanan penuh! R2: ${fmtSz(r2Used)}/${fmtSz(r2LimitBytes)} dan Drive: ${fmtSz(driveUsed)}/${fmtSz(driveLimitBytes)}. Hapus beberapa dokumen terlebih dahulu.`};
+      return{ok:false,msg:`Penyimpanan R2 dan Google Drive keduanya sudah penuh. R2: ${fmtSz(r2Used)}/${fmtSz(r2LimitBytes)}, Drive: ${fmtSz(driveUsed)}/${fmtSz(driveLimitBytes)}.`};
     }
     if(fileSize>driveSisa){
-      return{ok:false,target:null,msg:`🚫 Ruang Drive tidak cukup. File: ${fmtSz(fileSize)}, sisa Drive: ${fmtSz(driveSisa)} dari limit ${fmtSz(driveLimitBytes)}.`};
+      return{ok:false,msg:`File terlalu besar untuk Drive. File: ${fmtSz(fileSize)}, sisa Drive: ${fmtSz(driveSisa)}.`};
     }
     return{ok:true,target:'drive',msg:''};
   }
 
   // R2 penuh, tidak ada Drive overflow
   if(r2Full){
-    return{ok:false,target:null,msg:`🚫 Penyimpanan R2 penuh (${fmtSz(r2Used)} / ${fmtSz(r2LimitBytes)}). Hapus beberapa dokumen atau aktifkan overflow ke Drive.`};
+    return{ok:false,msg:`Penyimpanan R2 penuh (${fmtSz(r2Used)} / ${fmtSz(r2LimitBytes)}). Tidak dapat mengupload dokumen baru.`};
   }
-  return{ok:false,target:null,msg:`🚫 Ruang R2 tidak cukup. File: ${fmtSz(fileSize)}, sisa: ${fmtSz(r2Sisa)}.`};
+  return{ok:false,msg:`Ruang R2 tidak cukup. File: ${fmtSz(fileSize)}, sisa: ${fmtSz(r2Sisa)}.`};
 }
 
 // ═══════════════════════════════
@@ -4917,7 +4857,6 @@ const PAGE_LOADERS={
   editProfilAdmin:loadProfilAdmin,
   backupUser:()=>loadUserBackupPage(),
   dokUser:()=>loadDokUser(selKatId,1),
-  upload:()=>checkStorageOnUploadPage(),
   setting:()=>{ loadR2(); },
   backup:()=>{ loadBackupPage(); },
 };
