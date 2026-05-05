@@ -2383,7 +2383,7 @@ async function testDriveConfig(){
 async function refreshDriveStorageUI(){
   if(!DRIVE.configured) return;
   try{
-    const used=await getDriveStorageUsedFromDB();
+    const used=await getDriveUsedBytes();
     const limitBytes=DRIVE.limitGb*1024*1024*1024;
     const pct=Math.min(100,(used/limitBytes)*100);
     const wrap=document.getElementById('driveStorageWrap');
@@ -2401,7 +2401,10 @@ async function refreshDriveStorageUI(){
 }
 
 async function getDriveUsedBytes(){
-  return getDriveStorageUsedFromDB();
+  // Hitung dari database: jumlah ukuran semua file dengan storage_type='drive' dan folder_id yang sama
+  const{data,error}=await sb.from('dokumen').select('ukuran_file').eq('storage_type','drive').eq('drive_folder_id',DRIVE.folderId);
+  if(error||!data) return 0;
+  return data.reduce((s,d)=>s+(d.ukuran_file||0),0);
 }
 
 // ── Google Drive OAuth2 Token (pakai refresh_token dari akun Google biasa) ──
@@ -2501,9 +2504,9 @@ async function driveDownload(driveFileId){
   return res;
 }
 
-// ── Cek apakah Drive penuh (berdasarkan DB, bukan Drive API) ─────────────
+// ── Cek apakah Drive penuh ────────────────────────────
 async function isDriveFull(incomingBytes){
-  const used=await getDriveStorageUsedFromDB();
+  const used=await getDriveUsedBytes();
   const limitBytes=DRIVE.limitGb*1024*1024*1024;
   return (used+incomingBytes)>limitBytes;
 }
@@ -3008,42 +3011,20 @@ async function saveEditDokAdmin(){
   loadDokAdmin(dakPage);
 }
 
-async function delDokAdmin(id, r2Key, driveFileId){
+async function delDokAdmin(id, r2Key){
   showActionSplash('Menghapus dokumen...','Menghapus file dari penyimpanan');
-  // Jika driveFileId belum dipass, ambil dari database
-  let driveFid=driveFileId||'';
-  if(!driveFid){
-    const{data:dok}=await sb.from('dokumen').select('drive_file_id').eq('id',id).single();
-    if(dok) driveFid=dok.drive_file_id||'';
-  }
   const{error:dbErr}=await sb.from('dokumen').delete().eq('id',id);
   if(dbErr){
     hideActionSplash();
     showAlertBanner('Gagal menghapus dokumen: '+dbErr.message,'err');
     return;
   }
-  // Hapus dari R2
   if(r2Key){
     try{ await r2Delete(r2Key); }
     catch(e){ console.warn('R2 delete warning:',e.message); }
   }
-  // Hapus dari Drive
-  if(driveFid){
-    try{
-      if(!DRIVE.serviceAccountJson) await ensureDriveConfig();
-      if(DRIVE.serviceAccountJson){
-        const token=await getDriveToken();
-        const res=await fetch(`https://www.googleapis.com/drive/v3/files/${driveFid}`,{
-          method:'DELETE',headers:{Authorization:`Bearer ${token}`}
-        });
-        if(!res.ok && res.status!==404) console.warn('Drive delete HTTP',res.status);
-      }
-    }catch(e){ console.warn('Drive delete warning:',e.message); }
-  }
   hideActionSplash();
   showAlertBanner('Dokumen/data telah terhapus','ok');
-  loadStorageUsage();
-  refreshDriveStorageUI();
   loadDokAdmin(dakPage);
 }
 
@@ -3263,9 +3244,8 @@ function konfirmHapusDok(btn){
 function konfirmHapusDokAdmin(btn){
   const id=btn.dataset.id;
   const r2=btn.dataset.r2||'';
-  const drive=btn.dataset.drive||'';
   const nama=decodeURIComponent(btn.dataset.nama||'');
-  confirm_('del','Hapus Dokumen?',`Hapus <strong>${nama}</strong>? Data akan dihapus dari catatan.`,()=>delDokAdmin(id,r2,drive));
+  confirm_('del','Hapus Dokumen?',`Hapus <strong>${nama}</strong>? Data akan dihapus dari catatan.`,()=>delDokAdmin(id,r2));
 }
 
 async function delDok(id, isAdmin=false){
@@ -3297,7 +3277,6 @@ async function delDok(id, isAdmin=false){
   hideActionSplash();
   showAlertBanner('Dokumen/data telah terhapus','ok');
   loadStorageUsage();
-  refreshDriveStorageUI();
   if(isAdmin){ loadDokAdmin(dakPage); }
   else { loadDokUser(selKatId,dukPage); }
 }
@@ -3491,7 +3470,6 @@ async function doUpload(){
   // Cek storage sebelum upload — presisi dari DB
   setPrg(5,'Memeriksa kapasitas penyimpanan...');
   document.getElementById('upPrgWrap').style.display='block';
-  let storTarget='r2';
   try{
     const storCheck=await cekStorageCukup(upFile.size);
     if(!storCheck.ok){
@@ -3502,7 +3480,6 @@ async function doUpload(){
       setBtn(btn,false,'<i class="fas fa-upload"></i> Upload Dokumen');
       return;
     }
-    storTarget=storCheck.target||'r2';
   }catch(e){
     console.warn('Storage check error (lanjut upload):', e.message);
   }
@@ -3515,12 +3492,12 @@ async function doUpload(){
   try{
     const fileBuffer=await upFile.arrayBuffer();
 
-    // ── Tentukan target penyimpanan dari hasil cekStorageCukup ──
+    // ── Cek overflow ke Drive ──
     let storageType='r2';
     let driveFileId=null;
-    if(storTarget==='drive'){
+    const r2IsFull=(currentStorageBytes+fileBuffer.byteLength > 8*1024*1024*1024);
+    if(r2IsFull && DRIVE.configured && DRIVE.autoOverflow){
       setPrg(20,'R2 penuh — mengunggah ke Google Drive...');
-      if(!DRIVE.serviceAccountJson) await ensureDriveConfig();
       const katNama=allKategori.find(k=>k.id===katId)?.nama||'Lainnya';
       const pegNama=(CP?.nama_lengkap||CU.id).replace(/[^a-zA-Z0-9_ ]/g,'_');
       driveFileId=await driveUpload(fileBuffer,upFile.name,upFile.type||'application/octet-stream',`${pegNama}/${katNama}`);
@@ -4602,7 +4579,6 @@ async function doUploadAdmin(){
   setBtn(btn,true);
 
   // Cek storage sebelum upload admin
-  let adminStorTarget='r2';
   try{
     const storCheck=await cekStorageCukup(upAdminFile.size);
     if(!storCheck.ok){
@@ -4610,7 +4586,6 @@ async function doUploadAdmin(){
       setBtn(btn,false,'<i class="fas fa-upload"></i> Upload Dokumen');
       return;
     }
-    adminStorTarget=storCheck.target||'r2';
   }catch(e){
     console.warn('Storage check error (lanjut upload):', e.message);
   }
@@ -4623,13 +4598,16 @@ async function doUploadAdmin(){
   try{
     const fileBuffer=await upAdminFile.arrayBuffer();
 
-    // ── Tentukan target penyimpanan dari cekStorageCukup ──
+    // ── Cek overflow ke Drive ──
     let storageType='r2';
     let driveFileId=null;
-    if(adminStorTarget==='drive'){
+    const{data:storRows}=await sb.from('dokumen').select('ukuran_file,storage_type');
+    const totalUsed=(storRows||[]).filter(d=>!d.storage_type||d.storage_type==='r2').reduce((s,d)=>s+(d.ukuran_file||0),0);
+    const r2IsFull=(totalUsed+fileBuffer.byteLength > 8*1024*1024*1024);
+    if(r2IsFull && DRIVE.configured && DRIVE.autoOverflow){
       setPrgAdmin(25,'R2 penuh — mengunggah ke Google Drive...');
-      if(!DRIVE.serviceAccountJson) await ensureDriveConfig();
       const katNamaUpload=allKategori.find(k=>k.id===katId)?.nama||'Lainnya';
+      // Ambil nama pegawai untuk path Drive
       const{data:pegRow}=await sb.from('profiles').select('nama_lengkap').eq('id',pegId).single();
       const pegNamaUpload=(pegRow?.nama_lengkap||pegId).replace(/[^a-zA-Z0-9_ ]/g,'_');
       driveFileId=await driveUpload(fileBuffer,upAdminFile.name,upAdminFile.type||'application/octet-stream',`${pegNamaUpload}/${katNamaUpload}`);
@@ -4721,22 +4699,16 @@ async function saveProAdmin(){
 }
 
 // ═══════════════════════════════
-//  STORAGE TRACKING (CONFIGURABLE LIMIT)
+//  STORAGE TRACKING (8 GB LIMIT)
 // ═══════════════════════════════
-// R2 limit bisa di-set via app_config key 'r2LimitBytes' (bytes)
-// Jika tidak ada, default 8 GB
-let R2_LIMIT_BYTES = 8 * 1024 * 1024 * 1024; // default, di-update saat loadR2
-let   currentStorageBytes = 0;
+const STORAGE_LIMIT_BYTES = 8 * 1024 * 1024 * 1024; // 8 GB tepat
+const STORAGE_WARN_BYTES  = 7 * 1024 * 1024 * 1024; // Peringatan mulai 7 GB
+let   currentStorageBytes = 0; // cache, diupdate setiap loadDash + upload/hapus
 
-async function loadR2Limit(){
-  try{
-    const{data}=await sb.from('app_config').select('value').eq('key','r2LimitBytes').single();
-    if(data?.value) R2_LIMIT_BYTES=parseInt(data.value)||R2_LIMIT_BYTES;
-  }catch(e){}
-}
-
-// Hitung total storage R2 (hanya storage_type='r2')
+// Hitung total storage R2 dari kolom ukuran_file di database
+// (hanya file storage_type='r2' — file di Drive tidak dihitung ke kuota R2)
 async function getStorageUsed(){
+  // Ambil SEMUA ukuran_file sekaligus (tidak pakai pagination)
   let total=0, from=0, done=false;
   while(!done){
     const{data,error}=await sb.from('dokumen')
@@ -4748,23 +4720,7 @@ async function getStorageUsed(){
     if(data.length<1000) done=true;
     else from+=1000;
   }
-  return total;
-}
-
-// Hitung total storage Drive (hanya storage_type='drive')
-async function getDriveStorageUsedFromDB(){
-  let total=0, from=0, done=false;
-  while(!done){
-    const{data,error}=await sb.from('dokumen')
-      .select('ukuran_file,storage_type')
-      .range(from, from+999);
-    if(error) break;
-    if(!data||data.length===0){done=true;break;}
-    data.forEach(d=>{ if(d.storage_type==='drive') total+=(d.ukuran_file||0); });
-    if(data.length<1000) done=true;
-    else from+=1000;
-  }
-  return total;
+  return total; // bytes
 }
 
 async function loadStorageUsage(){
@@ -4772,7 +4728,9 @@ async function loadStorageUsage(){
     const used=await getStorageUsed();
     currentStorageBytes=used;
     renderStorageBar(used);
-  }catch(e){ console.warn('Storage usage error:', e.message); }
+  }catch(e){
+    console.warn('Storage usage error:', e.message);
+  }
 }
 
 function renderStorageBar(usedBytes){
@@ -4780,67 +4738,49 @@ function renderStorageBar(usedBytes){
   if(!wrap) return;
   wrap.style.display='block';
 
-  const limitBytes=R2_LIMIT_BYTES;
-  const pct=Math.min((usedBytes/limitBytes)*100, 100);
+  const pct=Math.min((usedBytes/STORAGE_LIMIT_BYTES)*100, 100);
   const bar=document.getElementById('storageBar');
   const alert=document.getElementById('storageAlert');
 
+  // Update bar width dan warna
   bar.style.width=pct.toFixed(2)+'%';
   bar.className='storage-bar-fill';
   if(pct>=100)      bar.classList.add('danger');
-  else if(pct>=87.5) bar.classList.add('warn');
+  else if(pct>=87.5) bar.classList.add('warn');  // 87.5% = 7GB dari 8GB
   else               bar.classList.add('safe');
 
+  // Update teks
   document.getElementById('storageUsed').textContent='R2 terpakai: '+fmtSz(usedBytes);
   document.getElementById('storagePct').textContent=pct.toFixed(1)+'%';
-  document.getElementById('storageText').textContent='R2: '+fmtSz(usedBytes)+' / '+fmtSz(limitBytes);
+  document.getElementById('storageText').textContent='R2: '+fmtSz(usedBytes)+' / 8 GB';
 
-  const warnBytes=limitBytes*0.875;
-  if(usedBytes>=limitBytes){
-    alert.innerHTML='<div class="storage-limit-danger"><i class="fas fa-ban"></i>Penyimpanan R2 PENUH — Upload baru tidak diizinkan.</div>';
-  } else if(usedBytes>=warnBytes){
-    const sisa=fmtSz(limitBytes-usedBytes);
-    alert.innerHTML=`<div class="storage-limit-warn"><i class="fas fa-exclamation-triangle"></i>Peringatan: Sisa ruang R2 hanya <strong>${sisa}</strong>.</div>`;
+  // Alert peringatan
+  if(usedBytes>=STORAGE_LIMIT_BYTES){
+    alert.innerHTML='<div class="storage-limit-danger"><i class="fas fa-ban"></i>Penyimpanan PENUH — Upload baru tidak diizinkan. Hapus beberapa dokumen untuk memberi ruang.</div>';
+  } else if(usedBytes>=STORAGE_WARN_BYTES){
+    const sisa=fmtSz(STORAGE_LIMIT_BYTES-usedBytes);
+    alert.innerHTML=`<div class="storage-limit-warn"><i class="fas fa-exclamation-triangle"></i>Peringatan: Sisa ruang hanya <strong>${sisa}</strong>. Segera hapus dokumen yang tidak diperlukan.</div>`;
   } else {
     alert.innerHTML='';
   }
 }
 
-// Cek storage sebelum upload — cek R2 DAN Drive secara ketat
+// Cek apakah masih ada ruang untuk file berukuran tertentu
+// Return: { ok: bool, message: string }
 async function cekStorageCukup(fileSize){
-  const r2Used=await getStorageUsed();
-  currentStorageBytes=r2Used;
-  renderStorageBar(r2Used);
+  // Refresh storage data sebelum cek (akurat)
+  const used=await getStorageUsed();
+  currentStorageBytes=used;
+  renderStorageBar(used); // update UI
 
-  const r2LimitBytes=R2_LIMIT_BYTES;
-  const driveLimitBytes=DRIVE.limitGb*1024*1024*1024;
-  const r2Sisa=r2LimitBytes-r2Used;
-  const r2Full=(r2Sisa<=0);
-  const r2TakCukup=(fileSize>r2Sisa);
-
-  // Jika R2 cukup — upload ke R2
-  if(!r2Full && !r2TakCukup){
-    return{ok:true,target:'r2',msg:''};
+  if(used>=STORAGE_LIMIT_BYTES){
+    return{ok:false,msg:'Penyimpanan penuh ('+fmtSz(used)+' / 8 GB). Tidak dapat mengupload dokumen baru.'};
   }
-
-  // R2 penuh atau tidak cukup — cek apakah bisa overflow ke Drive
-  if(DRIVE.configured && DRIVE.autoOverflow){
-    const driveUsed=await getDriveStorageUsedFromDB();
-    const driveSisa=driveLimitBytes-driveUsed;
-    if(driveSisa<=0){
-      return{ok:false,msg:`Penyimpanan R2 dan Google Drive keduanya sudah penuh. R2: ${fmtSz(r2Used)}/${fmtSz(r2LimitBytes)}, Drive: ${fmtSz(driveUsed)}/${fmtSz(driveLimitBytes)}.`};
-    }
-    if(fileSize>driveSisa){
-      return{ok:false,msg:`File terlalu besar untuk Drive. File: ${fmtSz(fileSize)}, sisa Drive: ${fmtSz(driveSisa)}.`};
-    }
-    return{ok:true,target:'drive',msg:''};
+  const sisa=STORAGE_LIMIT_BYTES-used;
+  if(fileSize>sisa){
+    return{ok:false,msg:`Ruang tidak cukup. File ini ${fmtSz(fileSize)} tapi hanya tersisa ${fmtSz(sisa)}.`};
   }
-
-  // R2 penuh, tidak ada Drive overflow
-  if(r2Full){
-    return{ok:false,msg:`Penyimpanan R2 penuh (${fmtSz(r2Used)} / ${fmtSz(r2LimitBytes)}). Tidak dapat mengupload dokumen baru.`};
-  }
-  return{ok:false,msg:`Ruang R2 tidak cukup. File: ${fmtSz(fileSize)}, sisa: ${fmtSz(r2Sisa)}.`};
+  return{ok:true,msg:''};
 }
 
 // ═══════════════════════════════
