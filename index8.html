@@ -2207,9 +2207,6 @@ async function saveR2(){
 //  GOOGLE DRIVE CONFIG
 // ═══════════════════════════════
 async function loadDriveConfig(){
-  // Cek sessionStorage cache dulu
-  const cached=sessionStorage.getItem('drivecfg_session');
-  if(cached){try{const d=JSON.parse(cached);if(d.serviceAccountJson){DRIVE={...DRIVE,...d};fillDriveFields();return;}}catch(e){}}
   try{
     const{data,error}=await sb.from('app_config').select('key,value').in('key',['driveJson','driveFolderId','driveLimitGb','driveAutoOverflow']);
     if(!error && data && data.length>0){
@@ -2221,22 +2218,8 @@ async function loadDriveConfig(){
       });
       DRIVE.configured=!!(DRIVE.serviceAccountJson && DRIVE.folderId);
       sessionStorage.setItem('drivecfg_session', JSON.stringify(DRIVE));
-      fillDriveFields();
-      return;
     }
-  }catch(e){ console.warn('loadDriveConfig direct error:',e.message); }
-  // Fallback RPC untuk user biasa (bypass RLS)
-  try{
-    const{data:rpcData,error:rpcErr}=await sb.rpc('get_drive_config');
-    if(!rpcErr && rpcData){
-      DRIVE.serviceAccountJson=rpcData.driveJson||'';
-      DRIVE.folderId=rpcData.driveFolderId||'';
-      DRIVE.limitGb=parseInt(rpcData.driveLimitGb)||10;
-      DRIVE.autoOverflow=rpcData.driveAutoOverflow==='true';
-      DRIVE.configured=!!(DRIVE.serviceAccountJson&&DRIVE.folderId);
-      sessionStorage.setItem('drivecfg_session',JSON.stringify(DRIVE));
-    }
-  }catch(e){ console.warn('loadDriveConfig RPC error:',e.message); }
+  }catch(e){ console.warn('loadDriveConfig error:',e.message); }
   fillDriveFields();
 }
 
@@ -3217,15 +3200,8 @@ async function openDokNewTab(r2Key, nama, driveFileId){
   try{
     toast('Menyiapkan file...','info');
     let blob;
-    if(driveFileId){
-      // File ada di Google Drive — pastikan konfigurasi Drive dimuat dulu
-      if(!DRIVE.serviceAccountJson){
-        // Coba muat config Drive langsung (untuk user biasa yang mungkin cache belum ada)
-        await ensureDriveConfig();
-      }
-      if(!DRIVE.serviceAccountJson){
-        throw new Error('File tersimpan di Google Drive namun konfigurasi Drive belum tersedia. Hubungi admin.');
-      }
+    if(driveFileId && DRIVE.configured){
+      // Ambil dari Google Drive
       const res=await driveDownload(driveFileId);
       blob=await res.blob();
     } else if(r2Key){
@@ -3244,45 +3220,6 @@ async function openDokNewTab(r2Key, nama, driveFileId){
     window.open(objUrl,'_blank');
     setTimeout(()=>URL.revokeObjectURL(objUrl),60000);
   }catch(e){toast('Gagal membuka file: '+e.message,'err');}
-}
-
-// Pastikan DRIVE config termuat — untuk user biasa yang mungkin RLS block app_config
-async function ensureDriveConfig(){
-  // Cek sessionStorage dulu
-  const cached=sessionStorage.getItem('drivecfg_session');
-  if(cached){
-    try{
-      const d=JSON.parse(cached);
-      if(d.serviceAccountJson){ DRIVE={...DRIVE,...d}; return; }
-    }catch(e){}
-  }
-  // Coba load via RPC (bypass RLS untuk user biasa)
-  try{
-    const{data,error}=await sb.rpc('get_drive_config');
-    if(!error && data){
-      DRIVE.serviceAccountJson=data.driveJson||'';
-      DRIVE.folderId=data.driveFolderId||'';
-      DRIVE.limitGb=parseInt(data.driveLimitGb)||10;
-      DRIVE.autoOverflow=data.driveAutoOverflow==='true';
-      DRIVE.configured=!!(DRIVE.serviceAccountJson&&DRIVE.folderId);
-      sessionStorage.setItem('drivecfg_session',JSON.stringify(DRIVE));
-      return;
-    }
-  }catch(e){ console.warn('ensureDriveConfig RPC error:',e.message); }
-  // Fallback: coba baca langsung (mungkin RLS mengizinkan SELECT)
-  try{
-    const{data,error}=await sb.from('app_config').select('key,value').in('key',['driveJson','driveFolderId','driveLimitGb','driveAutoOverflow']);
-    if(!error && data && data.length>0){
-      data.forEach(row=>{
-        if(row.key==='driveJson') DRIVE.serviceAccountJson=row.value||'';
-        if(row.key==='driveFolderId') DRIVE.folderId=row.value||'';
-        if(row.key==='driveLimitGb') DRIVE.limitGb=parseInt(row.value)||10;
-        if(row.key==='driveAutoOverflow') DRIVE.autoOverflow=row.value==='true';
-      });
-      DRIVE.configured=!!(DRIVE.serviceAccountJson&&DRIVE.folderId);
-      sessionStorage.setItem('drivecfg_session',JSON.stringify(DRIVE));
-    }
-  }catch(e){ console.warn('ensureDriveConfig direct error:',e.message); }
 }
 
 
@@ -3627,9 +3564,8 @@ async function doUserBackupR2(){
     const cached=localStorage.getItem('r2cfg');
     if(cached){try{R2={...R2,...JSON.parse(cached)};}catch(e){}}
   }
-  // Pastikan Drive config termuat (untuk file yang tersimpan di Drive)
-  if(!DRIVE.serviceAccountJson) await ensureDriveConfig();
-  // R2 tidak harus dikonfigurasi jika semua file di Drive — periksa saat iterasi
+  // R2 tidak harus dikonfigurasi jika semua file di Drive
+  // Periksa saat iterasi file nanti
   if(typeof JSZip==='undefined'){
     toast('JSZip belum termuat. Coba refresh halaman.','err');return;
   }
