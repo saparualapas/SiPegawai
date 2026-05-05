@@ -815,16 +815,6 @@ tbody td.wrap{white-space:normal;min-width:140px;}
           <div class="form-group"><label class="form-label">Bucket</label><input class="form-control" id="r2Bkt"/></div>
           <div class="form-group"><label class="form-label">Access Key</label><input class="form-control" id="r2AK" style="font-family:'JetBrains Mono',monospace;font-size:.79rem"/></div>
           <div class="form-group"><label class="form-label">Secret Key</label><input class="form-control" type="password" id="r2SK"/></div>
-          <div class="form-group"><label class="form-label">Batas Penyimpanan R2</label>
-            <div style="display:flex;gap:.5rem;align-items:center">
-              <input class="form-control" id="r2LimitVal" type="number" min="1" max="99999" value="8" style="max-width:100px" oninput="updateR2LimitPreview()"/>
-              <select class="form-control" id="r2LimitUnit" style="max-width:80px" onchange="updateR2LimitPreview()">
-                <option value="GB">GB</option>
-                <option value="MB">MB</option>
-              </select>
-              <span style="font-size:.8rem;color:var(--muted)" id="r2LimitPreview">= 8 GB</span>
-            </div>
-          </div>
           <button class="btn-p" onclick="saveR2()" style="width:100%;justify-content:center"><i class="fas fa-save"></i> Simpan R2</button>
           <div id="r2Stat" style="margin-top:.65rem;font-size:.79rem;color:var(--muted)"></div>
         </div></div>
@@ -1874,7 +1864,7 @@ async function enterApp(prof){
   // Load R2 dari sessionStorage cache dulu (cepat), lalu dari DB (lengkap)
   const r2Cached=sessionStorage.getItem('r2cfg_session');
   if(r2Cached){try{R2={...R2,...JSON.parse(r2Cached)};}catch(e){}}
-  await Promise.all([loadJabatan(),loadKategori(),loadR2(),loadDriveConfig(),loadR2Limit()]);
+  await Promise.all([loadJabatan(),loadKategori(),loadR2(),loadDriveConfig()]);
 
   if(prof.role==='admin'){
     const savedPage=sessionStorage.getItem('activePage');
@@ -2235,32 +2225,6 @@ function fillR2Fields(){
   if(ak) ak.value=R2.accessKey||'';
   if(st) st.textContent=R2.accountId?'✓ R2 sudah dikonfigurasi':'Belum dikonfigurasi';
   if(w) w.style.display=R2.accountId?'none':'flex';
-  // Isi limit R2
-  const limitBytes=R2_LIMIT_BYTES;
-  const lVal=document.getElementById('r2LimitVal');
-  const lUnit=document.getElementById('r2LimitUnit');
-  if(lVal&&lUnit){
-    const gb=limitBytes/(1024*1024*1024);
-    if(gb<1){ lVal.value=Math.round(gb*1024); lUnit.value='MB'; }
-    else { lVal.value=gb; lUnit.value='GB'; }
-    updateR2LimitPreview();
-  }
-}
-
-function updateR2LimitPreview(){
-  const val=parseFloat(document.getElementById('r2LimitVal')?.value)||0;
-  const unit=document.getElementById('r2LimitUnit')?.value||'GB';
-  const prev=document.getElementById('r2LimitPreview');
-  if(!prev) return;
-  const gbVal=unit==='MB'?(val/1024):val;
-  prev.textContent='= '+(gbVal<1?(Math.round(gbVal*1024)+' MB'):(gbVal.toFixed(gbVal%1===0?0:2)+' GB'));
-}
-
-function getR2LimitBytes(){
-  const val=parseFloat(document.getElementById('r2LimitVal')?.value)||8;
-  const unit=document.getElementById('r2LimitUnit')?.value||'GB';
-  const gb=unit==='MB'?val/1024:val;
-  return Math.round(gb*1024*1024*1024);
 }
 
 async function saveR2(){
@@ -2269,12 +2233,11 @@ async function saveR2(){
   const ak=document.getElementById('r2AK').value.trim();
   const sk=document.getElementById('r2SK').value.trim();
   if(!aid||!bkt||!ak||!sk){toast('Semua field R2 wajib diisi!','warn');return;}
-  const limitBytes=getR2LimitBytes();
   const btn=document.querySelector('button[onclick="saveR2()"]');
   if(btn) setBtn(btn,true);
   showActionSplash('Menyimpan konfigurasi R2...');
   let hasError=false;
-  const entries=[['accountId',aid],['bucket',bkt],['accessKey',ak],['secretKey',sk],['r2LimitBytes',String(limitBytes)]];
+  const entries=[['accountId',aid],['bucket',bkt],['accessKey',ak],['secretKey',sk]];
   for(const[k,v] of entries){
     const{error}=await sb.from('app_config').upsert({key:k,value:v},{onConflict:'key'});
     if(error){ console.error('saveR2 error:',k,error.message); hasError=true; }
@@ -2283,9 +2246,7 @@ async function saveR2(){
   hideActionSplash();
   if(hasError){ toast('Gagal simpan konfigurasi R2. Cek console.','err'); return; }
   R2={accountId:aid,bucket:bkt,accessKey:ak,secretKey:sk};
-  R2_LIMIT_BYTES=limitBytes;
   sessionStorage.setItem('r2cfg_session', JSON.stringify(R2));
-  renderStorageBar(currentStorageBytes);
   const st=document.getElementById('r2Stat');
   if(st) st.textContent='✓ R2 berhasil disimpan';
   toast('Konfigurasi R2 berhasil disimpan ✓','ok');
@@ -3638,41 +3599,31 @@ async function checkStorageOnUploadPage(){
     if(!DRIVE.serviceAccountJson) await ensureDriveConfig();
     const r2Used=await getStorageUsed();
     currentStorageBytes=r2Used;
-    renderStorageBar(r2Used);
     const r2LimitBytes=R2_LIMIT_BYTES;
     const driveGb=(DRIVE.limitGb&&DRIVE.limitGb>0)?DRIVE.limitGb:10;
     const driveLimitBytes=driveGb*1024*1024*1024;
+    const r2Full=(r2Used>=r2LimitBytes);
 
-    const btnUp=document.getElementById('btnUpload');
-    const enableBtn=()=>{if(btnUp){btnUp.disabled=false;btnUp.style.opacity='';btnUp.title='';}};
-    const disableBtn=(msg)=>{
-      showStorageBlockAlert(msg);
-      if(btnUp){btnUp.disabled=true;btnUp.style.opacity='0.4';btnUp.title='Penyimpanan penuh';}
-    };
-
-    if(DRIVE.configured && DRIVE.autoOverflow){
-      const driveUsed=await getDriveStorageUsedFromDB();
-      const r2Full=(r2Used>=r2LimitBytes);
-      const driveFull=(driveUsed>=driveLimitBytes);
-      if(r2Full && driveFull){
-        disableBtn(`🚫 Semua penyimpanan penuh! R2: ${fmtSz(r2Used)}/${fmtSz(r2LimitBytes)}, Drive: ${fmtSz(driveUsed)}/${fmtSz(driveLimitBytes)}. Hapus dokumen lama untuk memberi ruang.`);
-        return;
-      }
-      if(r2Full){
-        // R2 penuh tapi Drive masih ada — boleh upload (ke Drive)
-        showInlineAlert('upSuccessAlert',`⚠ R2 penuh — file akan disimpan ke Google Drive (sisa: ${fmtSz(driveLimitBytes-driveUsed)}).`,'warn');
-      }
-      if(driveFull && r2Full){
-        disableBtn(`🚫 Drive penuh (${fmtSz(driveUsed)}/${fmtSz(driveLimitBytes)}) dan R2 juga penuh. Upload tidak tersedia.`);
-        return;
-      }
-    } else {
-      if(r2Used>=r2LimitBytes){
-        disableBtn(`🚫 Penyimpanan R2 penuh (${fmtSz(r2Used)}/${fmtSz(r2LimitBytes)}). Upload tidak tersedia.`);
+    if(r2Full){
+      if(DRIVE.configured && DRIVE.autoOverflow){
+        const driveUsed=await getDriveStorageUsedFromDB();
+        if(driveUsed>=driveLimitBytes){
+          // Semua penuh — nonaktifkan tombol upload
+          showStorageBlockAlert(`🚫 Semua penyimpanan penuh! R2: ${fmtSz(r2Used)}/${fmtSz(r2LimitBytes)}, Drive: ${fmtSz(driveUsed)}/${fmtSz(driveLimitBytes)}. Hapus dokumen lama untuk memberi ruang.`);
+          const btnUp=document.getElementById('btnUpload');
+          if(btnUp){btnUp.disabled=true;btnUp.style.opacity='0.4';btnUp.title='Penyimpanan penuh';}
+          return;
+        }
+      } else if(!DRIVE.configured || !DRIVE.autoOverflow){
+        showStorageBlockAlert(`🚫 Penyimpanan R2 penuh (${fmtSz(r2Used)}/${fmtSz(r2LimitBytes)}). Upload tidak tersedia.`);
+        const btnUp=document.getElementById('btnUpload');
+        if(btnUp){btnUp.disabled=true;btnUp.style.opacity='0.4';btnUp.title='Penyimpanan penuh';}
         return;
       }
     }
-    enableBtn();
+    // Storage OK — pastikan tombol aktif
+    const btnUp=document.getElementById('btnUpload');
+    if(btnUp){btnUp.disabled=false;btnUp.style.opacity='';btnUp.title='';}
   }catch(e){ console.warn('checkStorageOnUploadPage error:',e.message); }
 }
 
@@ -4837,7 +4788,6 @@ async function loadR2Limit(){
     const{data}=await sb.from('app_config').select('value').eq('key','r2LimitBytes').single();
     if(data?.value) R2_LIMIT_BYTES=parseInt(data.value)||R2_LIMIT_BYTES;
   }catch(e){}
-  fillR2Fields(); // update UI preview setelah limit dimuat
 }
 
 // Hitung total storage R2 (hanya storage_type='r2')
@@ -4921,41 +4871,36 @@ async function cekStorageCukup(fileSize){
   renderStorageBar(r2Used);
 
   const r2LimitBytes=R2_LIMIT_BYTES;
+  // Pastikan limitGb valid — jika 0/NaN, pakai 10 GB sebagai default aman
   const driveGb=(DRIVE.limitGb && DRIVE.limitGb>0) ? DRIVE.limitGb : 10;
   const driveLimitBytes=driveGb*1024*1024*1024;
   const r2Sisa=r2LimitBytes-r2Used;
   const r2Full=(r2Sisa<=0);
   const r2TakCukup=(fileSize>r2Sisa);
 
-  // Jika Drive dikonfigurasi + autoOverflow aktif:
-  // Tentukan target berdasarkan R2 dulu, tapi SELALU validasi limit masing-masing
+  // Jika R2 cukup — upload ke R2
+  if(!r2Full && !r2TakCukup){
+    return{ok:true,target:'r2',msg:''};
+  }
+
+  // R2 penuh atau tidak cukup — cek apakah bisa overflow ke Drive
   if(DRIVE.configured && DRIVE.autoOverflow){
     const driveUsed=await getDriveStorageUsedFromDB();
     const driveSisa=driveLimitBytes-driveUsed;
-    const driveFull=(driveSisa<=0);
-
-    if(!r2Full && !r2TakCukup){
-      // R2 masih cukup → upload ke R2
-      return{ok:true,target:'r2',msg:''};
-    }
-    // R2 penuh/tidak cukup → coba Drive
-    if(driveFull){
-      return{ok:false,target:null,msg:`🚫 Semua penyimpanan penuh!\nR2: ${fmtSz(r2Used)} / ${fmtSz(r2LimitBytes)}\nDrive: ${fmtSz(driveUsed)} / ${fmtSz(driveLimitBytes)}\nHapus beberapa dokumen terlebih dahulu.`};
+    if(driveSisa<=0){
+      return{ok:false,target:null,msg:`🚫 Penyimpanan penuh! R2: ${fmtSz(r2Used)}/${fmtSz(r2LimitBytes)} dan Drive: ${fmtSz(driveUsed)}/${fmtSz(driveLimitBytes)}. Hapus beberapa dokumen terlebih dahulu.`};
     }
     if(fileSize>driveSisa){
-      return{ok:false,target:null,msg:`🚫 Drive tidak cukup. File: ${fmtSz(fileSize)}, sisa Drive: ${fmtSz(driveSisa)} / ${fmtSz(driveLimitBytes)}.`};
+      return{ok:false,target:null,msg:`🚫 Ruang Drive tidak cukup. File: ${fmtSz(fileSize)}, sisa Drive: ${fmtSz(driveSisa)} dari limit ${fmtSz(driveLimitBytes)}.`};
     }
     return{ok:true,target:'drive',msg:''};
   }
 
-  // Drive tidak dikonfigurasi atau autoOverflow mati — hanya R2
+  // R2 penuh, tidak ada Drive overflow
   if(r2Full){
     return{ok:false,target:null,msg:`🚫 Penyimpanan R2 penuh (${fmtSz(r2Used)} / ${fmtSz(r2LimitBytes)}). Hapus beberapa dokumen atau aktifkan overflow ke Drive.`};
   }
-  if(r2TakCukup){
-    return{ok:false,target:null,msg:`🚫 Ruang R2 tidak cukup. File: ${fmtSz(fileSize)}, sisa: ${fmtSz(r2Sisa)}.`};
-  }
-  return{ok:true,target:'r2',msg:''};
+  return{ok:false,target:null,msg:`🚫 Ruang R2 tidak cukup. File: ${fmtSz(fileSize)}, sisa: ${fmtSz(r2Sisa)}.`};
 }
 
 // ═══════════════════════════════
