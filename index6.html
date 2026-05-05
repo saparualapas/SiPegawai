@@ -863,7 +863,7 @@ tbody td.wrap{white-space:normal;min-width:140px;}
             </div>
             <div style="display:flex;gap:.7rem;flex-wrap:wrap">
               <button class="btn-p" onclick="backupR2Files()" id="btnBackupR2" style="flex:1;min-width:200px;justify-content:center;background:linear-gradient(135deg,#d97706,#b45309)">
-                <i class="fas fa-cloud-download-alt"></i> Download Semua File (.zip)
+                <i class="fas fa-cloud-download-alt"></i> Download Semua File R2 (.zip)
               </button>
               <button class="btn-s" onclick="backupR2ByPegawai()" id="btnBackupR2Peg" style="flex:1;min-width:200px;justify-content:center">
                 <i class="fas fa-user-circle"></i> Download per Pegawai (.zip)
@@ -2361,13 +2361,10 @@ async function getDriveToken(){
   throw new Error('Tipe konfigurasi tidak dikenal. Gunakan format oauth2 atau service_account.');
 }
 
-// ── Upload file ke Google Drive dengan struktur folder ────────────────────
-// drivePath: optional, e.g. 'NamaPegawai/KategoriDok' — akan dibuat sebagai nama deskriptif di Drive
-async function driveUpload(fileBuffer, fileName, mimeType, drivePath){
+// ── Upload file ke Google Drive ────────────────────────
+async function driveUpload(fileBuffer, fileName, mimeType){
   const token=await getDriveToken();
-  // Nama file di Drive: sertakan path agar mudah diidentifikasi
-  const driveFileName=drivePath ? drivePath.replace(/[\/\?%*:|"<>]/g,'_')+'__'+fileName : fileName;
-  const meta=JSON.stringify({name:driveFileName,parents:[DRIVE.folderId]});
+  const meta=JSON.stringify({name:fileName,parents:[DRIVE.folderId]});
   const boundary='sipegawai_boundary_'+Date.now();
   const bodyParts=[
     `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${meta}\r\n`,
@@ -2419,7 +2416,7 @@ async function migrateR2ToDrive(){
   if(btn) setBtn(btn,true,'<i class="fas fa-spin fa-spinner"></i> Memigrasikan...');
   toast('Memulai migrasi R2 → Drive...','info');
 
-  const{data:docs,error}=await sb.from('dokumen').select('id,r2_key,nama_file,ukuran_file,profiles:user_id(nama_lengkap),kategori_dokumen:kategori_id(nama)').eq('storage_type','r2').order('uploaded_at',{ascending:true});
+  const{data:docs,error}=await sb.from('dokumen').select('id,r2_key,nama_file,ukuran_file').eq('storage_type','r2').order('uploaded_at',{ascending:true});
   if(error||!docs||!docs.length){
     toast('Tidak ada file R2 yang perlu dimigrasi.','info');
     if(btn) setBtn(btn,false,'<i class="fas fa-exchange-alt"></i> Pindahkan R2 ke Drive');
@@ -2436,10 +2433,8 @@ async function migrateR2ToDrive(){
       if(!r2Res.ok) throw new Error('R2 fetch gagal: '+r2Res.status);
       const buf=await r2Res.arrayBuffer();
 
-      // Upload ke Drive dengan nama deskriptif: NamaPegawai/KategoriDok__NamaFile
-      const pegNama=(doc.profiles?.nama_lengkap||'Unknown').replace(/[^a-zA-Z0-9_ ]/g,'_');
-      const katNama=(doc.kategori_dokumen?.nama||'Lainnya').replace(/[^a-zA-Z0-9_ ]/g,'_');
-      const driveFileId=await driveUpload(buf,doc.nama_file||doc.r2_key.split('/').pop(),'application/octet-stream',`${pegNama}/${katNama}`);
+      // Upload ke Drive
+      const driveFileId=await driveUpload(buf,doc.nama_file||doc.r2_key.split('/').pop(),'application/octet-stream');
 
       // Update database
       await sb.from('dokumen').update({storage_type:'drive',drive_file_id:driveFileId,drive_folder_id:DRIVE.folderId}).eq('id',doc.id);
@@ -3090,7 +3085,7 @@ async function loadDokUser(katId=null,p=1){
         </div>
       </div>
       <div style="display:flex;gap:.35rem;flex-shrink:0">
-        <button class="btn-ok" data-r2="${d.r2_key||''}" data-drive="${d.drive_file_id||''}" data-nama="${encodeURIComponent(d.nama_file)}" onclick="openDokNewTab(this.dataset.r2,decodeURIComponent(this.dataset.nama),this.dataset.drive)" title="Buka/Download"><i class="fas fa-download"></i> Buka</button>
+        <button class="btn-ok" data-r2="${d.r2_key}" data-nama="${encodeURIComponent(d.nama_file)}" onclick="openDokNewTab(this.dataset.r2,decodeURIComponent(this.dataset.nama))" title="Buka/Download"><i class="fas fa-download"></i> Buka</button>
         <button class="btn-icon" data-id="${d.id}" data-nama="${encodeURIComponent(d.nama_file)}" data-kat="${d.kategori_id||''}" data-ket="${encodeURIComponent(d.keterangan||'')}" onclick="openEditDok(this.dataset.id,decodeURIComponent(this.dataset.nama),this.dataset.kat,decodeURIComponent(this.dataset.ket))" title="Edit"><i class="fas fa-edit" style="color:var(--accent)"></i></button>
         <button class="btn-icon" data-id="${d.id}" data-nama="${encodeURIComponent(d.nama_file)}" onclick="konfirmHapusDok(this)" title="Hapus"><i class="fas fa-trash" style="color:var(--danger)"></i></button>
       </div>
@@ -3352,9 +3347,7 @@ async function doUpload(){
     const r2IsFull=stor && (stor.used+fileBuffer.byteLength > 8*1024*1024*1024);
     if(r2IsFull && DRIVE.configured && DRIVE.autoOverflow){
       setPrg(20,'R2 penuh — mengunggah ke Google Drive...');
-      const katNama=allKategori.find(k=>k.id===katId)?.nama||'Lainnya';
-      const pegNama=(CP?.nama_lengkap||CU.id).replace(/[^a-zA-Z0-9_ ]/g,'_');
-      driveFileId=await driveUpload(fileBuffer,upFile.name,upFile.type||'application/octet-stream',`${pegNama}/${katNama}`);
+      driveFileId=await driveUpload(fileBuffer,upFile.name,upFile.type||'application/octet-stream');
       storageType='drive';
     } else {
       setPrg(20,'Mengunggah ke Cloudflare R2...');
@@ -3504,16 +3497,11 @@ async function loadUserBackupPage(){
   const stat=document.getElementById('userBackupStat');
   if(!stat) return;
 
-  // Cek R2 configured — tapi jangan disable kalau ada file Drive juga
+  // Cek R2 configured
   if(!R2.accountId||!R2.accessKey||!R2.secretKey||!R2.bucket){
-    // Cek apakah ada file di Drive
-    const{data:driveDocs}=await sb.from('dokumen').select('id').eq('user_id',CU.id).eq('storage_type','drive');
-    if(!driveDocs||!driveDocs.length){
-      stat.innerHTML='<span style="color:var(--danger)"><i class="fas fa-exclamation-circle"></i> R2 belum dikonfigurasi oleh admin. Hubungi administrator.</span>';
-      document.getElementById('btnUserBackup').disabled=true;
-      return;
-    }
-    // Ada file di Drive — lanjutkan tapi tampilkan peringatan R2
+    stat.innerHTML='<span style="color:var(--danger)"><i class="fas fa-exclamation-circle"></i> R2 belum dikonfigurasi oleh admin. Hubungi administrator.</span>';
+    document.getElementById('btnUserBackup').disabled=true;
+    return;
   }
 
   // Ambil statistik dokumen milik user ini
@@ -3528,8 +3516,6 @@ async function loadUserBackupPage(){
 
   const totalDok=docs?.length||0;
   const totalSize=(docs||[]).reduce((s,d)=>s+(d.ukuran_file||0),0);
-  const driveCount=(docs||[]).filter(d=>d.storage_type==='drive').length;
-  const r2Count=(docs||[]).filter(d=>!d.storage_type||d.storage_type==='r2').length;
 
   if(totalDok===0){
     stat.innerHTML='<i class="fas fa-info-circle" style="color:var(--muted)"></i> Anda belum memiliki dokumen yang tersimpan.';
@@ -3538,11 +3524,11 @@ async function loadUserBackupPage(){
     return;
   }
 
-  let statParts=['<i class="fas fa-file-alt" style="color:var(--accent2)"></i> <strong>'+totalDok+'</strong> dokumen &nbsp;·&nbsp; Total: <strong>'+fmtSz(totalSize)+'</strong>'];
-  if(r2Count>0) statParts.push('<i class="fas fa-cloud" style="color:var(--warn)"></i> R2: <strong>'+r2Count+'</strong> file');
-  if(driveCount>0) statParts.push('<i class="fab fa-google-drive" style="color:#0F9D58"></i> Drive: <strong>'+driveCount+'</strong> file');
-  if(driveCount>0 && !DRIVE.configured) statParts.push('<span style="color:var(--danger)">⚠ Drive belum dikonfigurasi admin</span>');
-  stat.innerHTML=statParts.join(' &nbsp;·&nbsp; ');
+  stat.innerHTML=
+    '<i class="fas fa-file-alt" style="color:var(--accent2)"></i> '
+    +'<strong>'+totalDok+'</strong> dokumen &nbsp;·&nbsp; '
+    +'Total ukuran: <strong>'+fmtSz(totalSize)+'</strong> &nbsp;·&nbsp; '
+    +'<span style="color:var(--accent2)">R2 terkonfigurasi ✓</span>';
   document.getElementById('btnUserBackup').disabled=false;
   document.getElementById('btnUserBackup').style.opacity='1';
 }
@@ -3564,8 +3550,9 @@ async function doUserBackupR2(){
     const cached=localStorage.getItem('r2cfg');
     if(cached){try{R2={...R2,...JSON.parse(cached)};}catch(e){}}
   }
-  // R2 tidak harus dikonfigurasi jika semua file di Drive
-  // Periksa saat iterasi file nanti
+  if(!R2.accountId||!R2.accessKey||!R2.secretKey||!R2.bucket){
+    toast('R2 belum dikonfigurasi oleh admin!','err');return;
+  }
   if(typeof JSZip==='undefined'){
     toast('JSZip belum termuat. Coba refresh halaman.','err');return;
   }
@@ -3626,7 +3613,7 @@ async function doUserBackupR2(){
   }
 
   for(const doc of docs){
-    if(!doc.r2_key && !doc.drive_file_id){
+    if(!doc.r2_key){
       failed++;done++;
       failedFiles.push(doc.nama_file||'?');
       continue;
@@ -3635,10 +3622,10 @@ async function doUserBackupR2(){
       const pct=Math.round((done/total)*88);
       setUserBackupPrg(pct,
         'Mengunduh '+( done+1)+' dari '+total+'...',
-        doc.nama_file||(doc.r2_key||doc.drive_file_id)
+        doc.nama_file||doc.r2_key
       );
 
-      // Generate fresh signed URL — support R2 dan Drive
+      // Generate fresh signed URL
       const url=await getSignedUrl(doc.r2_key, doc.drive_file_id);
       const res=await fetchFile(url);
       const blob=await res.blob();
@@ -3661,12 +3648,7 @@ async function doUserBackupR2(){
 
   if(ok===0){
     setUserBackupPrg(0,'Tidak ada file yang berhasil diunduh');
-    const hasDrive=docs.some(d=>d.drive_file_id);
-    const hasR2=docs.some(d=>d.r2_key);
-    let errMsg='Tidak ada file yang berhasil diunduh.';
-    if(hasDrive && !DRIVE.configured) errMsg+=' Beberapa file tersimpan di Google Drive — minta admin untuk mengonfigurasi Drive.';
-    else if(hasR2) errMsg+=' Pastikan CORS Worker R2 sudah dikonfigurasi dengan benar.';
-    resultEl.innerHTML='<div class="alert-danger alert-box" style="margin-top:.5rem"><i class="fas fa-times-circle"></i><div>'+errMsg+'</div></div>';
+    resultEl.innerHTML='<div class="alert-danger alert-box" style="margin-top:.5rem"><i class="fas fa-times-circle"></i><div>Tidak ada file yang berhasil diunduh. Pastikan aplikasi diakses melalui server (bukan file://) dan CORS R2 sudah dikonfigurasi.</div></div>';
     prgWrap.style.display='none';
     setBtn(btn,false,'<i class="fas fa-cloud-download-alt"></i> Download Semua File Saya (.zip)');
     return;
@@ -3726,31 +3708,20 @@ async function loadBackupPage(){
     sb.from('profiles').select('*',{count:'exact',head:true}).neq('role','admin')
   ]);
 
-  // Gunakan getStorageUsed() untuk perhitungan presisi (hanya R2)
+  // Gunakan getStorageUsed() untuk perhitungan presisi (paginasi semua row)
   const totalBytes=await getStorageUsed();
   currentStorageBytes=totalBytes;
   renderStorageBar(totalBytes); // Sinkronkan storage bar di dashboard
 
-  // Hitung Drive bytes terpisah
-  const{data:allDokSizes}=await sb.from('dokumen').select('ukuran_file,storage_type');
-  const driveBytes=(allDokSizes||[]).filter(d=>d.storage_type==='drive').reduce((s,d)=>s+(d.ukuran_file||0),0);
-
   document.getElementById('backupDokStat').innerHTML=
-    `<i class="fas fa-file-alt" style="color:var(--accent2)"></i> <strong>${dokCount||0}</strong> dokumen &nbsp;·&nbsp; R2: <strong>${fmtSz(totalBytes)}</strong>${DRIVE.configured?' &nbsp;·&nbsp; <i class="fab fa-google-drive" style="color:#0F9D58"></i> Drive: <strong>'+fmtSz(driveBytes)+'</strong>':''}`;
+    `<i class="fas fa-file-alt" style="color:var(--accent2)"></i> <strong>${dokCount||0}</strong> dokumen terdaftar &nbsp;·&nbsp; Total: <strong>${fmtSz(totalBytes)}</strong>`;
   document.getElementById('backupPegStat').innerHTML=
     `<i class="fas fa-users" style="color:var(--navy)"></i> <strong>${pegCount||0}</strong> pegawai terdaftar`;
 
-  // Stat R2 — pisahkan R2 vs Drive
-  const{data:storStats}=await sb.from('dokumen').select('storage_type,ukuran_file');
-  const r2Docs=(storStats||[]).filter(d=>!d.storage_type||d.storage_type==='r2');
-  const driveDocs=(storStats||[]).filter(d=>d.storage_type==='drive');
-  const r2Bytes=r2Docs.reduce((s,d)=>s+(d.ukuran_file||0),0);
-  const driveBytes=driveDocs.reduce((s,d)=>s+(d.ukuran_file||0),0);
+  // Stat R2
   const r2Configured = R2.accountId && R2.accessKey && R2.secretKey && R2.bucket;
   document.getElementById('r2BackupStat').innerHTML = r2Configured
-    ? `<i class="fas fa-cloud" style="color:var(--warn)"></i> R2: <strong>${r2Docs.length}</strong> file (<strong>${fmtSz(r2Bytes)}</strong>)`
-      +(driveDocs.length ? ` &nbsp;·&nbsp; <i class="fab fa-google-drive" style="color:#0F9D58"></i> Drive: <strong>${driveDocs.length}</strong> file (<strong>${fmtSz(driveBytes)}</strong>)` : '')
-      +` &nbsp;·&nbsp; <span style="color:var(--accent2)">R2 terkonfigurasi ✓</span>`
+    ? `<i class="fas fa-cloud" style="color:var(--warn)"></i> <strong>${dokCount||0}</strong> file tersimpan di R2 &nbsp;·&nbsp; Total ukuran: <strong>${fmtSz(totalBytes)}</strong> &nbsp;·&nbsp; <span style="color:var(--accent2)">R2 terkonfigurasi ✓</span>`
     : `<i class="fas fa-exclamation-triangle" style="color:var(--danger)"></i> <span style="color:var(--danger)">R2 belum dikonfigurasi — backup tidak tersedia</span>`;
 
   // Isi dropdown pegawai untuk backup per pegawai
@@ -4037,14 +4008,14 @@ async function backupR2Files(){
   const{data:docs,error}=await sb.from('dokumen')
     .select('nama_file,r2_key,drive_file_id,storage_type,kategori_dokumen:kategori_id(nama),profiles:user_id(nama_lengkap)')
     .order('profiles(nama_lengkap)',{ascending:true});
-  setBtn(btn,false,'<i class="fas fa-cloud-download-alt"></i> Download Semua File (.zip)');
+  setBtn(btn,false,'<i class="fas fa-cloud-download-alt"></i> Download Semua File R2 (.zip)');
   if(error){toast('Gagal mengambil data: '+error.message,'err');return;}
   if(!docs||!docs.length){toast('Belum ada dokumen yang tersimpan di database.','warn');return;}
-  const valid=docs.filter(d=>d.r2_key||d.drive_file_id);
-  if(!valid.length){toast('Semua dokumen tidak memiliki file yang valid (r2_key/drive_file_id).','err');return;}
+  const valid=docs.filter(d=>d.r2_key);
+  if(!valid.length){toast('Semua dokumen tidak memiliki r2_key yang valid.','err');return;}
   const ts=new Date().toISOString().slice(0,10);
   toast(`Memulai download ${valid.length} file...`,'info');
-  await _doR2Zip(valid,`backup_semua_${ts}.zip`,'r2','Semua');
+  await _doR2Zip(docs,`backup_r2_semua_${ts}.zip`,'r2','Semua');
 }
 
 async function _doR2Zip(docs, zipFilename, logType, label){
@@ -4093,7 +4064,7 @@ async function _doR2Zip(docs, zipFilename, logType, label){
   }
 
   for(const doc of docs){
-    if(!doc.r2_key && !doc.drive_file_id){
+    if(!doc.r2_key){
       failed++;done++;
       failedFiles.push(doc.nama_file||'?');
       continue;
@@ -4103,10 +4074,10 @@ async function _doR2Zip(docs, zipFilename, logType, label){
       setR2BackupPrg(
         pct,
         `Mengunduh ${done+1} dari ${total}...`,
-        `${doc.profiles?.nama_lengkap||'—'} › ${doc.nama_file||(doc.r2_key||doc.drive_file_id)}`
+        `${doc.profiles?.nama_lengkap||'—'} › ${doc.nama_file||doc.r2_key}`
       );
 
-      // Generate fresh signed URL setiap file agar tidak expired (support R2+Drive)
+      // Generate fresh signed URL setiap file agar tidak expired
       const url=await getSignedUrl(doc.r2_key, doc.drive_file_id);
 
       // Fetch dengan retry
@@ -4136,12 +4107,7 @@ async function _doR2Zip(docs, zipFilename, logType, label){
   // Jika tidak ada file yang berhasil didownload
   if(ok===0){
     setR2BackupPrg(0,'Tidak ada file yang berhasil diunduh');
-    const hasDrive=docs.some(d=>d.drive_file_id);
-    const hasR2=docs.some(d=>d.r2_key);
-    let errMsg='Tidak ada file yang berhasil diunduh dari penyimpanan.';
-    if(hasDrive && !DRIVE.configured) errMsg+=' Beberapa file ada di Google Drive — konfigurasi Drive di Pengaturan.';
-    else if(hasR2) errMsg+=' Cek konfigurasi CORS dan Worker R2.';
-    toast(errMsg,'err');
+    toast('Tidak ada file yang berhasil diunduh dari R2. Cek konfigurasi CORS dan API Token.','err');
     if(failedFiles.length){
       console.error('Semua file gagal:',failedFiles);
     }
@@ -4458,16 +4424,12 @@ async function doUploadAdmin(){
     // ── Cek overflow ke Drive ──
     let storageType='r2';
     let driveFileId=null;
-    const{data:storRows}=await sb.from('dokumen').select('ukuran_file,storage_type');
-    const totalUsed=(storRows||[]).filter(d=>!d.storage_type||d.storage_type==='r2').reduce((s,d)=>s+(d.ukuran_file||0),0);
+    const{data:storRows}=await sb.from('dokumen').select('ukuran_file');
+    const totalUsed=(storRows||[]).reduce((s,d)=>s+(d.ukuran_file||0),0);
     const r2IsFull=(totalUsed+fileBuffer.byteLength > 8*1024*1024*1024);
     if(r2IsFull && DRIVE.configured && DRIVE.autoOverflow){
       setPrgAdmin(25,'R2 penuh — mengunggah ke Google Drive...');
-      const katNamaUpload=allKategori.find(k=>k.id===katId)?.nama||'Lainnya';
-      // Ambil nama pegawai untuk path Drive
-      const{data:pegRow}=await sb.from('profiles').select('nama_lengkap').eq('id',pegId).single();
-      const pegNamaUpload=(pegRow?.nama_lengkap||pegId).replace(/[^a-zA-Z0-9_ ]/g,'_');
-      driveFileId=await driveUpload(fileBuffer,upAdminFile.name,upAdminFile.type||'application/octet-stream',`${pegNamaUpload}/${katNamaUpload}`);
+      driveFileId=await driveUpload(fileBuffer,upAdminFile.name,upAdminFile.type||'application/octet-stream');
       storageType='drive';
     } else {
       setPrgAdmin(25,'Mengunggah ke Cloudflare R2...');
@@ -4562,18 +4524,19 @@ const STORAGE_LIMIT_BYTES = 8 * 1024 * 1024 * 1024; // 8 GB tepat
 const STORAGE_WARN_BYTES  = 7 * 1024 * 1024 * 1024; // Peringatan mulai 7 GB
 let   currentStorageBytes = 0; // cache, diupdate setiap loadDash + upload/hapus
 
-// Hitung total storage R2 dari kolom ukuran_file di database
-// (hanya file storage_type='r2' — file di Drive tidak dihitung ke kuota R2)
+// Hitung total storage dari kolom ukuran_file di database
+// (presisi 100% karena ukuran_file diisi saat upload dari upFile.size — byte eksak)
 async function getStorageUsed(){
   // Ambil SEMUA ukuran_file sekaligus (tidak pakai pagination)
+  // Supabase mengembalikan max 1000 row per request, pakai range
   let total=0, from=0, done=false;
   while(!done){
     const{data,error}=await sb.from('dokumen')
-      .select('ukuran_file,storage_type')
+      .select('ukuran_file')
       .range(from, from+999);
     if(error) throw error;
     if(!data||data.length===0){done=true;break;}
-    data.forEach(d=>{ if(!d.storage_type||d.storage_type==='r2') total+=(d.ukuran_file||0); });
+    data.forEach(d=>{ total+=(d.ukuran_file||0); });
     if(data.length<1000) done=true;
     else from+=1000;
   }
@@ -4607,9 +4570,9 @@ function renderStorageBar(usedBytes){
   else               bar.classList.add('safe');
 
   // Update teks
-  document.getElementById('storageUsed').textContent='R2 terpakai: '+fmtSz(usedBytes);
+  document.getElementById('storageUsed').textContent='Terpakai: '+fmtSz(usedBytes);
   document.getElementById('storagePct').textContent=pct.toFixed(1)+'%';
-  document.getElementById('storageText').textContent='R2: '+fmtSz(usedBytes)+' / 8 GB';
+  document.getElementById('storageText').textContent=fmtSz(usedBytes)+' / 8 GB';
 
   // Alert peringatan
   if(usedBytes>=STORAGE_LIMIT_BYTES){
