@@ -104,26 +104,10 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
 .storage-limit-warn{display:flex;align-items:center;gap:.5rem;background:#fef3c7;border:1px solid #f59e0b;border-radius:10px;padding:.55rem .875rem;margin-top:.6rem;font-size:.8rem;color:#92400e;font-weight:600;}
 .storage-limit-danger{display:flex;align-items:center;gap:.5rem;background:#fde8e8;border:1px solid var(--danger);border-radius:10px;padding:.55rem .875rem;margin-top:.6rem;font-size:.8rem;color:var(--danger);font-weight:600;}
 
-/* ACTION SPLASH — overlay loading saat proses CRUD */
-#actionSplash{
-  display:none;position:fixed;inset:0;z-index:9500;
-  background:rgba(10,35,66,.55);backdrop-filter:blur(3px);
-  align-items:center;justify-content:center;flex-direction:column;gap:1rem;
-}
-#actionSplash.show{display:flex;}
-.asp-card{
-  background:#fff;border-radius:18px;padding:1.75rem 2.25rem;
-  display:flex;align-items:center;gap:1rem;
-  box-shadow:0 12px 48px rgba(10,35,66,.22);
-  min-width:220px;max-width:340px;
-}
-.asp-spin{
-  width:32px;height:32px;flex-shrink:0;
-  border:3px solid var(--border);border-top-color:var(--accent);
-  border-radius:50%;animation:spin .7s linear infinite;
-}
-.asp-txt{font-size:.92rem;font-weight:600;color:var(--navy);line-height:1.35;}
-.asp-sub{font-size:.75rem;color:var(--muted);margin-top:.15rem;}
+/* HONEYPOT */
+.hp-field{position:absolute;left:-9999px;top:-9999px;opacity:0;pointer-events:none;height:0;overflow:hidden;}
+
+/* PASSWORD TOGGLE */
 .pw-wrap{position:relative;}
 .pw-wrap .form-control{padding-right:2.6rem;}
 .pw-toggle{position:absolute;right:.75rem;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;padding:.2rem;font-size:.9rem;line-height:1;display:flex;align-items:center;justify-content:center;}
@@ -428,17 +412,6 @@ tbody td.wrap{white-space:normal;min-width:140px;}
   <div class="sp-name">SiPegawai</div>
   <div class="sp-sub">Sistem Arsip Pegawai</div>
   <div class="sp-spin"></div>
-</div>
-
-<!-- ACTION SPLASH — loading overlay untuk proses CRUD -->
-<div id="actionSplash">
-  <div class="asp-card">
-    <div class="asp-spin"></div>
-    <div>
-      <div class="asp-txt" id="aspTxt">Menyimpan data...</div>
-      <div class="asp-sub" id="aspSub">Mohon tunggu sebentar</div>
-    </div>
-  </div>
 </div>
 
 <!-- AUTH -->
@@ -832,12 +805,8 @@ tbody td.wrap{white-space:normal;min-width:140px;}
           <div class="form-group"><label class="form-label">Folder ID Google Drive <span style="font-size:.72rem;color:var(--muted)">(dari URL: drive.google.com/drive/folders/<strong>ID_INI</strong>)</span></label><input class="form-control" id="driveFolderId" style="font-family:'JetBrains Mono',monospace;font-size:.79rem" placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms"/></div>
           <div class="form-group"><label class="form-label">Batas Penyimpanan Drive</label>
             <div style="display:flex;gap:.5rem;align-items:center">
-              <input class="form-control" id="driveLimitVal" type="number" min="1" max="99999" value="10" style="max-width:100px"/>
-              <select class="form-control" id="driveLimitUnit" style="max-width:80px">
-                <option value="GB">GB</option>
-                <option value="MB">MB</option>
-              </select>
-              <span style="font-size:.8rem;color:var(--muted)" id="driveLimitPreview">= 10 GB</span>
+              <input class="form-control" id="driveLimitGb" type="number" min="1" max="1000" value="10" style="max-width:100px"/>
+              <span style="font-size:.84rem;color:var(--muted)">GB (max per folder)</span>
             </div>
           </div>
           <div class="form-group"><label class="form-label" style="display:flex;align-items:center;gap:.5rem;cursor:pointer">
@@ -1443,20 +1412,6 @@ function dClr(n){const e=(n||'').split('.').pop().toLowerCase();return e==='pdf'
 function dBg(n){const e=(n||'').split('.').pop().toLowerCase();return e==='pdf'?'var(--danger-l)':['jpg','jpeg','png'].includes(e)?'var(--accent2-l)':'var(--accent-l)';}
 function setBtn(btn,loading,html=''){btn.disabled=loading;if(loading)btn.innerHTML='<div class="spinner" style="width:16px;height:16px;border-width:2px;border-top-color:currentColor;display:inline-block"></div>';else if(html)btn.innerHTML=html;}
 function hideSplash(){const s=document.getElementById('splash');if(s){s.style.opacity='0';s.style.transition='opacity .3s';setTimeout(()=>s.style.display='none',350);}}
-
-// ACTION SPLASH — tampil saat proses CRUD (tambah/edit/hapus)
-function showActionSplash(txt='Memproses...', sub='Mohon tunggu sebentar'){
-  const el=document.getElementById('actionSplash');
-  const t=document.getElementById('aspTxt');
-  const s=document.getElementById('aspSub');
-  if(t) t.textContent=txt;
-  if(s) s.textContent=sub;
-  if(el) el.classList.add('show');
-}
-function hideActionSplash(){
-  const el=document.getElementById('actionSplash');
-  if(el) el.classList.remove('show');
-}
 
 function skel(cid,rows=5){
   const el=document.getElementById(cid);if(!el)return;
@@ -2082,19 +2037,15 @@ async function saveJab(){
   const nama=document.getElementById('mJabNama').value.trim();
   if(!nama){toast('Nama jabatan wajib diisi!','warn');return;}
   const eid=document.getElementById('mJabId').value;
-  showActionSplash(eid?'Memperbarui jabatan...':'Menambah jabatan...');
   const pay={nama};
   const{error}=eid?await sb.from('jabatan').update(pay).eq('id',eid):await sb.from('jabatan').insert(pay);
-  hideActionSplash();
   if(error){toast('Gagal: '+error.message,'err');return;}
   closeM('mJabatan');toast((eid?'Jabatan diperbarui':'Jabatan ditambahkan')+' ✓','ok');
   await loadJabatan();loadJabPage();
 }
 
 async function delJab(id){
-  showActionSplash('Menghapus jabatan...','Data akan dihapus permanen');
   await sb.from('jabatan').delete().eq('id',id);
-  hideActionSplash();
   toast('Jabatan dihapus','info');await loadJabatan();loadJabPage();
 }
 
@@ -2153,19 +2104,15 @@ async function saveKat(){
   const nama=document.getElementById('mKatNama').value.trim();
   if(!nama){toast('Nama kategori wajib diisi!','warn');return;}
   const eid=document.getElementById('mKatId').value;
-  showActionSplash(eid?'Memperbarui kategori...':'Menambah kategori...');
   const pay={nama,deskripsi:document.getElementById('mKatDesk').value};
   const{error}=eid?await sb.from('kategori_dokumen').update(pay).eq('id',eid):await sb.from('kategori_dokumen').insert(pay);
-  hideActionSplash();
   if(error){toast('Gagal: '+error.message,'err');return;}
   closeM('mKategori');toast((eid?'Kategori diperbarui':'Kategori ditambahkan')+' ✓','ok');
   await loadKategori();loadKatPage();
 }
 
 async function delKat(id){
-  showActionSplash('Menghapus kategori...','Data akan dihapus permanen');
   await sb.from('kategori_dokumen').delete().eq('id',id);
-  hideActionSplash();
   toast('Kategori dihapus','info');await loadKategori();loadKatPage();
 }
 
@@ -2234,16 +2181,19 @@ async function saveR2(){
   if(!aid||!bkt||!ak||!sk){toast('Semua field R2 wajib diisi!','warn');return;}
   const btn=document.querySelector('button[onclick="saveR2()"]');
   if(btn) setBtn(btn,true);
-  showActionSplash('Menyimpan konfigurasi R2...');
   let hasError=false;
+  // Simpan satu per satu dengan error handling
   const entries=[['accountId',aid],['bucket',bkt],['accessKey',ak],['secretKey',sk]];
   for(const[k,v] of entries){
     const{error}=await sb.from('app_config').upsert({key:k,value:v},{onConflict:'key'});
     if(error){ console.error('saveR2 error:',k,error.message); hasError=true; }
   }
   if(btn) setBtn(btn,false,'<i class="fas fa-save"></i> Simpan R2');
-  hideActionSplash();
-  if(hasError){ toast('Gagal simpan konfigurasi R2. Cek console.','err'); return; }
+  if(hasError){
+    toast('Gagal simpan konfigurasi R2. Cek console.','err');
+    return;
+  }
+  // Update R2 object di memory dan sessionStorage (bukan localStorage)
   R2={accountId:aid,bucket:bkt,accessKey:ak,secretKey:sk};
   sessionStorage.setItem('r2cfg_session', JSON.stringify(R2));
   const st=document.getElementById('r2Stat');
@@ -2266,7 +2216,7 @@ async function loadDriveConfig(){
       data.forEach(row=>{
         if(row.key==='driveJson') DRIVE.serviceAccountJson=row.value||'';
         if(row.key==='driveFolderId') DRIVE.folderId=row.value||'';
-        if(row.key==='driveLimitGb') DRIVE.limitGb=parseFloat(row.value)||10;
+        if(row.key==='driveLimitGb') DRIVE.limitGb=parseInt(row.value)||10;
         if(row.key==='driveAutoOverflow') DRIVE.autoOverflow=row.value==='true';
       });
       DRIVE.configured=!!(DRIVE.serviceAccountJson && DRIVE.folderId);
@@ -2281,7 +2231,7 @@ async function loadDriveConfig(){
     if(!rpcErr && rpcData){
       DRIVE.serviceAccountJson=rpcData.driveJson||'';
       DRIVE.folderId=rpcData.driveFolderId||'';
-      DRIVE.limitGb=parseFloat(rpcData.driveLimitGb)||10;
+      DRIVE.limitGb=parseInt(rpcData.driveLimitGb)||10;
       DRIVE.autoOverflow=rpcData.driveAutoOverflow==='true';
       DRIVE.configured=!!(DRIVE.serviceAccountJson&&DRIVE.folderId);
       sessionStorage.setItem('drivecfg_session',JSON.stringify(DRIVE));
@@ -2293,67 +2243,35 @@ async function loadDriveConfig(){
 function fillDriveFields(){
   const jEl=document.getElementById('driveJson');
   const fEl=document.getElementById('driveFolderId');
-  const lValEl=document.getElementById('driveLimitVal');
-  const lUnitEl=document.getElementById('driveLimitUnit');
+  const lEl=document.getElementById('driveLimitGb');
   const aEl=document.getElementById('driveAutoOverflow');
   const stEl=document.getElementById('driveStat');
   if(jEl) jEl.value=DRIVE.serviceAccountJson||'';
   if(fEl) fEl.value=DRIVE.folderId||'';
-  // Tampilkan limit: jika < 1 GB tampilkan dalam MB
-  if(lValEl && lUnitEl){
-    const gb=DRIVE.limitGb||10;
-    if(gb<1){
-      lValEl.value=Math.round(gb*1024);
-      lUnitEl.value='MB';
-    } else {
-      lValEl.value=gb;
-      lUnitEl.value='GB';
-    }
-    updateDriveLimitPreview();
-    lValEl.oninput=updateDriveLimitPreview;
-    lUnitEl.onchange=updateDriveLimitPreview;
-  }
+  if(lEl) lEl.value=DRIVE.limitGb||10;
   if(aEl) aEl.checked=DRIVE.autoOverflow||false;
   if(stEl) stEl.textContent=DRIVE.configured?'✓ Google Drive sudah dikonfigurasi':'Belum dikonfigurasi';
   if(DRIVE.configured) refreshDriveStorageUI();
 }
 
-function updateDriveLimitPreview(){
-  const val=parseFloat(document.getElementById('driveLimitVal')?.value)||0;
-  const unit=document.getElementById('driveLimitUnit')?.value||'GB';
-  const prev=document.getElementById('driveLimitPreview');
-  if(!prev)return;
-  const gbVal=unit==='MB'?(val/1024):val;
-  if(gbVal<1) prev.textContent='= '+Math.round(gbVal*1024)+' MB';
-  else prev.textContent='= '+gbVal.toFixed(gbVal%1===0?0:2)+' GB';
-}
-
-function getDriveLimitGb(){
-  const val=parseFloat(document.getElementById('driveLimitVal')?.value)||10;
-  const unit=document.getElementById('driveLimitUnit')?.value||'GB';
-  return unit==='MB'?val/1024:val;
-}
-
 async function saveDriveConfig(){
   const json=document.getElementById('driveJson').value.trim();
   const fid=document.getElementById('driveFolderId').value.trim();
-  const lgb=getDriveLimitGb(); // dalam GB (float), support MB input
+  const lgb=document.getElementById('driveLimitGb').value.trim();
   const auto=document.getElementById('driveAutoOverflow').checked;
   if(!json||!fid){toast('Service Account JSON dan Folder ID wajib diisi!','warn');return;}
   try{ JSON.parse(json); }catch(e){toast('Service Account JSON tidak valid!','err');return;}
   const btn=document.querySelector('button[onclick="saveDriveConfig()"]');
   if(btn) setBtn(btn,true);
-  showActionSplash('Menyimpan konfigurasi Drive...');
-  const entries=[['driveJson',json],['driveFolderId',fid],['driveLimitGb',String(lgb)],['driveAutoOverflow',auto?'true':'false']];
+  const entries=[['driveJson',json],['driveFolderId',fid],['driveLimitGb',lgb||'10'],['driveAutoOverflow',auto?'true':'false']];
   let hasError=false;
   for(const[k,v] of entries){
     const{error}=await sb.from('app_config').upsert({key:k,value:v},{onConflict:'key'});
     if(error){ console.error('saveDriveConfig error:',k,error.message); hasError=true; }
   }
   if(btn) setBtn(btn,false,'<i class="fas fa-save"></i> Simpan Konfigurasi Drive');
-  hideActionSplash();
   if(hasError){toast('Gagal simpan konfigurasi Drive!','err');return;}
-  DRIVE={serviceAccountJson:json,folderId:fid,limitGb:lgb,autoOverflow:auto,configured:true};
+  DRIVE={serviceAccountJson:json,folderId:fid,limitGb:parseInt(lgb)||10,autoOverflow:auto,configured:true};
   sessionStorage.setItem('drivecfg_session', JSON.stringify(DRIVE));
   document.getElementById('driveStat').textContent='✓ Google Drive berhasil disimpan';
   toast('Konfigurasi Google Drive berhasil disimpan ✓','ok');
@@ -2393,8 +2311,7 @@ async function refreshDriveStorageUI(){
     const ul=document.getElementById('driveUsedLabel');
     const ll=document.getElementById('driveLimitLabel');
     if(ul) ul.textContent=fmtSz(used)+' dipakai ('+pct.toFixed(1)+'%)';
-    const limitLabel=DRIVE.limitGb<1?(Math.round(DRIVE.limitGb*1024)+' MB'):(DRIVE.limitGb+' GB');
-    if(ll) ll.textContent='Limit: '+limitLabel;
+    if(ll) ll.textContent='Limit: '+DRIVE.limitGb+' GB';
     const warn=document.getElementById('driveFullWarn');
     if(warn) warn.style.display=pct>85?'flex':'none';
   }catch(e){ console.warn('Drive storage UI error:',e.message); }
@@ -2644,14 +2561,21 @@ function filterApproval(){
 }
 
 async function approveU(id){
-  showActionSplash('Menyetujui akun...','Mengirim notifikasi email');
+  // Simpan session admin sebelum operasi apapun
   const{data:{session:adminSess}}=await sb.auth.getSession();
   const adminTok=adminSess?{access_token:adminSess.access_token,refresh_token:adminSess.refresh_token}:null;
+
   const{error}=await sb.from('profiles').update({status_akun:'approved'}).eq('id',id).select();
-  if(error){hideActionSplash();toast('Gagal: '+error.message,'err');return;}
+  if(error){toast('Gagal: '+error.message,'err');return;}
+
+  // Kirim notifikasi email ke pegawai
   await kirimNotifEmail(id,'approved');
-  if(adminTok){ try{ await sb.auth.setSession(adminTok); }catch(e){} }
-  hideActionSplash();
+
+  // Pastikan session admin tetap aktif setelah semua operasi
+  if(adminTok){
+    try{ await sb.auth.setSession(adminTok); }catch(e){}
+  }
+
   toast('Akun disetujui ✓','ok');
   loadApproval(apvPage);loadDash();
 }
@@ -2661,24 +2585,29 @@ function konfirmHapusUser(id){
 }
 
 async function deleteUserPermanent(id){
-  showActionSplash('Menghapus user...','Menghapus data dan file dokumen');
+  // Ambil semua dokumen user dari database sebelum dihapus
   const{data:userDocs}=await sb.from('dokumen').select('r2_key').eq('user_id',id);
   const{error}=await sb.rpc('hapus_user_auth',{uid:id});
   if(error){
-    hideActionSplash();
     toast('Gagal hapus: '+error.message,'err');
     console.error('deleteUserPermanent error:',error);
     return;
   }
+  // Hapus semua file R2 milik user
   if(userDocs && userDocs.length>0){
     for(const dok of userDocs){
-      if(dok.r2_key){ try{ await r2Delete(dok.r2_key); }catch(e){ console.warn('R2 delete warning:',e.message); } }
+      if(dok.r2_key){
+        try{ await r2Delete(dok.r2_key); }
+        catch(e){ console.warn('R2 delete warning:',e.message); }
+      }
     }
   }
+  // Hapus dari array lokal
   const idx=allProfiles.findIndex(p=>p.id===id);
   if(idx>-1) allProfiles.splice(idx,1);
-  hideActionSplash();
+  // Tampilkan alert sukses
   showAlertBanner('User berhasil dihapus permanen!','ok');
+  // Reload semua data
   await Promise.all([loadPeg(1), loadDash()]);
 }
 
@@ -2696,11 +2625,10 @@ function showAlertBanner(msg, type='ok'){
 }
 
 async function rejectU(id){
-  showActionSplash('Menolak akun...','Mengirim notifikasi email');
   const{error}=await sb.from('profiles').update({status_akun:'rejected'}).eq('id',id).select();
-  if(error){hideActionSplash();toast('Gagal: '+error.message,'err');return;}
+  if(error){toast('Gagal: '+error.message,'err');return;}
+  // Kirim notifikasi email ke pegawai
   await kirimNotifEmail(id,'rejected');
-  hideActionSplash();
   toast('Akun ditolak — notifikasi email dikirim','info');
   loadApproval(apvPage);loadDash();
 }
@@ -2996,7 +2924,6 @@ async function saveEditDokAdmin(){
   if(!katId){ toast('Pilih kategori terlebih dahulu!','warn'); return; }
   const btn = document.getElementById('btnSaveEditDokAdmin');
   setBtn(btn, true);
-  showActionSplash('Menyimpan perubahan dokumen...');
   const katNama = allKategori.find(k=>k.id===katId)?.nama || null;
   const{error} = await sb.from('dokumen').update({
     kategori_id   : katId,
@@ -3004,7 +2931,6 @@ async function saveEditDokAdmin(){
     keterangan    : ket || null,
   }).eq('id', id);
   setBtn(btn, false, '<i class="fas fa-save"></i> Simpan');
-  hideActionSplash();
   if(error){ toast('Gagal menyimpan: '+error.message,'err'); return; }
   closeM('mEditDokAdmin');
   toast('Dokumen berhasil diperbarui ✓','ok');
@@ -3012,10 +2938,8 @@ async function saveEditDokAdmin(){
 }
 
 async function delDokAdmin(id, r2Key){
-  showActionSplash('Menghapus dokumen...','Menghapus file dari penyimpanan');
   const{error:dbErr}=await sb.from('dokumen').delete().eq('id',id);
   if(dbErr){
-    hideActionSplash();
     showAlertBanner('Gagal menghapus dokumen: '+dbErr.message,'err');
     return;
   }
@@ -3023,7 +2947,6 @@ async function delDokAdmin(id, r2Key){
     try{ await r2Delete(r2Key); }
     catch(e){ console.warn('R2 delete warning:',e.message); }
   }
-  hideActionSplash();
   showAlertBanner('Dokumen/data telah terhapus','ok');
   loadDokAdmin(dakPage);
 }
@@ -3102,12 +3025,12 @@ async function loadProfil(){
 
 async function savePro(){
   const btn=document.getElementById('btnSavePro');setBtn(btn,true);
+  // Validasi NIP 18 digit
   const nipVal=document.getElementById('eNip').value.replace(/[^0-9]/g,'');
   if(nipVal && nipVal.length!==18){
     showInlineAlert('saveProAlert','NIP harus tepat 18 digit angka (sekarang '+nipVal.length+' digit).','warn');
     setBtn(btn,false,'<i class="fas fa-save"></i> Simpan');return;
   }
-  showActionSplash('Menyimpan profil...');
   const{error}=await sb.from('profiles').update({
     nama_lengkap:document.getElementById('eNama').value.trim(),
     nip:nipVal||null,
@@ -3115,7 +3038,6 @@ async function savePro(){
     email:document.getElementById('eEmail').value.trim()
   }).eq('id',CU.id);
   setBtn(btn,false,'<i class="fas fa-save"></i> Simpan');
-  hideActionSplash();
   if(error){showInlineAlert('saveProAlert','Gagal menyimpan: '+error.message,'err');return;}
   const{data:np}=await sb.from('profiles').select('*,jabatan(nama)').eq('id',CU.id).single();
   CP=np;
@@ -3221,15 +3143,13 @@ async function saveEditDok(){
   if(!katId){ toast('Pilih kategori terlebih dahulu!','warn'); return; }
   const btn = document.getElementById('btnSaveEditDok');
   setBtn(btn, true);
-  showActionSplash('Menyimpan perubahan dokumen...');
   const katNama = allKategori.find(k=>k.id===katId)?.nama || null;
   const{error} = await sb.from('dokumen').update({
     kategori_id   : katId,
     jenis_dokumen : katNama,
     keterangan    : ket || null,
-  }).eq('id', id).eq('user_id', CU.id);
+  }).eq('id', id).eq('user_id', CU.id); // pastikan hanya bisa edit milik sendiri
   setBtn(btn, false, '<i class="fas fa-save"></i> Simpan');
-  hideActionSplash();
   if(error){ toast('Gagal menyimpan: '+error.message,'err'); return; }
   closeM('mEditDok');
   toast('Dokumen berhasil diperbarui ✓','ok');
@@ -3249,16 +3169,13 @@ function konfirmHapusDokAdmin(btn){
 }
 
 async function delDok(id, isAdmin=false){
-  showActionSplash('Menghapus dokumen...','Menghapus file dari penyimpanan');
   const{data:dok,error:fetchErr}=await sb.from('dokumen').select('r2_key,nama_file,drive_file_id,storage_type').eq('id',id).single();
   if(fetchErr){
-    hideActionSplash();
     showAlertBanner('Gagal menghapus dokumen: '+fetchErr.message,'err');
     return;
   }
   const{error:dbErr}=await sb.from('dokumen').delete().eq('id',id);
   if(dbErr){
-    hideActionSplash();
     showAlertBanner('Gagal menghapus dokumen: '+dbErr.message,'err');
     return;
   }
@@ -3274,8 +3191,8 @@ async function delDok(id, isAdmin=false){
       });
     }catch(e){ console.warn('Drive delete warning:',e.message); }
   }
-  hideActionSplash();
   showAlertBanner('Dokumen/data telah terhapus','ok');
+  // Refresh storage usage setelah hapus (async, tidak blokir UI)
   loadStorageUsage();
   if(isAdmin){ loadDokAdmin(dakPage); }
   else { loadDokUser(selKatId,dukPage); }
@@ -3345,7 +3262,7 @@ async function ensureDriveConfig(){
     if(!error && data){
       DRIVE.serviceAccountJson=data.driveJson||'';
       DRIVE.folderId=data.driveFolderId||'';
-      DRIVE.limitGb=parseFloat(data.driveLimitGb)||10;
+      DRIVE.limitGb=parseInt(data.driveLimitGb)||10;
       DRIVE.autoOverflow=data.driveAutoOverflow==='true';
       DRIVE.configured=!!(DRIVE.serviceAccountJson&&DRIVE.folderId);
       sessionStorage.setItem('drivecfg_session',JSON.stringify(DRIVE));
@@ -3359,7 +3276,7 @@ async function ensureDriveConfig(){
       data.forEach(row=>{
         if(row.key==='driveJson') DRIVE.serviceAccountJson=row.value||'';
         if(row.key==='driveFolderId') DRIVE.folderId=row.value||'';
-        if(row.key==='driveLimitGb') DRIVE.limitGb=parseFloat(row.value)||10;
+        if(row.key==='driveLimitGb') DRIVE.limitGb=parseInt(row.value)||10;
         if(row.key==='driveAutoOverflow') DRIVE.autoOverflow=row.value==='true';
       });
       DRIVE.configured=!!(DRIVE.serviceAccountJson&&DRIVE.folderId);
@@ -3495,7 +3412,7 @@ async function doUpload(){
     // ── Cek overflow ke Drive ──
     let storageType='r2';
     let driveFileId=null;
-    const r2IsFull=(currentStorageBytes+fileBuffer.byteLength > 8*1024*1024*1024);
+    const r2IsFull=stor && (stor.used+fileBuffer.byteLength > 8*1024*1024*1024);
     if(r2IsFull && DRIVE.configured && DRIVE.autoOverflow){
       setPrg(20,'R2 penuh — mengunggah ke Google Drive...');
       const katNama=allKategori.find(k=>k.id===katId)?.nama||'Lainnya';
