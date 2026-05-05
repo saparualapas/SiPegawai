@@ -2865,9 +2865,9 @@ async function loadDokAdmin(p=1){
       <td style="font-size:.77rem;color:var(--muted);white-space:nowrap">${fmtSz(d.ukuran_file)}</td>
       <td style="font-size:.77rem;color:var(--muted);white-space:nowrap">${fmtD(d.uploaded_at)}</td>
       <td style="white-space:nowrap">
-        <button class="btn-ok" data-r2="${d.r2_key||''}" data-drive="${d.drive_file_id||''}" data-nama="${namaEnc}" onclick="adminOpenDok(this.dataset.r2,decodeURIComponent(this.dataset.nama),this.dataset.drive)"><i class="fas fa-download"></i> Buka</button>
+        <button class="btn-ok" data-r2="${d.r2_key||''}" data-nama="${namaEnc}" onclick="adminOpenDok(this.dataset.r2,decodeURIComponent(this.dataset.nama))"><i class="fas fa-download"></i> Buka</button>
         <button class="btn-icon" data-id="${d.id}" data-nama="${namaEnc}" data-kat="${d.kategori_id||''}" data-ket="${encodeURIComponent(d.keterangan||'')}" onclick="openEditDokAdmin(this.dataset.id,decodeURIComponent(this.dataset.nama),this.dataset.kat,decodeURIComponent(this.dataset.ket))"><i class="fas fa-edit" style="color:var(--accent)"></i></button>
-        <button class="btn-icon" data-id="${d.id}" data-r2="${d.r2_key||''}" data-drive="${d.drive_file_id||''}" data-nama="${namaEnc}" onclick="konfirmHapusDokAdmin(this)"><i class="fas fa-trash" style="color:var(--danger)"></i></button>
+        <button class="btn-icon" data-id="${d.id}" data-r2="${d.r2_key||''}" data-nama="${namaEnc}" onclick="konfirmHapusDokAdmin(this)"><i class="fas fa-trash" style="color:var(--danger)"></i></button>
       </td></tr>`;
   }).join('');
 
@@ -2929,32 +2929,23 @@ async function delDokAdmin(id, r2Key){
   loadDokAdmin(dakPage);
 }
 
-async function adminOpenDok(r2Key, nama, driveFileId){
-  if(!r2Key && !driveFileId){toast('File tidak ditemukan!','err');return;}
+async function adminOpenDok(r2Key, nama){
+  if(!r2Key){toast('File tidak ditemukan!','err');return;}
   try{
     toast('Menyiapkan file...','info');
-    let blob;
-    if(driveFileId && DRIVE.configured){
-      const res=await driveDownload(driveFileId);
-      blob=await res.blob();
-    } else if(r2Key){
-      const token=await getWorkerToken();
-      const encodedKey=r2Key.split('/').map(encodeURIComponent).join('/');
-      const res=await fetch(`${WORKER_URL}/file/${encodedKey}`,{
-        headers:{'Authorization':`Bearer ${token}`}
-      });
-      if(!res.ok){
-        const d=await res.json().catch(()=>({}));
-        throw new Error(d.error||`Gagal (${res.status})`);
-      }
-      blob=await res.blob();
-    } else {
-      throw new Error('File tidak dapat ditemukan di R2 maupun Drive');
+    const token=await getWorkerToken();
+    const res=await fetch(`${WORKER_URL}/file/${r2Key}`,{
+      headers:{'Authorization':`Bearer ${token}`}
+    });
+    if(!res.ok){
+      const d=await res.json().catch(()=>({}));
+      throw new Error(d.error||`Gagal (${res.status})`);
     }
+    const blob=await res.blob();
     const a=document.createElement('a');
     a.href=URL.createObjectURL(blob);
     a.target='_blank';
-    a.download=nama||'file';
+    a.download=nama||r2Key.split('/').pop();
     document.body.appendChild(a);
     a.click();
     setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(a.href);},1000);
@@ -3147,7 +3138,7 @@ function konfirmHapusDokAdmin(btn){
 }
 
 async function delDok(id, isAdmin=false){
-  const{data:dok,error:fetchErr}=await sb.from('dokumen').select('r2_key,nama_file,drive_file_id,storage_type').eq('id',id).single();
+  const{data:dok,error:fetchErr}=await sb.from('dokumen').select('r2_key,nama_file').eq('id',id).single();
   if(fetchErr){
     showAlertBanner('Gagal menghapus dokumen: '+fetchErr.message,'err');
     return;
@@ -3160,14 +3151,6 @@ async function delDok(id, isAdmin=false){
   if(dok && dok.r2_key){
     try{ await r2Delete(dok.r2_key); }
     catch(e){ console.warn('R2 delete warning:',e.message); }
-  }
-  if(dok && dok.drive_file_id && DRIVE.configured){
-    try{
-      const token=await getDriveToken();
-      await fetch(`https://www.googleapis.com/drive/v3/files/${dok.drive_file_id}`,{
-        method:'DELETE',headers:{Authorization:`Bearer ${token}`}
-      });
-    }catch(e){ console.warn('Drive delete warning:',e.message); }
   }
   showAlertBanner('Dokumen/data telah terhapus','ok');
   // Refresh storage usage setelah hapus (async, tidak blokir UI)
@@ -3562,7 +3545,7 @@ async function doUserBackupR2(){
 
   // Ambil semua dokumen milik user ini
   const{data:docs,error}=await sb.from('dokumen')
-    .select('nama_file,r2_key,drive_file_id,storage_type,ukuran_file,kategori_dokumen:kategori_id(nama)')
+    .select('nama_file,r2_key,ukuran_file,kategori_dokumen:kategori_id(nama)')
     .eq('user_id',CU.id)
     .order('uploaded_at',{ascending:true});
 
@@ -3835,7 +3818,7 @@ async function exportDokumenCSV(){
   setBtn(btn,true);
   try{
     const{data,error}=await sb.from('dokumen')
-      .select('id,nama_file,jenis_dokumen,keterangan,ukuran_file,r2_key,drive_file_id,storage_type,uploaded_at,user_id,profiles(nama_lengkap,nip,jabatan(nama))')
+      .select('id,nama_file,jenis_dokumen,keterangan,ukuran_file,r2_key,uploaded_at,user_id,profiles(nama_lengkap,nip,jabatan(nama))')
       .order('uploaded_at',{ascending:false});
     if(error)throw error;
 
@@ -3978,7 +3961,7 @@ async function doBackupR2PerPegawai(){
   const btn=document.getElementById('btnDoBackupR2Peg');
   setBtn(btn,true);
   const{data:docs,error}=await sb.from('dokumen')
-    .select('nama_file,r2_key,drive_file_id,storage_type,kategori_dokumen:kategori_id(nama),profiles:user_id(nama_lengkap)')
+    .select('nama_file,r2_key,kategori_dokumen:kategori_id(nama),profiles:user_id(nama_lengkap)')
     .eq('user_id',pegId).order('uploaded_at',{ascending:false});
   setBtn(btn,false,'<i class="fas fa-download"></i> Download File Pegawai Ini');
   if(error){toast('Gagal mengambil data: '+error.message,'err');return;}
@@ -4006,7 +3989,7 @@ async function backupR2Files(){
   const btn=document.getElementById('btnBackupR2');
   setBtn(btn,true);
   const{data:docs,error}=await sb.from('dokumen')
-    .select('nama_file,r2_key,drive_file_id,storage_type,kategori_dokumen:kategori_id(nama),profiles:user_id(nama_lengkap)')
+    .select('nama_file,r2_key,kategori_dokumen:kategori_id(nama),profiles:user_id(nama_lengkap)')
     .order('profiles(nama_lengkap)',{ascending:true});
   setBtn(btn,false,'<i class="fas fa-cloud-download-alt"></i> Download Semua File R2 (.zip)');
   if(error){toast('Gagal mengambil data: '+error.message,'err');return;}
