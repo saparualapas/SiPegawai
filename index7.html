@@ -3731,17 +3731,21 @@ async function loadBackupPage(){
   currentStorageBytes=totalBytes;
   renderStorageBar(totalBytes); // Sinkronkan storage bar di dashboard
 
-  // Ambil semua data storage sekaligus — dipakai untuk backupDokStat DAN r2BackupStat
+  // Hitung Drive bytes terpisah
+  const{data:allDokSizes}=await sb.from('dokumen').select('ukuran_file,storage_type');
+  const driveBytes=(allDokSizes||[]).filter(d=>d.storage_type==='drive').reduce((s,d)=>s+(d.ukuran_file||0),0);
+
+  document.getElementById('backupDokStat').innerHTML=
+    `<i class="fas fa-file-alt" style="color:var(--accent2)"></i> <strong>${dokCount||0}</strong> dokumen &nbsp;·&nbsp; R2: <strong>${fmtSz(totalBytes)}</strong>${DRIVE.configured?' &nbsp;·&nbsp; <i class="fab fa-google-drive" style="color:#0F9D58"></i> Drive: <strong>'+fmtSz(driveBytes)+'</strong>':''}`;
+  document.getElementById('backupPegStat').innerHTML=
+    `<i class="fas fa-users" style="color:var(--navy)"></i> <strong>${pegCount||0}</strong> pegawai terdaftar`;
+
+  // Stat R2 — pisahkan R2 vs Drive
   const{data:storStats}=await sb.from('dokumen').select('storage_type,ukuran_file');
   const r2Docs=(storStats||[]).filter(d=>!d.storage_type||d.storage_type==='r2');
   const driveDocs=(storStats||[]).filter(d=>d.storage_type==='drive');
   const r2Bytes=r2Docs.reduce((s,d)=>s+(d.ukuran_file||0),0);
   const driveBytes=driveDocs.reduce((s,d)=>s+(d.ukuran_file||0),0);
-
-  document.getElementById('backupDokStat').innerHTML=
-    `<i class="fas fa-file-alt" style="color:var(--accent2)"></i> <strong>${dokCount||0}</strong> dokumen &nbsp;·&nbsp; R2: <strong>${fmtSz(r2Bytes)}</strong>${driveDocs.length?' &nbsp;·&nbsp; <i class="fab fa-google-drive" style="color:#0F9D58"></i> Drive: <strong>'+fmtSz(driveBytes)+'</strong>':''}`;
-  document.getElementById('backupPegStat').innerHTML=
-    `<i class="fas fa-users" style="color:var(--navy)"></i> <strong>${pegCount||0}</strong> pegawai terdaftar`;
   const r2Configured = R2.accountId && R2.accessKey && R2.secretKey && R2.bucket;
   document.getElementById('r2BackupStat').innerHTML = r2Configured
     ? `<i class="fas fa-cloud" style="color:var(--warn)"></i> R2: <strong>${r2Docs.length}</strong> file (<strong>${fmtSz(r2Bytes)}</strong>)`
