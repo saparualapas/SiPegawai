@@ -976,8 +976,7 @@ tbody td.wrap{white-space:normal;min-width:140px;}
             <div style="font-size:.82rem;line-height:1.7;color:var(--text2);margin-bottom:.75rem">
               Buat function berikut di <strong>Supabase → SQL Editor</strong> agar pengecekan storage berfungsi untuk semua user (bukan hanya admin):
             </div>
-            <pre style="background:#0f172a;color:#e2e8f0;padding:1rem;border-radius:10px;font-size:.72rem;line-height:1.6;overflow-x:auto;white-space:pre-wrap">-- ── 1. Hitung total storage (WAJIB, untuk cek kapasitas) ───────────────────
-CREATE OR REPLACE FUNCTION get_total_storage_used()
+            <pre style="background:#0f172a;color:#e2e8f0;padding:1rem;border-radius:10px;font-size:.72rem;line-height:1.6;overflow-x:auto;white-space:pre-wrap">CREATE OR REPLACE FUNCTION get_total_storage_used()
 RETURNS json
 LANGUAGE sql
 SECURITY DEFINER
@@ -989,69 +988,6 @@ AS $$
   FROM dokumen;
 $$;
 
--- ── 2. Insert dokumen DENGAN cek kapasitas atomik ────────────────────────────
--- Cek dilakukan BERSAMAAN dengan insert dalam 1 transaksi — tidak ada celah race condition
-CREATE OR REPLACE FUNCTION insert_dokumen_safe(
-  p_payload    jsonb,
-  p_r2_limit   bigint,
-  p_drive_limit bigint,
-  p_storage_type text  -- 'r2' atau 'drive'
-)
-RETURNS jsonb
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-DECLARE
-  v_r2_used    bigint;
-  v_drive_used bigint;
-  v_file_size  bigint;
-  v_new_id     uuid;
-BEGIN
-  -- Hitung usage saat ini (dalam transaksi yang sama = consistent read)
-  SELECT
-    COALESCE(SUM(CASE WHEN storage_type IS NULL OR storage_type='r2'  THEN ukuran_file ELSE 0 END), 0),
-    COALESCE(SUM(CASE WHEN storage_type='drive' THEN ukuran_file ELSE 0 END), 0)
-  INTO v_r2_used, v_drive_used
-  FROM dokumen;
-
-  v_file_size := (p_payload->>'ukuran_file')::bigint;
-
-  -- Validasi kapasitas
-  IF p_storage_type = 'r2' THEN
-    IF (v_r2_used + v_file_size) > p_r2_limit THEN
-      RETURN jsonb_build_object('ok', false, 'error', 'R2_FULL',
-        'r2_used', v_r2_used, 'r2_limit', p_r2_limit, 'file_size', v_file_size);
-    END IF;
-  ELSIF p_storage_type = 'drive' THEN
-    IF (v_drive_used + v_file_size) > p_drive_limit THEN
-      RETURN jsonb_build_object('ok', false, 'error', 'DRIVE_FULL',
-        'drive_used', v_drive_used, 'drive_limit', p_drive_limit, 'file_size', v_file_size);
-    END IF;
-  END IF;
-
-  -- Insert dokumen
-  INSERT INTO dokumen
-  SELECT * FROM jsonb_populate_record(null::dokumen, p_payload)
-  RETURNING id INTO v_new_id;
-
-  RETURN jsonb_build_object('ok', true, 'id', v_new_id);
-EXCEPTION WHEN OTHERS THEN
-  RETURN jsonb_build_object('ok', false, 'error', SQLERRM);
-END;
-$$;
-
--- ── 3. Config R2 (untuk user biasa) ────────────────────────────────────────
-CREATE OR REPLACE FUNCTION get_r2_config()
-RETURNS json
-LANGUAGE sql
-SECURITY DEFINER
-AS $$
-  SELECT json_object_agg(key, value)
-  FROM app_config
-  WHERE key IN ('accountId','bucket','accessKey','secretKey','r2LimitBytes');
-$$;
-
--- ── 4. Config Drive (untuk user biasa) ─────────────────────────────────────
 CREATE OR REPLACE FUNCTION get_drive_config()
 RETURNS json
 LANGUAGE sql
@@ -1060,6 +996,16 @@ AS $$
   SELECT json_object_agg(key, value)
   FROM app_config
   WHERE key IN ('driveJson','driveFolderId','driveLimitGb','driveAutoOverflow');
+$$;
+
+CREATE OR REPLACE FUNCTION get_r2_config()
+RETURNS json
+LANGUAGE sql
+SECURITY DEFINER
+AS $$
+  SELECT json_object_agg(key, value)
+  FROM app_config
+  WHERE key IN ('accountId','bucket','accessKey','secretKey','r2LimitBytes');
 $$;</pre>
             <div style="font-size:.77rem;color:var(--danger);margin-top:.5rem;font-weight:600">
               <i class="fas fa-exclamation-circle"></i> Tanpa function ini, user biasa tidak dapat mengupload dokumen karena kuota tidak bisa diverifikasi.
@@ -3768,10 +3714,19 @@ async function doUpload(){
       await r2Put(ep,R2.bucket,r2Key,fileBuffer,upFile.type||'application/octet-stream');
     }
 
-    setPrg(75,'Memeriksa kapasitas & menyimpan ke database...');
+    setPrg(75,'Menyimpan ke database...');
     const ket=document.getElementById('upKet').value.trim();
-
-    // Bangun payload
+    // Pastikan session masih aktif sebelum insert
+    const{data:{session:sess}}=await sb.auth.getSession();
+    if(!sess){
+      // Session expired, refresh dari sessionStorage
+      const savedUser=sessionStorage.getItem('currentUser');
+      if(savedUser){
+        const u=JSON.parse(savedUser);
+        await sb.auth.setSession({access_token:u.access_token||'',refresh_token:u.refresh_token||''});
+      }
+    }
+    // Bangun payload dinamis — jangan kirim r2_key:null saat drive (NOT NULL constraint)
     const insertPayload={
       user_id:CU.id,
       nama_file:upFile.name,
@@ -3785,51 +3740,22 @@ async function doUpload(){
       uploaded_at:new Date().toISOString()
     };
     if(storageType==='r2') insertPayload.r2_key=r2Key;
-
-    // Gunakan RPC atomik — cek kapasitas + insert dalam 1 transaksi Postgres
-    // Ini mencegah race condition saat 2 user upload bersamaan
-    const driveGbLimit=(DRIVE.limitGb&&DRIVE.limitGb>0)?DRIVE.limitGb:10;
-    const{data:rpcResult,error:rpcErr}=await sb.rpc('insert_dokumen_safe',{
-      p_payload:    insertPayload,
-      p_r2_limit:   R2_LIMIT_BYTES,
-      p_drive_limit: Math.round(driveGbLimit*1024*1024*1024),
-      p_storage_type: storageType
-    });
-
-    // Jika RPC gagal (function belum dibuat), fallback ke insert biasa
-    const useRpc=!rpcErr && rpcResult!==null;
-    let dbErr=null;
-    if(useRpc){
-      if(!rpcResult.ok){
-        const errCode=rpcResult.error||'';
-        let msg='';
-        if(errCode==='R2_FULL')
-          msg=`🚫 R2 penuh! Terisi ${fmtSz(rpcResult.r2_used||0)} dari ${fmtSz(rpcResult.r2_limit||0)}. Upload ditolak.`;
-        else if(errCode==='DRIVE_FULL')
-          msg=`🚫 Drive penuh! Terisi ${fmtSz(rpcResult.drive_used||0)} dari ${fmtSz(rpcResult.drive_limit||0)}. Upload ditolak.`;
-        else
-          msg='🚫 Gagal menyimpan: '+(errCode||'error tidak diketahui');
-        // Cleanup file yang sudah diupload
-        if(storageType==='drive'&&driveFileId){
-          try{ const t=await getDriveToken(); await fetch(`https://www.googleapis.com/drive/v3/files/${driveFileId}`,{method:'DELETE',headers:{Authorization:`Bearer ${t}`}}); }catch(ce){}
-        } else if(storageType==='r2'&&r2Key){
-          try{ await r2Delete(r2Key); }catch(ce){}
-        }
-        throw new Error(msg);
-      }
-    } else {
-      // Fallback: insert biasa (tanpa atomic check)
-      const{error:e}=await sb.from('dokumen').insert(insertPayload);
-      dbErr=e;
-    }
-
+    const{error:dbErr}=await sb.from('dokumen').insert(insertPayload);
     if(dbErr){
       console.error('DB insert error:',dbErr);
-      if(storageType==='drive'&&driveFileId){
-        try{ const t=await getDriveToken(); await fetch(`https://www.googleapis.com/drive/v3/files/${driveFileId}`,{method:'DELETE',headers:{Authorization:`Bearer ${t}`}}); console.log('Drive cleanup OK'); }catch(ce){}
+      // Cleanup file yang sudah terupload agar tidak orphan dan tidak duplikat
+      if(storageType==='drive' && driveFileId){
+        try{
+          const token=await getDriveToken();
+          await fetch(`https://www.googleapis.com/drive/v3/files/${driveFileId}`,{
+            method:'DELETE',headers:{Authorization:`Bearer ${token}`}
+          });
+          console.log('Drive cleanup OK setelah DB error');
+        }catch(ce){ console.warn('Drive cleanup gagal:',ce.message); }
         driveFileId=null;
-      } else if(storageType==='r2'&&r2Key){
-        try{ await r2Delete(r2Key); }catch(ce){}
+      } else if(storageType==='r2' && r2Key){
+        try{ await r2Delete(r2Key); console.log('R2 cleanup OK'); }
+        catch(ce){ console.warn('R2 cleanup gagal:',ce.message); }
       }
       throw new Error('Gagal simpan ke database: '+dbErr.message);
     }
@@ -5010,8 +4936,9 @@ async function doUploadAdmin(){
       await r2Put(ep,R2.bucket,r2Key,fileBuffer,upAdminFile.type||'application/octet-stream');
     }
 
-    setPrgAdmin(75,'Memeriksa kapasitas & menyimpan ke database...');
+    setPrgAdmin(75,'Menyimpan ke database...');
     const katNama=allKategori.find(k=>k.id===katId)?.nama||null;
+    // Bangun payload dinamis — jangan kirim r2_key:null saat drive (NOT NULL constraint)
     const adminInsertPayload={
       user_id      : pegId,
       uploaded_by  : CU.id,
@@ -5026,49 +4953,21 @@ async function doUploadAdmin(){
       uploaded_at  : new Date().toISOString()
     };
     if(storageType==='r2') adminInsertPayload.r2_key=r2Key;
-
-    // Gunakan RPC atomik — cek kapasitas + insert dalam 1 transaksi Postgres
-    const driveGbLimitA=(DRIVE.limitGb&&DRIVE.limitGb>0)?DRIVE.limitGb:10;
-    const{data:rpcResultA,error:rpcErrA}=await sb.rpc('insert_dokumen_safe',{
-      p_payload:    adminInsertPayload,
-      p_r2_limit:   R2_LIMIT_BYTES,
-      p_drive_limit: Math.round(driveGbLimitA*1024*1024*1024),
-      p_storage_type: storageType
-    });
-
-    const useRpcA=!rpcErrA && rpcResultA!==null;
-    let dbErrA=null;
-    if(useRpcA){
-      if(!rpcResultA.ok){
-        const errCode=rpcResultA.error||'';
-        let msg='';
-        if(errCode==='R2_FULL')
-          msg=`🚫 R2 penuh! ${fmtSz(rpcResultA.r2_used||0)}/${fmtSz(rpcResultA.r2_limit||0)}. Upload ditolak.`;
-        else if(errCode==='DRIVE_FULL')
-          msg=`🚫 Drive penuh! ${fmtSz(rpcResultA.drive_used||0)}/${fmtSz(rpcResultA.drive_limit||0)}. Upload ditolak.`;
-        else
-          msg='🚫 Gagal: '+(errCode||'error tidak diketahui');
-        // Cleanup
-        if(storageType==='drive'&&driveFileId){
-          try{ const t=await getDriveToken(); await fetch(`https://www.googleapis.com/drive/v3/files/${driveFileId}`,{method:'DELETE',headers:{Authorization:`Bearer ${t}`}}); }catch(ce){}
-        } else if(storageType==='r2'&&r2Key){
-          try{ await r2Delete(r2Key); }catch(ce){}
-        }
-        throw new Error(msg);
-      }
-    } else {
-      const{error:e}=await sb.from('dokumen').insert(adminInsertPayload);
-      dbErrA=e;
-    }
-
-    if(dbErrA){
-      console.error('DB insert error (admin):',dbErrA);
-      if(storageType==='drive'&&driveFileId){
-        try{ const t=await getDriveToken(); await fetch(`https://www.googleapis.com/drive/v3/files/${driveFileId}`,{method:'DELETE',headers:{Authorization:`Bearer ${t}`}}); }catch(ce){}
-      } else if(storageType==='r2'&&r2Key){
+    const{error:dbErr}=await sb.from('dokumen').insert(adminInsertPayload);
+    if(dbErr){
+      console.error('DB insert error (admin):',dbErr);
+      // Cleanup file orphan
+      if(storageType==='drive' && driveFileId){
+        try{
+          const token=await getDriveToken();
+          await fetch(`https://www.googleapis.com/drive/v3/files/${driveFileId}`,{
+            method:'DELETE',headers:{Authorization:`Bearer ${token}`}
+          });
+        }catch(ce){ console.warn('Drive cleanup gagal:',ce.message); }
+      } else if(storageType==='r2' && r2Key){
         try{ await r2Delete(r2Key); }catch(ce){}
       }
-      throw new Error('Gagal simpan ke database: '+dbErrA.message);
+      throw new Error('Gagal simpan ke database: '+dbErr.message);
     }
     // Update cache storage setelah upload sukses — hitung ulang dari DB
     await _updateCacheSetelahUpload();
