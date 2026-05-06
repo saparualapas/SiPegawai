@@ -1029,12 +1029,9 @@ BEGIN
     END IF;
   END IF;
 
-  -- Insert dokumen (pastikan id selalu terisi)
+  -- Insert dokumen
   INSERT INTO dokumen
-  SELECT * FROM jsonb_populate_record(
-    null::dokumen,
-    p_payload || jsonb_build_object('id', COALESCE(p_payload->>'id', gen_random_uuid()::text))
-  )
+  SELECT * FROM jsonb_populate_record(null::dokumen, p_payload)
   RETURNING id INTO v_new_id;
 
   RETURN jsonb_build_object('ok', true, 'id', v_new_id);
@@ -1063,25 +1060,9 @@ AS $$
   SELECT json_object_agg(key, value)
   FROM app_config
   WHERE key IN ('driveJson','driveFolderId','driveLimitGb','driveAutoOverflow');
-$$;
-
--- ── 5. Update cache storage (WAJIB agar user biasa bisa simpan cache setelah upload)
--- User biasa tidak punya RLS WRITE ke app_config, jadi harus via SECURITY DEFINER
-CREATE OR REPLACE FUNCTION update_storage_cache(p_r2_bytes bigint, p_drive_bytes bigint)
-RETURNS void
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-BEGIN
-  INSERT INTO app_config(key, value) VALUES
-    ('cachedR2Bytes',    p_r2_bytes::text),
-    ('cachedDriveBytes', p_drive_bytes::text),
-    ('cachedStorageAt',  now()::text)
-  ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
-END;
 $$;</pre>
             <div style="font-size:.77rem;color:var(--danger);margin-top:.5rem;font-weight:600">
-              <i class="fas fa-exclamation-circle"></i> Tanpa function-function ini, user biasa tidak dapat mengupload dokumen dan cache storage tidak bisa diperbarui.
+              <i class="fas fa-exclamation-circle"></i> Tanpa function ini, user biasa tidak dapat mengupload dokumen karena kuota tidak bisa diverifikasi.
             </div>
           </div>
         </div>
@@ -3364,48 +3345,23 @@ async function savePro(){
     showInlineAlert('saveProAlert','NIP harus tepat 18 digit angka (sekarang '+nipVal.length+' digit).','warn');
     setBtn(btn,false,'<i class="fas fa-save"></i> Simpan');return;
   }
-  const newEmail=document.getElementById('eEmail').value.trim().toLowerCase();
-  const currentEmail=CU?.email||'';
-  const emailChanged = newEmail && newEmail!==currentEmail;
-
   showActionSplash('Menyimpan profil...');
-
-  // 1. Update tabel profiles
   const{error}=await sb.from('profiles').update({
     nama_lengkap:document.getElementById('eNama').value.trim(),
     nip:nipVal||null,
     jabatan_id:document.getElementById('eJabatan').value||null,
-    email:newEmail
+    email:document.getElementById('eEmail').value.trim()
   }).eq('id',CU.id);
   setBtn(btn,false,'<i class="fas fa-save"></i> Simpan');
   hideActionSplash();
   if(error){showInlineAlert('saveProAlert','Gagal menyimpan: '+error.message,'err');return;}
-
-  // 2. Jika email berubah, update juga di Supabase Auth (auth.users)
-  if(emailChanged){
-    const{error:authErr}=await sb.auth.updateUser({email:newEmail});
-    if(authErr){
-      // Profile sudah tersimpan, tapi email auth gagal — beri tahu user
-      showInlineAlert('saveProAlert',
-        '✓ Profil tersimpan. <strong>Namun email auth gagal diubah</strong>: '+authErr.message+
-        '<br><small>Email di profil sudah diperbarui, tapi untuk login gunakan email lama hingga diverifikasi.</small>','warn');
-    } else {
-      // Supabase akan kirim email konfirmasi ke alamat BARU
-      // User harus klik link di email baru untuk mengaktifkan perubahan
-      showInlineAlert('saveProAlert',
-        '✓ Profil tersimpan! <strong>Cek email baru ('+newEmail+')</strong> untuk konfirmasi perubahan alamat email.'+
-        '<br><small style="opacity:.8">⚠️ Gunakan email lama untuk login hingga email baru dikonfirmasi.</small>','ok');
-    }
-  } else {
-    showInlineAlert('saveProAlert','✓ Profil berhasil diperbarui!','ok');
-  }
-
   const{data:np}=await sb.from('profiles').select('*,jabatan(nama)').eq('id',CU.id).single();
   CP=np;
   sessionStorage.setItem('currentProfile', JSON.stringify(np));
   setSidebar(np);
+  showInlineAlert('saveProAlert','✓ Profil berhasil diperbarui!','ok');
   loadProfil();
-  if(!emailChanged) setTimeout(()=>showPage('profil'),1500);
+  setTimeout(()=>showPage('profil'),1500);
 }
 
 function showInlineAlert(elId,msg,type){
@@ -3841,10 +3797,6 @@ async function doUpload(){
     });
 
     // Jika RPC gagal (function belum dibuat), fallback ke insert biasa
-    // Pastikan id selalu ada (generate di client jika RPC tidak bisa)
-    if(!insertPayload.id){
-      insertPayload.id=crypto.randomUUID?crypto.randomUUID():[...Array(8)].map(()=>Math.floor(Math.random()*16).toString(16)).join('')+'-'+[...Array(4)].map(()=>Math.floor(Math.random()*16).toString(16)).join('')+'-4'+[...Array(3)].map(()=>Math.floor(Math.random()*16).toString(16)).join('')+'-'+[...Array(4)].map(()=>Math.floor(Math.random()*16).toString(16)).join('')+'-'+[...Array(12)].map(()=>Math.floor(Math.random()*16).toString(16)).join('');
-    }
     const useRpc=!rpcErr && rpcResult!==null;
     let dbErr=null;
     if(useRpc){
@@ -5075,10 +5027,6 @@ async function doUploadAdmin(){
     };
     if(storageType==='r2') adminInsertPayload.r2_key=r2Key;
 
-    // Pastikan id selalu ada sebelum kirim ke RPC/insert
-    if(!adminInsertPayload.id){
-      adminInsertPayload.id=crypto.randomUUID?crypto.randomUUID():[...Array(8)].map(()=>Math.floor(Math.random()*16).toString(16)).join('')+'-'+[...Array(4)].map(()=>Math.floor(Math.random()*16).toString(16)).join('')+'-4'+[...Array(3)].map(()=>Math.floor(Math.random()*16).toString(16)).join('')+'-'+[...Array(4)].map(()=>Math.floor(Math.random()*16).toString(16)).join('')+'-'+[...Array(12)].map(()=>Math.floor(Math.random()*16).toString(16)).join('');
-    }
     // Gunakan RPC atomik — cek kapasitas + insert dalam 1 transaksi Postgres
     const driveGbLimitA=(DRIVE.limitGb&&DRIVE.limitGb>0)?DRIVE.limitGb:10;
     const{data:rpcResultA,error:rpcErrA}=await sb.rpc('insert_dokumen_safe',{
@@ -5171,40 +5119,21 @@ function loadProfilAdmin(){
 async function saveProAdmin(){
   const nama =document.getElementById('eAdminNama').value.trim();
   const nip  =document.getElementById('eAdminNip').value.replace(/[^0-9]/g,'');
-  const newEmail=document.getElementById('eAdminEmail').value.trim().toLowerCase();
+  const email=document.getElementById('eAdminEmail').value.trim();
   if(!nama){showInlineAlert('saveAdminProAlert','Nama tidak boleh kosong!','warn');return;}
   if(nip && nip.length!==18){showInlineAlert('saveAdminProAlert','NIP harus tepat 18 digit angka (sekarang '+nip.length+' digit).','warn');return;}
   const btn=document.getElementById('btnSaveAdminPro');
   setBtn(btn,true);
-  const emailChanged = newEmail && newEmail!==(CU?.email||'');
-
-  // 1. Update profiles
   const{error}=await sb.from('profiles').update({
-    nama_lengkap:nama, nip:nip||null, email:newEmail||CP.email
+    nama_lengkap:nama, nip:nip||null, email:email||CP.email
   }).eq('id',CU.id);
   setBtn(btn,false,'<i class="fas fa-save"></i> Simpan');
   if(error){showInlineAlert('saveAdminProAlert','Gagal menyimpan: '+error.message,'err');return;}
-
-  // 2. Update email di Supabase Auth jika berubah
-  if(emailChanged){
-    const{error:authErr}=await sb.auth.updateUser({email:newEmail});
-    if(authErr){
-      showInlineAlert('saveAdminProAlert',
-        '✓ Profil tersimpan. <strong>Email auth gagal diubah</strong>: '+authErr.message+
-        '<br><small>Gunakan email lama untuk login hingga verifikasi selesai.</small>','warn');
-    } else {
-      showInlineAlert('saveAdminProAlert',
-        '✓ Profil tersimpan! <strong>Cek email baru ('+newEmail+')</strong> untuk konfirmasi.'+
-        '<br><small>⚠️ Gunakan email lama untuk login hingga email baru dikonfirmasi.</small>','ok');
-    }
-  } else {
-    showInlineAlert('saveAdminProAlert','✓ Profil admin berhasil diperbarui!','ok');
-  }
-
   const{data:np}=await sb.from('profiles').select('*,jabatan(nama)').eq('id',CU.id).single();
   CP=np;
   sessionStorage.setItem('currentProfile',JSON.stringify(np));
   setSidebar(np);
+  showInlineAlert('saveAdminProAlert','✓ Profil admin berhasil diperbarui!','ok');
 }
 
 // ═══════════════════════════════
@@ -5257,21 +5186,15 @@ async function _hitung_drive_dari_db(){
   return total;
 }
 
-// Simpan cache ke app_config.
-// Admin: upsert langsung (RLS izinkan). User biasa: coba RPC update_storage_cache (SECURITY DEFINER).
+// Simpan cache ke app_config — HANYA dipanggil oleh admin (punya akses tulis)
 async function _simpanCacheStorage(r2Bytes, driveBytes){
   try{
     const now=new Date().toISOString();
-    const results=await Promise.allSettled([
+    await Promise.all([
       sb.from('app_config').upsert({key:'cachedR2Bytes',    value:String(Math.max(0,r2Bytes))},    {onConflict:'key'}),
       sb.from('app_config').upsert({key:'cachedDriveBytes', value:String(Math.max(0,driveBytes))},  {onConflict:'key'}),
       sb.from('app_config').upsert({key:'cachedStorageAt',  value:now},                              {onConflict:'key'}),
     ]);
-    // Jika ada yang 403 (user biasa tidak punya RLS write) => coba RPC
-    const anyDenied=results.some(r=>r.status==='rejected'||(r.value&&r.value.error&&(r.value.error.code==='42501'||r.value.error.status===403)));
-    if(anyDenied){
-      try{ await sb.rpc('update_storage_cache',{p_r2_bytes:Math.max(0,r2Bytes),p_drive_bytes:Math.max(0,driveBytes)}); }catch(e2){}
-    }
   }catch(e){ console.warn('[storage] simpan cache gagal (normal jika user biasa):',e.message); }
 }
 
@@ -5295,20 +5218,11 @@ async function recalcAndCacheStorage(){
   return{r2,drive};
 }
 
-// Update cache setelah upload/hapus
-// User biasa: pakai RPC get_total_storage_used (SECURITY DEFINER) sebagai sumber kebenaran
-// Admin: hitung ulang dari DB langsung, lalu simpan cache
+// Update cache setelah upload/hapus — hitung ulang dari DB lalu simpan
 async function _updateCacheSetelahUpload(){
   try{
-    let r2=0,drive=0;
-    try{
-      // Utama: RPC SECURITY DEFINER (akurat untuk semua role)
-      const rpc=await _getUsageViaRPC();
-      r2=rpc.r2; drive=rpc.drive;
-    }catch(e){
-      // Fallback admin: hitung dari DB langsung
-      try{ const d=await Promise.all([_hitung_r2_dari_db(),_hitung_drive_dari_db()]); r2=d[0]; drive=d[1]; }catch(e2){}
-    }
+    // Admin: hitung ulang + simpan cache agar user biasa bisa baca via RPC
+    const[r2,drive]=await Promise.all([_hitung_r2_dari_db(),_hitung_drive_dari_db()]);
     await _simpanCacheStorage(r2,drive);
     currentStorageBytes=r2;
     renderStorageBar(r2);
@@ -5317,13 +5231,7 @@ async function _updateCacheSetelahUpload(){
 
 async function _updateCacheSetelahHapus(){
   try{
-    let r2=0,drive=0;
-    try{
-      const rpc=await _getUsageViaRPC();
-      r2=rpc.r2; drive=rpc.drive;
-    }catch(e){
-      try{ const d=await Promise.all([_hitung_r2_dari_db(),_hitung_drive_dari_db()]); r2=d[0]; drive=d[1]; }catch(e2){}
-    }
+    const[r2,drive]=await Promise.all([_hitung_r2_dari_db(),_hitung_drive_dari_db()]);
     await _simpanCacheStorage(r2,drive);
     currentStorageBytes=r2;
     renderStorageBar(r2);
