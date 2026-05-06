@@ -969,50 +969,6 @@ tbody td.wrap{white-space:normal;min-width:140px;}
           </div>
         </div>
 
-        <!-- SQL Setup Required -->
-        <div class="card" style="border:2px solid var(--warn)">
-          <div class="card-hd"><span class="card-title"><i class="fas fa-database" style="color:var(--warn);margin-right:.4rem"></i>Wajib: SQL Function Supabase</span></div>
-          <div class="card-body">
-            <div style="font-size:.82rem;line-height:1.7;color:var(--text2);margin-bottom:.75rem">
-              Buat function berikut di <strong>Supabase → SQL Editor</strong> agar pengecekan storage berfungsi untuk semua user (bukan hanya admin):
-            </div>
-            <pre style="background:#0f172a;color:#e2e8f0;padding:1rem;border-radius:10px;font-size:.72rem;line-height:1.6;overflow-x:auto;white-space:pre-wrap">CREATE OR REPLACE FUNCTION get_total_storage_used()
-RETURNS json
-LANGUAGE sql
-SECURITY DEFINER
-AS $$
-  SELECT json_build_object(
-    'r2_bytes',    COALESCE(SUM(CASE WHEN storage_type IS NULL OR storage_type='r2'    THEN ukuran_file ELSE 0 END),0),
-    'drive_bytes', COALESCE(SUM(CASE WHEN storage_type='drive' THEN ukuran_file ELSE 0 END),0)
-  )
-  FROM dokumen;
-$$;
-
-CREATE OR REPLACE FUNCTION get_drive_config()
-RETURNS json
-LANGUAGE sql
-SECURITY DEFINER
-AS $$
-  SELECT json_object_agg(key, value)
-  FROM app_config
-  WHERE key IN ('driveJson','driveFolderId','driveLimitGb','driveAutoOverflow');
-$$;
-
-CREATE OR REPLACE FUNCTION get_r2_config()
-RETURNS json
-LANGUAGE sql
-SECURITY DEFINER
-AS $$
-  SELECT json_object_agg(key, value)
-  FROM app_config
-  WHERE key IN ('accountId','bucket','accessKey','secretKey','r2LimitBytes');
-$$;</pre>
-            <div style="font-size:.77rem;color:var(--danger);margin-top:.5rem;font-weight:600">
-              <i class="fas fa-exclamation-circle"></i> Tanpa function ini, user biasa tidak dapat mengupload dokumen karena kuota tidak bisa diverifikasi.
-            </div>
-          </div>
-        </div>
-
         <!-- Panduan Recovery -->
         <div class="card">
           <div class="card-hd"><span class="card-title"><i class="fas fa-life-ring" style="color:var(--danger);margin-right:.4rem"></i>Panduan Recovery</span></div>
@@ -3205,8 +3161,18 @@ async function delDokAdmin(id, r2Key, driveFileId){
   }
   hideActionSplash();
   showAlertBanner('Dokumen/data telah terhapus','ok');
-  // Hitung ulang cache dari DB setelah hapus
-  await _updateCacheSetelahHapus();
+  // Update cache langsung (kurangi ukuran file yang dihapus)
+  try{
+    if(ukuranDel>0){
+      const cacheNow=await _bacaCacheStorage();
+      if(cacheNow){
+        const newR2   =(stTypeDel==='r2')   ?Math.max(0,cacheNow.r2-ukuranDel)   :cacheNow.r2;
+        const newDrive=(stTypeDel==='drive') ?Math.max(0,cacheNow.drive-ukuranDel):cacheNow.drive;
+        await _simpanCacheStorage(newR2,newDrive);
+      }
+    }
+  }catch(ce){ console.warn('[cache] update pasca hapus admin gagal:',ce.message); }
+  // Recalc penuh untuk akurasi (admin punya akses penuh)
   loadStorageUsage();
   refreshDriveStorageUI();
   loadDokAdmin(dakPage);
@@ -3467,9 +3433,19 @@ async function delDok(id, isAdmin=false){
   }
   hideActionSplash();
   showAlertBanner('Dokumen/data telah terhapus','ok');
-  // Hitung ulang cache dari DB setelah hapus (akurat, tidak tergantung nilai lama)
-  await _updateCacheSetelahHapus();
+  // Update cache: kurangi ukuran file yang dihapus dari cache
+  try{
+    const ukuran=(dok&&dok.ukuran_file)||0;
+    const stType=(dok&&dok.storage_type)||'r2';
+    const cacheNow=await _bacaCacheStorage();
+    if(cacheNow&&ukuran>0){
+      const newR2   =(stType==='r2')   ?Math.max(0,cacheNow.r2-ukuran)   :cacheNow.r2;
+      const newDrive=(stType==='drive') ?Math.max(0,cacheNow.drive-ukuran):cacheNow.drive;
+      await _simpanCacheStorage(newR2,newDrive);
+    }
+  }catch(ce){ console.warn('[cache] update pasca hapus gagal:',ce.message); }
   if(isAdmin){
+    // Admin: recalc penuh untuk akurasi maksimal
     loadStorageUsage();
     refreshDriveStorageUI();
     loadDokAdmin(dakPage);
@@ -3760,8 +3736,15 @@ async function doUpload(){
       throw new Error('Gagal simpan ke database: '+dbErr.message);
     }
 
-    // Update cache storage setelah upload sukses — hitung ulang dari DB
-    await _updateCacheSetelahUpload();
+    // Update cache storage setelah upload user sukses
+    try{
+      const cacheNow=await _bacaCacheStorage();
+      if(cacheNow){
+        const newR2   =(storageType==='r2')   ?(cacheNow.r2+upFile.size)   :cacheNow.r2;
+        const newDrive=(storageType==='drive') ?(cacheNow.drive+upFile.size):cacheNow.drive;
+        await _simpanCacheStorage(newR2, newDrive);
+      }
+    }catch(ce){ console.warn('[cache] update pasca upload user gagal:',ce.message); }
     setPrg(100,'Selesai!');
     document.getElementById('upPrgBar').classList.add('done');
     toast('Dokumen berhasil diupload ✓','ok');
@@ -4969,8 +4952,15 @@ async function doUploadAdmin(){
       }
       throw new Error('Gagal simpan ke database: '+dbErr.message);
     }
-    // Update cache storage setelah upload sukses — hitung ulang dari DB
-    await _updateCacheSetelahUpload();
+    // Update cache storage setelah upload sukses
+    try{
+      const cacheNow=await _bacaCacheStorage();
+      if(cacheNow){
+        const newR2   =(storageType==='r2')   ?(cacheNow.r2+upAdminFile.size)   :cacheNow.r2;
+        const newDrive=(storageType==='drive') ?(cacheNow.drive+upAdminFile.size):cacheNow.drive;
+        await _simpanCacheStorage(newR2, newDrive);
+      }
+    }catch(ce){ console.warn('[cache] update pasca upload admin gagal:',ce.message); }
     setPrgAdmin(100,'Selesai!');
     document.getElementById('upAdminPrgBar').classList.add('done');
     toast(`Dokumen berhasil diupload atas nama ${upAdminPegSelected?.nama||'pegawai'} ✓`,'ok');
@@ -5082,33 +5072,13 @@ async function _hitung_drive_dari_db(){
 async function _simpanCacheStorage(r2Bytes, driveBytes){
   try{
     const now=new Date().toISOString();
+    // Upsert semua sekaligus
     await Promise.all([
-      sb.from('app_config').upsert({key:'cachedR2Bytes',    value:String(Math.max(0,r2Bytes))},    {onConflict:'key'}),
-      sb.from('app_config').upsert({key:'cachedDriveBytes', value:String(Math.max(0,driveBytes))},  {onConflict:'key'}),
+      sb.from('app_config').upsert({key:'cachedR2Bytes',    value:String(r2Bytes)},    {onConflict:'key'}),
+      sb.from('app_config').upsert({key:'cachedDriveBytes', value:String(driveBytes)},  {onConflict:'key'}),
       sb.from('app_config').upsert({key:'cachedStorageAt',  value:now},                 {onConflict:'key'}),
     ]);
   }catch(e){ console.warn('[storage] simpan cache gagal:',e.message); }
-}
-
-// Tambah ukuran ke cache (setelah upload) — hitung ulang dari DB agar akurat 100%
-async function _updateCacheSetelahUpload(){
-  try{
-    // Selalu hitung ulang dari DB untuk akurasi penuh
-    const[r2,drive]=await Promise.all([_hitung_r2_dari_db(),_hitung_drive_dari_db()]);
-    await _simpanCacheStorage(r2,drive);
-    currentStorageBytes=r2;
-    renderStorageBar(r2);
-  }catch(e){ console.warn('[storage] update cache pasca upload gagal:',e.message); }
-}
-
-// Kurangi ukuran dari cache (setelah hapus)
-async function _updateCacheSetelahHapus(){
-  try{
-    const[r2,drive]=await Promise.all([_hitung_r2_dari_db(),_hitung_drive_dari_db()]);
-    await _simpanCacheStorage(r2,drive);
-    currentStorageBytes=r2;
-    renderStorageBar(r2);
-  }catch(e){ console.warn('[storage] update cache pasca hapus gagal:',e.message); }
 }
 
 // Baca cache dari app_config (bisa dibaca siapa saja termasuk user biasa)
@@ -5267,24 +5237,26 @@ async function cekStorageCukup(fileSize, isAdmin=false){
       const cache=await _bacaCacheStorage();
       if(cache!==null){ r2Used=cache.r2; driveUsed=cache.drive; }
     }catch(e){}
-    // Jika cache kosong → coba RPC
+    // Jika cache kosong → coba RPC → coba query langsung sebagai last resort
     if(r2Used<0){
       try{
         const{data,error}=await sb.rpc('get_total_storage_used');
-        if(!error&&data&&'r2_bytes' in data){
-          r2Used=parseInt(data.r2_bytes||0);
-          driveUsed=parseInt(data.drive_bytes||0);
-        }
+        if(!error&&data&&'r2_bytes' in data){ r2Used=parseInt(data.r2_bytes||0); driveUsed=parseInt(data.drive_bytes||0); }
       }catch(e){}
     }
-    // TIDAK ada fallback query langsung untuk user — RLS akan beri angka salah
-    // Jika cache dan RPC dua-duanya gagal → BLOK upload (lebih aman)
+    if(r2Used<0){
+      // Query langsung — tidak akurat untuk user (RLS) tapi lebih baik dari tidak ada
+      try{
+        const fb=await getAllStorageUsed();
+        r2Used=fb.r2; driveUsed=fb.drive;
+      }catch(e){}
+    }
   }
 
-  // FAIL-SAFE ketat: jika usage masih -1 → TOLAK upload
+  // FAIL-SAFE ketat: jika usage masih -1 (tidak berhasil dimuat) → TOLAK
   if(r2Used<0||driveUsed<0){
     return{ok:false, target:null,
-      msg:'🚫 Tidak dapat memverifikasi kapasitas penyimpanan. Silahkan hubungi admin untuk memastikan kuota sudah terkonfigurasi.'};
+      msg:'🚫 Tidak dapat memverifikasi kapasitas penyimpanan. Coba lagi atau hubungi admin.'};
   }
 
   currentStorageBytes=r2Used;
