@@ -815,16 +815,15 @@ tbody td.wrap{white-space:normal;min-width:140px;}
           <div class="form-group"><label class="form-label">Bucket</label><input class="form-control" id="r2Bkt"/></div>
           <div class="form-group"><label class="form-label">Access Key</label><input class="form-control" id="r2AK" style="font-family:'JetBrains Mono',monospace;font-size:.79rem"/></div>
           <div class="form-group"><label class="form-label">Secret Key</label><input class="form-control" type="password" id="r2SK"/></div>
-          <div class="form-group"><label class="form-label">Batas Penyimpanan R2 <span style="font-size:.72rem;color:var(--muted)">(max 8 GB)</span></label>
+          <div class="form-group"><label class="form-label">Batas Penyimpanan R2</label>
             <div style="display:flex;gap:.5rem;align-items:center">
-              <input class="form-control" id="r2LimitVal" type="number" min="1" max="8192" value="8" style="max-width:100px" oninput="updateR2LimitPreview()"/>
+              <input class="form-control" id="r2LimitVal" type="number" min="1" max="99999" value="8" style="max-width:100px" oninput="updateR2LimitPreview()"/>
               <select class="form-control" id="r2LimitUnit" style="max-width:80px" onchange="updateR2LimitPreview()">
                 <option value="GB">GB</option>
                 <option value="MB">MB</option>
               </select>
               <span style="font-size:.8rem;color:var(--muted)" id="r2LimitPreview">= 8 GB</span>
             </div>
-            <div style="font-size:.72rem;color:var(--muted);margin-top:.25rem">Cloudflare R2 free tier: maks 10 GB. Setting ini membatasi kuota internal.</div>
           </div>
           <button class="btn-p" onclick="saveR2()" style="width:100%;justify-content:center"><i class="fas fa-save"></i> Simpan R2</button>
           <div id="r2Stat" style="margin-top:.65rem;font-size:.79rem;color:var(--muted)"></div>
@@ -1875,7 +1874,7 @@ async function enterApp(prof){
   // Load R2 dari sessionStorage cache dulu (cepat), lalu dari DB (lengkap)
   const r2Cached=sessionStorage.getItem('r2cfg_session');
   if(r2Cached){try{R2={...R2,...JSON.parse(r2Cached)};}catch(e){}}
-  await Promise.all([loadJabatan(),loadKategori(),loadR2(),loadDriveConfig()]);
+  await Promise.all([loadJabatan(),loadKategori(),loadR2(),loadDriveConfig(),loadR2Limit()]);
 
   if(prof.role==='admin'){
     const savedPage=sessionStorage.getItem('activePage');
@@ -2189,20 +2188,16 @@ async function loadR2(){
   const{data:adminData,error:adminErr}=await sb.from('app_config').select('key,value');
   if(!adminErr && adminData && adminData.length>0){
     R2={accountId:'',bucket:'',accessKey:'',secretKey:''};
-    adminData.forEach(row=>{
-      if(row.key==='accountId') R2.accountId=row.value||'';
-      if(row.key==='bucket')    R2.bucket=row.value||'';
-      if(row.key==='accessKey') R2.accessKey=row.value||'';
-      if(row.key==='secretKey') R2.secretKey=row.value||'';
-      if(row.key==='r2LimitBytes' && row.value) R2_LIMIT_BYTES=parseInt(row.value)||R2_LIMIT_BYTES;
-    });
+    adminData.forEach(row=>{ if(row.key in R2) R2[row.key]=row.value||''; });
+    // Admin: simpan ke sessionStorage (bukan localStorage) sebagai cache per-sesi
     sessionStorage.setItem('r2cfg_session', JSON.stringify(R2));
-    sessionStorage.setItem('r2limit_session', String(R2_LIMIT_BYTES));
     fillR2Fields();
     return;
   }
 
   // LANGKAH 2: Untuk user biasa — panggil RPC get_r2_config()
+  // RPC ini berjalan sebagai SECURITY DEFINER sehingga bisa baca app_config
+  // tanpa melanggar RLS, dan hanya bisa dipanggil oleh user approved
   try{
     const{data:rpcData,error:rpcErr}=await sb.rpc('get_r2_config');
     if(!rpcErr && rpcData){
@@ -2212,19 +2207,20 @@ async function loadR2(){
         accessKey: rpcData.accessKey||'',
         secretKey: rpcData.secretKey||''
       };
-      if(rpcData.r2LimitBytes) R2_LIMIT_BYTES=parseInt(rpcData.r2LimitBytes)||R2_LIMIT_BYTES;
+      // Cache di sessionStorage (hilang saat browser ditutup, aman)
       sessionStorage.setItem('r2cfg_session', JSON.stringify(R2));
-      sessionStorage.setItem('r2limit_session', String(R2_LIMIT_BYTES));
       fillR2Fields();
       return;
     }
   }catch(e){ console.warn('RPC get_r2_config error:',e.message); }
 
-  // LANGKAH 3: Fallback — baca dari sessionStorage cache
+  // LANGKAH 3: Fallback — baca dari sessionStorage cache (sesi saat ini saja)
   const cached=sessionStorage.getItem('r2cfg_session');
-  if(cached){ try{R2={...R2,...JSON.parse(cached)};}catch(e){} }
-  const cachedLimit=sessionStorage.getItem('r2limit_session');
-  if(cachedLimit) R2_LIMIT_BYTES=parseInt(cachedLimit)||R2_LIMIT_BYTES;
+  if(cached){
+    try{
+      R2={...R2,...JSON.parse(cached)};
+    }catch(e){ console.warn('R2 session cache parse error'); }
+  }
   fillR2Fields();
 }
 
@@ -2263,9 +2259,7 @@ function updateR2LimitPreview(){
 function getR2LimitBytes(){
   const val=parseFloat(document.getElementById('r2LimitVal')?.value)||8;
   const unit=document.getElementById('r2LimitUnit')?.value||'GB';
-  let gb=unit==='MB'?val/1024:val;
-  if(gb>8) gb=8; // max 8 GB
-  if(gb<(1/1024)) gb=1/1024; // min 1 MB
+  const gb=unit==='MB'?val/1024:val;
   return Math.round(gb*1024*1024*1024);
 }
 
@@ -2275,9 +2269,7 @@ async function saveR2(){
   const ak=document.getElementById('r2AK').value.trim();
   const sk=document.getElementById('r2SK').value.trim();
   if(!aid||!bkt||!ak||!sk){toast('Semua field R2 wajib diisi!','warn');return;}
-  let limitBytes=getR2LimitBytes();
-  const MAX_R2=8*1024*1024*1024;
-  if(limitBytes>MAX_R2) limitBytes=MAX_R2; // hard cap 8 GB
+  const limitBytes=getR2LimitBytes();
   const btn=document.querySelector('button[onclick="saveR2()"]');
   if(btn) setBtn(btn,true);
   showActionSplash('Menyimpan konfigurasi R2...');
@@ -2290,14 +2282,10 @@ async function saveR2(){
   if(btn) setBtn(btn,false,'<i class="fas fa-save"></i> Simpan R2');
   hideActionSplash();
   if(hasError){ toast('Gagal simpan konfigurasi R2. Cek console.','err'); return; }
-  // Update memory + hapus semua cache agar cekStorageCukup baca DB segar
   R2={accountId:aid,bucket:bkt,accessKey:ak,secretKey:sk};
   R2_LIMIT_BYTES=limitBytes;
-  sessionStorage.removeItem('r2cfg_session');
-  sessionStorage.removeItem('r2limit_session');
   sessionStorage.setItem('r2cfg_session', JSON.stringify(R2));
   renderStorageBar(currentStorageBytes);
-  fillR2Fields();
   const st=document.getElementById('r2Stat');
   if(st) st.textContent='✓ R2 berhasil disimpan';
   toast('Konfigurasi R2 berhasil disimpan ✓','ok');
@@ -2406,8 +2394,6 @@ async function saveDriveConfig(){
   hideActionSplash();
   if(hasError){toast('Gagal simpan konfigurasi Drive!','err');return;}
   DRIVE={serviceAccountJson:json,folderId:fid,limitGb:lgb,autoOverflow:auto,configured:true};
-  // Hapus semua cache agar cekStorageCukup baca DB segar di upload berikutnya
-  sessionStorage.removeItem('drivecfg_session');
   sessionStorage.setItem('drivecfg_session', JSON.stringify(DRIVE));
   document.getElementById('driveStat').textContent='✓ Google Drive berhasil disimpan';
   toast('Konfigurasi Google Drive berhasil disimpan ✓','ok');
@@ -3649,62 +3635,44 @@ function setPrg(p,l){document.getElementById('upPrgBar').style.width=p+'%';docum
 // Cek storage saat buka halaman Upload — tampilkan banner jika penuh
 async function checkStorageOnUploadPage(){
   try{
-    // Baca limit segar dari DB
-    let r2LimitBytes=R2_LIMIT_BYTES;
-    let driveGb=0, driveConfigured=false, driveAutoOverflow=false;
-    try{
-      const{data:cfgRows}=await sb.from('app_config')
-        .select('key,value')
-        .in('key',['r2LimitBytes','driveLimitGb','driveAutoOverflow','driveJson','driveFolderId']);
-      if(cfgRows){
-        let hasJ=false,hasF=false;
-        cfgRows.forEach(r=>{
-          if(r.key==='r2LimitBytes'&&r.value) r2LimitBytes=parseInt(r.value);
-          if(r.key==='driveLimitGb'&&r.value) driveGb=parseFloat(r.value);
-          if(r.key==='driveAutoOverflow') driveAutoOverflow=(r.value==='true');
-          if(r.key==='driveJson'&&r.value) hasJ=true;
-          if(r.key==='driveFolderId'&&r.value) hasF=true;
-        });
-        driveConfigured=hasJ&&hasF;
-      }
-    }catch(e2){}
-    if(r2LimitBytes>8*1024*1024*1024) r2LimitBytes=8*1024*1024*1024;
-    if(driveGb<=0) driveGb=(DRIVE.limitGb&&DRIVE.limitGb>0)?DRIVE.limitGb:10;
-    const driveLimitBytes=driveGb*1024*1024*1024;
-    R2_LIMIT_BYTES=r2LimitBytes;
-
-    const[r2Used,driveUsed]=await Promise.all([getStorageUsed(),getDriveStorageUsedFromDB()]);
+    if(!DRIVE.serviceAccountJson) await ensureDriveConfig();
+    const r2Used=await getStorageUsed();
     currentStorageBytes=r2Used;
     renderStorageBar(r2Used);
-
-    const r2Full=(r2Used>=r2LimitBytes);
-    const driveFull=(driveUsed>=driveLimitBytes);
+    const r2LimitBytes=R2_LIMIT_BYTES;
+    const driveGb=(DRIVE.limitGb&&DRIVE.limitGb>0)?DRIVE.limitGb:10;
+    const driveLimitBytes=driveGb*1024*1024*1024;
 
     const btnUp=document.getElementById('btnUpload');
-    const enable=()=>{if(btnUp){btnUp.disabled=false;btnUp.style.opacity='';btnUp.title='';}};
-    const disable=(msg)=>{
+    const enableBtn=()=>{if(btnUp){btnUp.disabled=false;btnUp.style.opacity='';btnUp.title='';}};
+    const disableBtn=(msg)=>{
       showStorageBlockAlert(msg);
       if(btnUp){btnUp.disabled=true;btnUp.style.opacity='0.4';btnUp.title='Penyimpanan penuh';}
     };
 
-    if(driveConfigured && driveAutoOverflow){
+    if(DRIVE.configured && DRIVE.autoOverflow){
+      const driveUsed=await getDriveStorageUsedFromDB();
+      const r2Full=(r2Used>=r2LimitBytes);
+      const driveFull=(driveUsed>=driveLimitBytes);
       if(r2Full && driveFull){
-        disable(`🚫 Semua penyimpanan penuh! R2: ${fmtSz(r2Used)}/${fmtSz(r2LimitBytes)}, Drive: ${fmtSz(driveUsed)}/${fmtSz(driveLimitBytes)}.`);
+        disableBtn(`🚫 Semua penyimpanan penuh! R2: ${fmtSz(r2Used)}/${fmtSz(r2LimitBytes)}, Drive: ${fmtSz(driveUsed)}/${fmtSz(driveLimitBytes)}. Hapus dokumen lama untuk memberi ruang.`);
         return;
       }
-      if(r2Full && !driveFull){
-        // Masih bisa upload ke Drive — boleh, tapi beri info
-        showInlineAlert('upSuccessAlert',`ℹ R2 penuh — file akan disimpan ke Drive (sisa: ${fmtSz(driveLimitBytes-driveUsed)}).`,'warn');
-        enable(); return;
+      if(r2Full){
+        // R2 penuh tapi Drive masih ada — boleh upload (ke Drive)
+        showInlineAlert('upSuccessAlert',`⚠ R2 penuh — file akan disimpan ke Google Drive (sisa: ${fmtSz(driveLimitBytes-driveUsed)}).`,'warn');
       }
-      enable(); return;
+      if(driveFull && r2Full){
+        disableBtn(`🚫 Drive penuh (${fmtSz(driveUsed)}/${fmtSz(driveLimitBytes)}) dan R2 juga penuh. Upload tidak tersedia.`);
+        return;
+      }
+    } else {
+      if(r2Used>=r2LimitBytes){
+        disableBtn(`🚫 Penyimpanan R2 penuh (${fmtSz(r2Used)}/${fmtSz(r2LimitBytes)}). Upload tidak tersedia.`);
+        return;
+      }
     }
-    // Hanya R2
-    if(r2Full){
-      disable(`🚫 Penyimpanan R2 penuh (${fmtSz(r2Used)}/${fmtSz(r2LimitBytes)}). Hapus dokumen atau aktifkan overflow ke Drive.`);
-      return;
-    }
-    enable();
+    enableBtn();
   }catch(e){ console.warn('checkStorageOnUploadPage error:',e.message); }
 }
 
@@ -4864,7 +4832,13 @@ async function saveProAdmin(){
 let R2_LIMIT_BYTES = 8 * 1024 * 1024 * 1024; // default, di-update saat loadR2
 let   currentStorageBytes = 0;
 
-// R2_LIMIT_BYTES dimuat via loadR2() saat init
+async function loadR2Limit(){
+  try{
+    const{data}=await sb.from('app_config').select('value').eq('key','r2LimitBytes').single();
+    if(data?.value) R2_LIMIT_BYTES=parseInt(data.value)||R2_LIMIT_BYTES;
+  }catch(e){}
+  fillR2Fields(); // update UI preview setelah limit dimuat
+}
 
 // Hitung total storage R2 (hanya storage_type='r2')
 async function getStorageUsed(){
@@ -4937,94 +4911,51 @@ function renderStorageBar(usedBytes){
   }
 }
 
-// Cek storage sebelum upload — ambil limit LANGSUNG dari DB, tidak pakai cache
+// Cek storage sebelum upload — cek R2 DAN Drive secara ketat
 async function cekStorageCukup(fileSize){
-  // Ambil semua config limit segar dari DB (bukan cache)
-  let r2LimitBytes = R2_LIMIT_BYTES; // default
-  let driveGb = 0;
-  let driveConfigured = false;
-  let driveAutoOverflow = false;
+  // Pastikan DRIVE config termuat agar limitGb akurat
+  if(!DRIVE.serviceAccountJson) await ensureDriveConfig();
 
-  try{
-    const{data:cfgRows}=await sb.from('app_config')
-      .select('key,value')
-      .in('key',['r2LimitBytes','driveLimitGb','driveAutoOverflow','driveJson','driveFolderId']);
-    if(cfgRows){
-      let hasR2Limit=false, hasDriveJson=false, hasDriveFid=false;
-      cfgRows.forEach(r=>{
-        if(r.key==='r2LimitBytes'&&r.value){ r2LimitBytes=parseInt(r.value); hasR2Limit=true; }
-        if(r.key==='driveLimitGb'&&r.value){ driveGb=parseFloat(r.value); }
-        if(r.key==='driveAutoOverflow'){ driveAutoOverflow=(r.value==='true'); }
-        if(r.key==='driveJson'&&r.value){ hasDriveJson=true; }
-        if(r.key==='driveFolderId'&&r.value){ hasDriveFid=true; }
-      });
-      driveConfigured=hasDriveJson&&hasDriveFid;
-      // Sinkronkan ke global agar UI konsisten
-      if(hasR2Limit) R2_LIMIT_BYTES=r2LimitBytes;
-      if(driveGb>0) DRIVE.limitGb=driveGb;
-      DRIVE.autoOverflow=driveAutoOverflow;
-    }
-  }catch(e){
-    // Fallback ke RPC jika user biasa tidak bisa baca app_config
-    try{
-      const{data:rpc}=await sb.rpc('get_drive_config');
-      if(rpc){
-        driveGb=parseFloat(rpc.driveLimitGb)||0;
-        driveAutoOverflow=(rpc.driveAutoOverflow==='true');
-        driveConfigured=!!(rpc.driveJson&&rpc.driveFolderId);
-        if(driveGb>0) DRIVE.limitGb=driveGb;
-        DRIVE.autoOverflow=driveAutoOverflow;
-      }
-    }catch(e2){ console.warn('cekStorage RPC error:',e2.message); }
-  }
-
-  // Validasi: jika driveGb masih 0, pakai DRIVE.limitGb atau default 10
-  if(driveGb<=0) driveGb=(DRIVE.limitGb&&DRIVE.limitGb>0)?DRIVE.limitGb:10;
-  // Max R2 8 GB
-  if(r2LimitBytes > 8*1024*1024*1024) r2LimitBytes=8*1024*1024*1024;
-  const driveLimitBytes=driveGb*1024*1024*1024;
-
-  // Hitung usage langsung dari DB
-  const[r2Used, driveUsed]=await Promise.all([getStorageUsed(), getDriveStorageUsedFromDB()]);
+  const r2Used=await getStorageUsed();
   currentStorageBytes=r2Used;
   renderStorageBar(r2Used);
 
+  const r2LimitBytes=R2_LIMIT_BYTES;
+  const driveGb=(DRIVE.limitGb && DRIVE.limitGb>0) ? DRIVE.limitGb : 10;
+  const driveLimitBytes=driveGb*1024*1024*1024;
   const r2Sisa=r2LimitBytes-r2Used;
   const r2Full=(r2Sisa<=0);
   const r2TakCukup=(fileSize>r2Sisa);
-  const driveSisa=driveLimitBytes-driveUsed;
-  const driveFull=(driveSisa<=0);
 
-  // Log untuk debug
-  console.log('[StorageCek]',{
-    r2Used:fmtSz(r2Used), r2Limit:fmtSz(r2LimitBytes), r2Full,
-    driveUsed:fmtSz(driveUsed), driveLimit:fmtSz(driveLimitBytes), driveFull,
-    driveConfigured, driveAutoOverflow, fileSize:fmtSz(fileSize)
-  });
+  // Jika Drive dikonfigurasi + autoOverflow aktif:
+  // Tentukan target berdasarkan R2 dulu, tapi SELALU validasi limit masing-masing
+  if(DRIVE.configured && DRIVE.autoOverflow){
+    const driveUsed=await getDriveStorageUsedFromDB();
+    const driveSisa=driveLimitBytes-driveUsed;
+    const driveFull=(driveSisa<=0);
 
-  // Skenario 1: Drive configured + autoOverflow
-  if(driveConfigured && driveAutoOverflow){
     if(!r2Full && !r2TakCukup){
-      return{ok:true, target:'r2', msg:''};
+      // R2 masih cukup → upload ke R2
+      return{ok:true,target:'r2',msg:''};
     }
-    // R2 penuh → coba Drive
+    // R2 penuh/tidak cukup → coba Drive
     if(driveFull){
-      return{ok:false, target:null, msg:`🚫 Semua penyimpanan penuh! R2: ${fmtSz(r2Used)}/${fmtSz(r2LimitBytes)}, Drive: ${fmtSz(driveUsed)}/${fmtSz(driveLimitBytes)}. Hapus dokumen lama.`};
+      return{ok:false,target:null,msg:`🚫 Semua penyimpanan penuh!\nR2: ${fmtSz(r2Used)} / ${fmtSz(r2LimitBytes)}\nDrive: ${fmtSz(driveUsed)} / ${fmtSz(driveLimitBytes)}\nHapus beberapa dokumen terlebih dahulu.`};
     }
     if(fileSize>driveSisa){
-      return{ok:false, target:null, msg:`🚫 Drive tidak cukup. File: ${fmtSz(fileSize)}, sisa Drive: ${fmtSz(driveSisa)}.`};
+      return{ok:false,target:null,msg:`🚫 Drive tidak cukup. File: ${fmtSz(fileSize)}, sisa Drive: ${fmtSz(driveSisa)} / ${fmtSz(driveLimitBytes)}.`};
     }
-    return{ok:true, target:'drive', msg:''};
+    return{ok:true,target:'drive',msg:''};
   }
 
-  // Skenario 2: Hanya R2
+  // Drive tidak dikonfigurasi atau autoOverflow mati — hanya R2
   if(r2Full){
-    return{ok:false, target:null, msg:`🚫 R2 penuh (${fmtSz(r2Used)}/${fmtSz(r2LimitBytes)}). Hapus dokumen atau aktifkan overflow ke Drive.`};
+    return{ok:false,target:null,msg:`🚫 Penyimpanan R2 penuh (${fmtSz(r2Used)} / ${fmtSz(r2LimitBytes)}). Hapus beberapa dokumen atau aktifkan overflow ke Drive.`};
   }
   if(r2TakCukup){
-    return{ok:false, target:null, msg:`🚫 Ruang R2 tidak cukup. File: ${fmtSz(fileSize)}, sisa: ${fmtSz(r2Sisa)}.`};
+    return{ok:false,target:null,msg:`🚫 Ruang R2 tidak cukup. File: ${fmtSz(fileSize)}, sisa: ${fmtSz(r2Sisa)}.`};
   }
-  return{ok:true, target:'r2', msg:''};
+  return{ok:true,target:'r2',msg:''};
 }
 
 // ═══════════════════════════════
