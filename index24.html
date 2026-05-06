@@ -464,7 +464,6 @@ tbody td.wrap{white-space:normal;min-width:140px;}
       <div style="text-align:right;margin-bottom:.4rem"><button class="btn-link" onclick="switchAuth('forgot')">Lupa password?</button></div>
       <button class="btn-main" id="btnLogin" onclick="doLogin()"><i class="fas fa-sign-in-alt"></i> Masuk</button>
       <div id="lErr" class="alert-danger alert-box" style="display:none;margin-top:.875rem"><i class="fas fa-times-circle"></i><div id="lErrTxt"></div></div>
-      <div id="loginMsg" style="display:none;margin-top:.875rem"></div>
     </div>
 
     <!-- REGISTER -->
@@ -1024,11 +1023,6 @@ BEGIN
         'r2_used', v_r2_used, 'r2_limit', p_r2_limit, 'file_size', v_file_size);
     END IF;
   ELSIF p_storage_type = 'drive' THEN
-    -- Blokir jika drive_limit tidak diset (= 0 artinya belum dikonfigurasi)
-    IF p_drive_limit <= 0 THEN
-      RETURN jsonb_build_object('ok', false, 'error', 'DRIVE_NOT_CONFIGURED',
-        'drive_used', v_drive_used, 'drive_limit', 0);
-    END IF;
     IF (v_drive_used + v_file_size) > p_drive_limit THEN
       RETURN jsonb_build_object('ok', false, 'error', 'DRIVE_FULL',
         'drive_used', v_drive_used, 'drive_limit', p_drive_limit, 'file_size', v_file_size);
@@ -2614,47 +2608,19 @@ async function refreshDriveStorageUI(){
     const{r2:r2Fresh, drive:usedFresh}=await recalcAndCacheStorage();
     currentStorageBytes=r2Fresh;
     const used=usedFresh;
-    // Jika limitGb tidak diset (=0), tampilkan peringatan konfigurasi
-    if(!DRIVE.limitGb || DRIVE.limitGb<=0){
-      const wrap=document.getElementById('driveStorageWrap');
-      if(wrap) wrap.style.display='block';
-      const ul=document.getElementById('driveUsedLabel');
-      if(ul) ul.textContent=fmtSz(used)+' dipakai';
-      const ll=document.getElementById('driveLimitLabel');
-      if(ll) ll.textContent='Limit: belum diset!';
-      const fill=document.getElementById('driveBarFill');
-      if(fill){ fill.style.width='100%'; fill.className='storage-bar-fill danger'; }
-      const warn=document.getElementById('driveFullWarn');
-      if(warn){ warn.style.display='flex'; warn.innerHTML='<i class="fas fa-exclamation-triangle"></i><div><strong>Limit Drive belum diset!</strong> Upload ke Drive diblokir hingga limit diisi. Isi angka limit di atas lalu simpan.</div>'; }
-      return;
-    }
-    const limitBytes=Math.round(DRIVE.limitGb*1024*1024*1024);
-    const rawPct=(used/limitBytes)*100;
-    const pct=Math.min(100, rawPct);
-    const isFull=rawPct>=100;
+    const limitBytes=DRIVE.limitGb*1024*1024*1024;
+    const pct=Math.min(100,(used/limitBytes)*100);
     const wrap=document.getElementById('driveStorageWrap');
     if(wrap) wrap.style.display='block';
     const fill=document.getElementById('driveBarFill');
-    if(fill){ fill.style.width=pct.toFixed(1)+'%'; fill.className='storage-bar-fill '+(isFull?'danger':pct>85?'danger':pct>60?'warn':'safe'); }
+    if(fill){ fill.style.width=pct.toFixed(1)+'%'; fill.className='storage-bar-fill '+(pct>85?'danger':pct>60?'warn':'safe'); }
     const ul=document.getElementById('driveUsedLabel');
     const ll=document.getElementById('driveLimitLabel');
-    if(ul) ul.textContent=fmtSz(used)+' dipakai ('+rawPct.toFixed(1)+'%)'+(isFull?' 🚫 PENUH':'');
+    if(ul) ul.textContent=fmtSz(used)+' dipakai ('+pct.toFixed(1)+'%)';
     const limitLabel=DRIVE.limitGb<1?(Math.round(DRIVE.limitGb*1024)+' MB'):(DRIVE.limitGb+' GB');
     if(ll) ll.textContent='Limit: '+limitLabel;
     const warn=document.getElementById('driveFullWarn');
-    if(warn){
-      if(isFull){
-        warn.style.display='flex';
-        warn.innerHTML='<i class="fas fa-ban"></i><div><strong>Drive PENUH ('+rawPct.toFixed(1)+'%)!</strong> Upload ke Drive diblokir. Hapus dokumen lama atau buat folder baru dan perbarui Folder ID.</div>';
-        warn.className='alert-danger alert-box';
-      } else if(pct>85){
-        warn.style.display='flex';
-        warn.innerHTML='<i class="fas fa-exclamation-triangle"></i><div>Drive mendekati penuh ('+pct.toFixed(1)+'%)! Segera buat folder Drive baru dan perbarui Folder ID.</div>';
-        warn.className='alert-warn alert-box';
-      } else {
-        warn.style.display='none';
-      }
-    }
+    if(warn) warn.style.display=pct>85?'flex':'none';
   }catch(e){ console.warn('Drive storage UI error:',e.message); }
 }
 
@@ -2781,36 +2747,9 @@ async function migrateR2ToDrive(){
     return;
   }
 
-  // Validasi limit Drive sebelum mulai migrate
-  const driveLimitGb = DRIVE.limitGb > 0 ? DRIVE.limitGb : 0;
-  if(driveLimitGb <= 0){
-    toast('🚫 Batas penyimpanan Drive belum diset. Atur dulu limit Drive di Pengaturan!','err');
-    if(btn) setBtn(btn,false,'<i class="fas fa-exchange-alt"></i> Pindahkan R2 ke Drive');
-    return;
-  }
-  const driveLimitBytes = Math.round(driveLimitGb * 1024 * 1024 * 1024);
-
-  // Hitung total ukuran file R2 yang akan dipindah vs sisa Drive
-  const totalR2Size = docs.reduce((s,d)=>s+(d.ukuran_file||0), 0);
-  const driveCurrentUsed = await getDriveStorageUsedFromDB().catch(()=>0);
-  const driveSisa = Math.max(0, driveLimitBytes - driveCurrentUsed);
-  if(totalR2Size > driveSisa){
-    toast(`🚫 Drive tidak cukup untuk migrasi! Total R2: ${fmtSz(totalR2Size)}, sisa Drive: ${fmtSz(driveSisa)} dari ${fmtSz(driveLimitBytes)}.`,'err');
-    if(btn) setBtn(btn,false,'<i class="fas fa-exchange-alt"></i> Pindahkan R2 ke Drive');
-    return;
-  }
-
   let ok=0,fail=0;
-  let driveRunningUsed = driveCurrentUsed; // tracking real-time agar tidak over-limit
   for(const doc of docs){
     try{
-      // Cek sisa Drive real-time untuk setiap file
-      const fileSz = doc.ukuran_file || 0;
-      if(driveRunningUsed + fileSz > driveLimitBytes){
-        toast(`🚫 Drive mendekati limit saat migrasi. Berhenti di file: ${doc.nama_file||'unknown'}. ${ok} file berhasil.`,'warn');
-        break;
-      }
-
       // Download dari R2 via Worker
       const token=await getWorkerToken();
       const encodedKey=doc.r2_key.split('/').map(encodeURIComponent).join('/');
@@ -2828,7 +2767,6 @@ async function migrateR2ToDrive(){
 
       // Hapus dari R2
       await r2Delete(doc.r2_key);
-      driveRunningUsed += fileSz;
       ok++;
     }catch(e){
       console.warn('Migrasi gagal:',doc.nama_file,e.message);
@@ -3894,8 +3832,7 @@ async function doUpload(){
 
     // Gunakan RPC atomik — cek kapasitas + insert dalam 1 transaksi Postgres
     // Ini mencegah race condition saat 2 user upload bersamaan
-    // KETAT: jika limitGb tidak diset → kirim 0 agar SQL menolak upload ke Drive
-    const driveGbLimit=(DRIVE.limitGb&&DRIVE.limitGb>0)?DRIVE.limitGb:0;
+    const driveGbLimit=(DRIVE.limitGb&&DRIVE.limitGb>0)?DRIVE.limitGb:10;
     const{data:rpcResult,error:rpcErr}=await sb.rpc('insert_dokumen_safe',{
       p_payload:    insertPayload,
       p_r2_limit:   R2_LIMIT_BYTES,
@@ -3918,8 +3855,6 @@ async function doUpload(){
           msg=`🚫 R2 penuh! Terisi ${fmtSz(rpcResult.r2_used||0)} dari ${fmtSz(rpcResult.r2_limit||0)}. Upload ditolak.`;
         else if(errCode==='DRIVE_FULL')
           msg=`🚫 Drive penuh! Terisi ${fmtSz(rpcResult.drive_used||0)} dari ${fmtSz(rpcResult.drive_limit||0)}. Upload ditolak.`;
-        else if(errCode==='DRIVE_NOT_CONFIGURED')
-          msg='🚫 Upload ke Drive diblokir: batas penyimpanan Drive belum diset. Admin perlu mengatur limit Drive di Pengaturan.';
         else
           msg='🚫 Gagal menyimpan: '+(errCode||'error tidak diketahui');
         // Cleanup file yang sudah diupload
@@ -5145,8 +5080,7 @@ async function doUploadAdmin(){
       adminInsertPayload.id=crypto.randomUUID?crypto.randomUUID():[...Array(8)].map(()=>Math.floor(Math.random()*16).toString(16)).join('')+'-'+[...Array(4)].map(()=>Math.floor(Math.random()*16).toString(16)).join('')+'-4'+[...Array(3)].map(()=>Math.floor(Math.random()*16).toString(16)).join('')+'-'+[...Array(4)].map(()=>Math.floor(Math.random()*16).toString(16)).join('')+'-'+[...Array(12)].map(()=>Math.floor(Math.random()*16).toString(16)).join('');
     }
     // Gunakan RPC atomik — cek kapasitas + insert dalam 1 transaksi Postgres
-    // KETAT: jika limitGb tidak diset → kirim 0 agar SQL menolak upload ke Drive
-    const driveGbLimitA=(DRIVE.limitGb&&DRIVE.limitGb>0)?DRIVE.limitGb:0;
+    const driveGbLimitA=(DRIVE.limitGb&&DRIVE.limitGb>0)?DRIVE.limitGb:10;
     const{data:rpcResultA,error:rpcErrA}=await sb.rpc('insert_dokumen_safe',{
       p_payload:    adminInsertPayload,
       p_r2_limit:   R2_LIMIT_BYTES,
@@ -5164,8 +5098,6 @@ async function doUploadAdmin(){
           msg=`🚫 R2 penuh! ${fmtSz(rpcResultA.r2_used||0)}/${fmtSz(rpcResultA.r2_limit||0)}. Upload ditolak.`;
         else if(errCode==='DRIVE_FULL')
           msg=`🚫 Drive penuh! ${fmtSz(rpcResultA.drive_used||0)}/${fmtSz(rpcResultA.drive_limit||0)}. Upload ditolak.`;
-        else if(errCode==='DRIVE_NOT_CONFIGURED')
-          msg='🚫 Upload ke Drive diblokir: batas penyimpanan Drive belum diset. Atur limit Drive di Pengaturan.';
         else
           msg='🚫 Gagal: '+(errCode||'error tidak diketahui');
         // Cleanup
@@ -5498,10 +5430,8 @@ async function cekStorageCukup(fileSize, isAdmin=false){
   }
 
   if(r2LimitBytes<=0||r2LimitBytes>8*1024*1024*1024) r2LimitBytes=8*1024*1024*1024;
-  // Drive limit: JANGAN fallback ke default jika tidak ada config — gunakan 0 = Drive TIDAK dikonfigurasi
-  // driveGb=0 artinya limit tidak diset → Drive TIDAK akan digunakan sebagai tujuan upload
-  // Hanya pakai DRIVE.limitGb jika admin memang sudah menyetelnya secara eksplisit
-  const driveLimitBytes = driveGb > 0 ? Math.round(driveGb * 1024 * 1024 * 1024) : 0;
+  if(driveGb<=0) driveGb=(DRIVE.limitGb>0)?DRIVE.limitGb:10;
+  const driveLimitBytes=Math.round(driveGb*1024*1024*1024);
 
   // ── 2. Hitung usage ─────────────────────────────────────────────────────
   let r2Used=-1, driveUsed=-1;
@@ -5567,33 +5497,17 @@ async function cekStorageCukup(fileSize, isAdmin=false){
   const msgDrvTCA=`🚫 Drive tidak cukup untuk file ini. File: ${fmtSz(fileSize)}, sisa Drive: ${fmtSz(driveSisa)} dari limit ${fmtSz(driveLimitBytes)}.`;
 
   // ── 5. Keputusan: Drive aktif + autoOverflow ─────────────────────────────
-  // KETAT: Drive hanya dipakai jika driveConfigured + autoOverflow + driveLimitBytes > 0
-  const driveAvailable = driveConfigured && driveAutoOverflow && driveLimitBytes > 0;
-  if(driveAvailable){
-    // Utamakan R2 dulu — jika R2 masih muat, pakai R2
+  if(driveConfigured && driveAutoOverflow){
     if(!r2Full && !r2TakCukup) return{ok:true, target:'r2', msg:''};
-    // R2 penuh/tidak muat → cek Drive secara KETAT
-    if(driveFull){
-      // Drive sudah di atas limit — BLOKIR total
-      return{ok:false, target:null, msg:isAdmin?msgDrvA:msgAllU};
-    }
-    if(driveTakCukup){
-      // File tidak muat di Drive — BLOKIR
-      return{ok:false, target:null, msg:isAdmin?msgDrvTCA:msgAllU};
-    }
-    // Drive masih ada ruang — izinkan overflow ke Drive
+    // R2 penuh/tidak muat → cek Drive
+    if(driveFull)      return{ok:false,target:null,msg:isAdmin?msgDrvA:msgAllU};
+    if(driveTakCukup)  return{ok:false,target:null,msg:isAdmin?msgDrvTCA:msgAllU};
     return{ok:true, target:'drive', msg:''};
   }
 
-  // ── 6. Keputusan: Hanya R2 (Drive tidak dikonfigurasi / tidak aktif / limit=0) ──
-  // Jika autoOverflow aktif tapi Drive belum dikonfigurasi atau limit=0 → BLOKIR ke Drive juga
-  if(r2Full){
-    const msgFull = driveConfigured && driveAutoOverflow && driveLimitBytes<=0
-      ? (isAdmin ? `🚫 R2 penuh & limit Drive belum disetel (set limit Drive > 0 di Pengaturan).` : msgR2U)
-      : (isAdmin ? msgR2A : msgR2U);
-    return{ok:false, target:null, msg:msgFull};
-  }
-  if(r2TakCukup) return{ok:false, target:null,
+  // ── 6. Keputusan: Hanya R2 ──────────────────────────────────────────────
+  if(r2Full)     return{ok:false,target:null,msg:isAdmin?msgR2A:msgR2U};
+  if(r2TakCukup) return{ok:false,target:null,
     msg:isAdmin?`🚫 R2 tidak cukup. File: ${fmtSz(fileSize)}, sisa: ${fmtSz(r2Sisa)}/${fmtSz(r2LimitBytes)}.`:msgR2U};
   return{ok:true, target:'r2', msg:''};
 }
@@ -5674,100 +5588,42 @@ async function init(){
     }
 
     if(urlParams){
-      const errCode    = urlParams.get('error_code') || urlParams.get('error');
-      const errDesc    = urlParams.get('error_description') || '';
-      const type       = urlParams.get('type'); // 'recovery' | 'signup' | 'email_change' | 'magiclink'
-      const accessToken  = urlParams.get('access_token');
+      const errCode = urlParams.get('error_code') || urlParams.get('error');
+      const errDesc = urlParams.get('error_description') || '';
+      const type = urlParams.get('type');
+      const accessToken = urlParams.get('access_token');
       const refreshToken = urlParams.get('refresh_token') || '';
 
-      // ── Error dari Supabase (link expired, invalid, dll) ──────────────────
       if(errCode){
+        // Link expired atau tidak valid
         window.history.replaceState(null,'',window.location.pathname);
-        const desc = decodeURIComponent((errDesc||'').replace(/\+/g,' '));
-        let msg, showForm;
-        if(type==='recovery' || (!type && (errCode==='otp_expired'||errCode==='access_denied'))){
-          msg  = 'Link reset password sudah kadaluarsa atau tidak valid. Silakan kirim ulang.';
-          showForm = 'forgot';
-        } else if(type==='email_change'){
-          msg  = 'Link konfirmasi email sudah kadaluarsa atau tidak valid. Silakan ubah email lagi.';
-          showForm = 'login';
-        } else if(type==='signup'){
-          msg  = 'Link aktivasi akun sudah kadaluarsa. Silakan daftar ulang atau minta admin reset akun Anda.';
-          showForm = 'login';
-        } else {
-          msg  = desc || 'Link tidak valid atau sudah kadaluarsa.';
-          showForm = 'login';
-        }
+        const desc = (errDesc||'').replace(/\+/g,' ');
+        const msg = (errCode==='otp_expired'||errCode==='access_denied')
+          ? 'Link reset password sudah kadaluarsa. Silakan kirim ulang email reset.'
+          : decodeURIComponent(desc)||'Link tidak valid.';
         hideSplash();
         document.getElementById('pageAuth').style.display='flex';
-        switchAuth(showForm);
+        switchAuth('forgot');
+        // Tampilkan pesan error setelah UI siap
         setTimeout(()=>{
-          // Tampilkan pesan di form yang sesuai
-          const targetId = showForm==='forgot'?'fMsg':'loginMsg';
-          const el = document.getElementById(targetId) || document.getElementById('fMsg') || document.getElementById('loginMsg');
-          if(el){
-            el.style.display='block';
-            el.innerHTML=`<div class="alert-danger alert-box"><i class="fas fa-times-circle"></i><div>${msg}<br><small style="opacity:.7">Klik link harus dalam 1 jam setelah email dikirim.</small></div></div>`;
+          const fMsg=document.getElementById('fMsg');
+          if(fMsg){
+            fMsg.style.display='block';
+            fMsg.innerHTML=`<div class="alert-danger alert-box"><i class="fas fa-times-circle"></i><div>${msg}<br><small style="opacity:.7">Kirim ulang email reset dan klik link dalam waktu 1 jam.</small></div></div>`;
           }
-        }, 150);
+        }, 100);
         return;
       }
 
-      // ── Token valid — bedakan berdasarkan TYPE ────────────────────────────
       if(accessToken){
+        // Token valid - set session dan tampilkan form reset password
         try{
           await sb.auth.setSession({access_token:accessToken, refresh_token:refreshToken});
         }catch(e){ console.warn('setSession error:',e.message); }
         window.history.replaceState(null,'',window.location.pathname);
         hideSplash();
         document.getElementById('pageAuth').style.display='flex';
-
-        if(type==='recovery'){
-          // Reset password — tampilkan form ganti password
-          switchAuth('reset');
-          return;
-        }
-
-        if(type==='signup'){
-          // Konfirmasi email pendaftaran — akun aktif, langsung masuk atau minta login
-          try{
-            const{data:{user}}=await sb.auth.getUser();
-            if(user){ CU=user; await loadSession(CU); return; }
-          }catch(e){}
-          switchAuth('login');
-          setTimeout(()=>{
-            const el=document.getElementById('loginMsg');
-            if(el){ el.style.display='block';
-              el.innerHTML='<div class="alert-info alert-box"><i class="fas fa-check-circle"></i><div>Email berhasil dikonfirmasi! Silakan login dengan akun Anda.</div></div>'; }
-          },150);
-          return;
-        }
-
-        if(type==='email_change'){
-          // Konfirmasi perubahan email — email baru sudah aktif
-          try{
-            const{data:{user}}=await sb.auth.getUser();
-            if(user){
-              // Update juga tabel profiles agar sinkron
-              await sb.from('profiles').update({email:user.email}).eq('id',user.id).catch(()=>{});
-              CU=user; await loadSession(CU); return;
-            }
-          }catch(e){}
-          switchAuth('login');
-          setTimeout(()=>{
-            const el=document.getElementById('loginMsg');
-            if(el){ el.style.display='block';
-              el.innerHTML='<div class="alert-info alert-box"><i class="fas fa-check-circle"></i><div>Email baru berhasil dikonfirmasi! Silakan login dengan email baru Anda.</div></div>'; }
-          },150);
-          return;
-        }
-
-        // Fallback: type tidak dikenal tapi ada token — coba langsung masuk
-        try{
-          const{data:{user}}=await sb.auth.getUser();
-          if(user){ CU=user; await loadSession(CU); return; }
-        }catch(e){}
-        switchAuth('login');
+        switchAuth('reset');
         return;
       }
     }
