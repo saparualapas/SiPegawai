@@ -814,7 +814,7 @@ tbody td.wrap{white-space:normal;min-width:140px;}
           <div class="form-group"><label class="form-label">Account ID</label><input class="form-control" id="r2AID" style="font-family:'JetBrains Mono',monospace;font-size:.79rem"/></div>
           <div class="form-group"><label class="form-label">Bucket</label><input class="form-control" id="r2Bkt"/></div>
           <div class="form-group"><label class="form-label">Access Key</label><input class="form-control" id="r2AK" style="font-family:'JetBrains Mono',monospace;font-size:.79rem"/></div>
-          <div class="form-group"><label class="form-label">Secret Key <span style="font-size:.72rem;color:var(--muted)">(kosongkan jika tidak ingin mengubah)</span></label><input class="form-control" type="password" id="r2SK" placeholder="Biarkan kosong untuk mempertahankan nilai lama"/></div>
+          <div class="form-group"><label class="form-label">Secret Key</label><input class="form-control" type="password" id="r2SK"/></div>
           <div class="form-group"><label class="form-label">Batas Penyimpanan R2 <span style="font-size:.72rem;color:var(--muted)">(max 8 GB)</span></label>
             <div style="display:flex;gap:.5rem;align-items:center">
               <input class="form-control" id="r2LimitVal" type="number" min="1" max="8192" value="8" style="max-width:100px" oninput="updateR2LimitPreview()"/>
@@ -827,7 +827,6 @@ tbody td.wrap{white-space:normal;min-width:140px;}
             <div style="font-size:.72rem;color:var(--muted);margin-top:.25rem">Cloudflare R2 free tier: maks 10 GB. Setting ini membatasi kuota internal.</div>
           </div>
           <button class="btn-p" onclick="saveR2()" style="width:100%;justify-content:center"><i class="fas fa-save"></i> Simpan R2</button>
-          <div id="r2Alert" class="alert-box" style="display:none;margin-top:.5rem"></div>
           <div id="r2Stat" style="margin-top:.65rem;font-size:.79rem;color:var(--muted)"></div>
         </div></div>
 
@@ -863,7 +862,6 @@ tbody td.wrap{white-space:normal;min-width:140px;}
             <button class="btn-s" onclick="migrateR2ToDrive()" id="btnMigrateR2" style="flex:1;justify-content:center;color:var(--warn);border-color:var(--warn)"><i class="fas fa-exchange-alt"></i> Pindahkan R2 ke Drive</button>
           </div>
           <div id="driveStat" style="margin-top:.65rem;font-size:.79rem;color:var(--muted)"></div>
-          <div id="driveAlert" class="alert-box" style="display:none;margin-top:.5rem"></div>
           <div id="driveStorageWrap" style="display:none;margin-top:.875rem;padding:.875rem;background:var(--surface2);border-radius:10px;border:1px solid var(--border)">
             <div style="font-size:.79rem;font-weight:600;margin-bottom:.4rem;color:var(--text2)"><i class="fab fa-google-drive" style="color:#0F9D58"></i> Penggunaan Google Drive</div>
             <div class="storage-bar-bg"><div class="storage-bar-fill safe" id="driveBarFill" style="width:0%"></div></div>
@@ -1139,7 +1137,6 @@ tbody td.wrap{white-space:normal;min-width:140px;}
     <div class="modal-bd">
       <input type="hidden" id="mJabId"/>
       <div class="form-group"><label class="form-label">Nama Jabatan *</label><input class="form-control" id="mJabNama" placeholder="cth: Kepala Sub Seksi Pembinaan"/></div>
-      <div id="jabAlert" class="alert-box" style="display:none;margin-top:.5rem"></div>
     </div>
     <div class="modal-ft">
       <button class="btn-s" onclick="closeM('mJabatan')">Batal</button>
@@ -1155,7 +1152,6 @@ tbody td.wrap{white-space:normal;min-width:140px;}
       <input type="hidden" id="mKatId"/>
       <div class="form-group"><label class="form-label">Nama Kategori *</label><input class="form-control" id="mKatNama" placeholder="cth: SK &amp; Surat Keputusan"/></div>
       <div class="form-group"><label class="form-label">Deskripsi</label><input class="form-control" id="mKatDesk" placeholder="Deskripsi singkat"/></div>
-      <div id="katAlert" class="alert-box" style="display:none;margin-top:.5rem"></div>
     </div>
     <div class="modal-ft">
       <button class="btn-s" onclick="closeM('mKategori')">Batal</button>
@@ -1188,7 +1184,6 @@ tbody td.wrap{white-space:normal;min-width:140px;}
         <label class="form-label">Keterangan</label>
         <input class="form-control" id="editDokKet" placeholder="cth: SK Pengangkatan 2024"/>
       </div>
-      <div id="editDokAlert" class="alert-box" style="display:none;margin-top:.5rem"></div>
     </div>
     <div class="modal-ft">
       <button class="btn-s" onclick="closeM('mEditDok')">Batal</button>
@@ -1221,7 +1216,6 @@ tbody td.wrap{white-space:normal;min-width:140px;}
         <label class="form-label">Keterangan</label>
         <input class="form-control" id="editAdminDokKet" placeholder="cth: SK Pengangkatan 2024"/>
       </div>
-      <div id="editAdminDokAlert" class="alert-box" style="display:none;margin-top:.5rem"></div>
     </div>
     <div class="modal-ft">
       <button class="btn-s" onclick="closeM('mEditDokAdmin')">Batal</button>
@@ -2098,31 +2092,22 @@ function editJab(id){
 
 async function saveJab(){
   const nama=document.getElementById('mJabNama').value.trim();
-  if(!nama){
-    showInlineAlert('jabAlert','Nama jabatan wajib diisi!','warn');
-    return;
-  }
+  if(!nama){toast('Nama jabatan wajib diisi!','warn');return;}
   const eid=document.getElementById('mJabId').value;
   showActionSplash(eid?'Memperbarui jabatan...':'Menambah jabatan...');
   const pay={nama};
   const{error}=eid?await sb.from('jabatan').update(pay).eq('id',eid):await sb.from('jabatan').insert(pay);
   hideActionSplash();
-  if(error){
-    showInlineAlert('jabAlert','Gagal: '+error.message,'err');
-    return;
-  }
-  closeM('mJabatan');
-  toast((eid?'Jabatan diperbarui':'Jabatan ditambahkan')+' ✓','ok');
+  if(error){toast('Gagal: '+error.message,'err');return;}
+  closeM('mJabatan');toast((eid?'Jabatan diperbarui':'Jabatan ditambahkan')+' ✓','ok');
   await loadJabatan();loadJabPage();
 }
 
 async function delJab(id){
   showActionSplash('Menghapus jabatan...','Data akan dihapus permanen');
-  const{error}=await sb.from('jabatan').delete().eq('id',id);
+  await sb.from('jabatan').delete().eq('id',id);
   hideActionSplash();
-  if(error){ toast('Gagal hapus jabatan: '+error.message,'err'); return; }
-  toast('Jabatan dihapus ✓','ok');
-  await loadJabatan();loadJabPage();
+  toast('Jabatan dihapus','info');await loadJabatan();loadJabPage();
 }
 
 // ═══════════════════════════════
@@ -2178,31 +2163,22 @@ function editKat(id){
 
 async function saveKat(){
   const nama=document.getElementById('mKatNama').value.trim();
-  if(!nama){
-    showInlineAlert('katAlert','Nama kategori wajib diisi!','warn');
-    return;
-  }
+  if(!nama){toast('Nama kategori wajib diisi!','warn');return;}
   const eid=document.getElementById('mKatId').value;
   showActionSplash(eid?'Memperbarui kategori...':'Menambah kategori...');
   const pay={nama,deskripsi:document.getElementById('mKatDesk').value};
   const{error}=eid?await sb.from('kategori_dokumen').update(pay).eq('id',eid):await sb.from('kategori_dokumen').insert(pay);
   hideActionSplash();
-  if(error){
-    showInlineAlert('katAlert','Gagal: '+error.message,'err');
-    return;
-  }
-  closeM('mKategori');
-  toast((eid?'Kategori diperbarui':'Kategori ditambahkan')+' ✓','ok');
+  if(error){toast('Gagal: '+error.message,'err');return;}
+  closeM('mKategori');toast((eid?'Kategori diperbarui':'Kategori ditambahkan')+' ✓','ok');
   await loadKategori();loadKatPage();
 }
 
 async function delKat(id){
   showActionSplash('Menghapus kategori...','Data akan dihapus permanen');
-  const{error}=await sb.from('kategori_dokumen').delete().eq('id',id);
+  await sb.from('kategori_dokumen').delete().eq('id',id);
   hideActionSplash();
-  if(error){ toast('Gagal hapus kategori: '+error.message,'err'); return; }
-  toast('Kategori dihapus ✓','ok');
-  await loadKategori();loadKatPage();
+  toast('Kategori dihapus','info');await loadKategori();loadKatPage();
 }
 
 // ═══════════════════════════════
@@ -2297,35 +2273,24 @@ async function saveR2(){
   const aid=document.getElementById('r2AID').value.trim();
   const bkt=document.getElementById('r2Bkt').value.trim();
   const ak=document.getElementById('r2AK').value.trim();
-  const skInput=document.getElementById('r2SK').value.trim();
-  // Jika Secret Key dikosongkan, pakai nilai lama dari memory (sudah terenkripsi di DB)
-  const sk=skInput||R2.secretKey||'';
-  if(!aid||!bkt||!ak||!sk){
-    toast('Semua field R2 wajib diisi! (Secret Key belum pernah disimpan)','warn');
-    showInlineAlert('r2Alert','Semua field wajib diisi. Secret Key belum ada — masukkan Secret Key terlebih dahulu.','warn');
-    return;
-  }
+  const sk=document.getElementById('r2SK').value.trim();
+  if(!aid||!bkt||!ak||!sk){toast('Semua field R2 wajib diisi!','warn');return;}
   let limitBytes=getR2LimitBytes();
   const MAX_R2=8*1024*1024*1024;
-  if(limitBytes>MAX_R2) limitBytes=MAX_R2;
+  if(limitBytes>MAX_R2) limitBytes=MAX_R2; // hard cap 8 GB
   const btn=document.querySelector('button[onclick="saveR2()"]');
   if(btn) setBtn(btn,true);
   showActionSplash('Menyimpan konfigurasi R2...');
   let hasError=false;
-  const errKeys=[];
   const entries=[['accountId',aid],['bucket',bkt],['accessKey',ak],['secretKey',sk],['r2LimitBytes',String(limitBytes)]];
   for(const[k,v] of entries){
     const{error}=await sb.from('app_config').upsert({key:k,value:v},{onConflict:'key'});
-    if(error){ console.error('saveR2 error:',k,error.message); hasError=true; errKeys.push(k); }
+    if(error){ console.error('saveR2 error:',k,error.message); hasError=true; }
   }
   if(btn) setBtn(btn,false,'<i class="fas fa-save"></i> Simpan R2');
   hideActionSplash();
-  if(hasError){
-    const msg=`Gagal simpan R2: ${errKeys.join(', ')}. Cek RLS policy tabel app_config.`;
-    toast(msg,'err');
-    showInlineAlert('r2Alert',msg,'err');
-    return;
-  }
+  if(hasError){ toast('Gagal simpan konfigurasi R2. Cek console.','err'); return; }
+  // Update memory + hapus semua cache agar cekStorageCukup baca DB segar
   R2={accountId:aid,bucket:bkt,accessKey:ak,secretKey:sk};
   R2_LIMIT_BYTES=limitBytes;
   sessionStorage.removeItem('r2cfg_session');
@@ -2334,8 +2299,7 @@ async function saveR2(){
   renderStorageBar(currentStorageBytes);
   fillR2Fields();
   const st=document.getElementById('r2Stat');
-  if(st) st.textContent='✓ R2 berhasil disimpan — Limit: '+fmtSz(limitBytes);
-  showInlineAlert('r2Alert',`✓ Konfigurasi R2 berhasil disimpan. Limit: ${fmtSz(limitBytes)}`,'ok');
+  if(st) st.textContent='✓ R2 berhasil disimpan';
   toast('Konfigurasi R2 berhasil disimpan ✓','ok');
   const w=document.getElementById('r2Warn');
   if(w) w.style.display='none';
@@ -2425,41 +2389,27 @@ function getDriveLimitGb(){
 async function saveDriveConfig(){
   const json=document.getElementById('driveJson').value.trim();
   const fid=document.getElementById('driveFolderId').value.trim();
-  const lgb=getDriveLimitGb();
+  const lgb=getDriveLimitGb(); // dalam GB (float), support MB input
   const auto=document.getElementById('driveAutoOverflow').checked;
-  if(!json||!fid){
-    showInlineAlert('driveAlert','JSON Drive dan Folder ID wajib diisi!','warn');
-    toast('JSON Drive dan Folder ID wajib diisi!','warn');
-    return;
-  }
-  try{ JSON.parse(json); }catch(e){
-    showInlineAlert('driveAlert','Format JSON tidak valid! Periksa kembali.','err');
-    toast('Format JSON tidak valid!','err');
-    return;
-  }
+  if(!json||!fid){toast('Service Account JSON dan Folder ID wajib diisi!','warn');return;}
+  try{ JSON.parse(json); }catch(e){toast('Service Account JSON tidak valid!','err');return;}
   const btn=document.querySelector('button[onclick="saveDriveConfig()"]');
   if(btn) setBtn(btn,true);
   showActionSplash('Menyimpan konfigurasi Drive...');
   const entries=[['driveJson',json],['driveFolderId',fid],['driveLimitGb',String(lgb)],['driveAutoOverflow',auto?'true':'false']];
-  let hasError=false; const errKeys=[];
+  let hasError=false;
   for(const[k,v] of entries){
     const{error}=await sb.from('app_config').upsert({key:k,value:v},{onConflict:'key'});
-    if(error){ console.error('saveDriveConfig error:',k,error.message); hasError=true; errKeys.push(k); }
+    if(error){ console.error('saveDriveConfig error:',k,error.message); hasError=true; }
   }
   if(btn) setBtn(btn,false,'<i class="fas fa-save"></i> Simpan Konfigurasi Drive');
   hideActionSplash();
-  if(hasError){
-    const msg=`Gagal simpan Drive config: ${errKeys.join(', ')}. Cek RLS policy tabel app_config.`;
-    showInlineAlert('driveAlert',msg,'err');
-    toast(msg,'err');
-    return;
-  }
+  if(hasError){toast('Gagal simpan konfigurasi Drive!','err');return;}
   DRIVE={serviceAccountJson:json,folderId:fid,limitGb:lgb,autoOverflow:auto,configured:true};
+  // Hapus semua cache agar cekStorageCukup baca DB segar di upload berikutnya
   sessionStorage.removeItem('drivecfg_session');
   sessionStorage.setItem('drivecfg_session', JSON.stringify(DRIVE));
-  const limitLabel=lgb<1?(Math.round(lgb*1024)+' MB'):(lgb+' GB');
   document.getElementById('driveStat').textContent='✓ Google Drive berhasil disimpan';
-  showInlineAlert('driveAlert',`✓ Konfigurasi Drive berhasil disimpan. Limit: ${limitLabel}`,'ok');
   toast('Konfigurasi Google Drive berhasil disimpan ✓','ok');
   refreshDriveStorageUI();
 }
@@ -3094,10 +3044,7 @@ async function saveEditDokAdmin(){
   const id    = document.getElementById('editAdminDokId').value;
   const katId = document.getElementById('editAdminDokKat').value;
   const ket   = document.getElementById('editAdminDokKet').value.trim();
-  if(!katId){
-    showInlineAlert('editAdminDokAlert','Pilih kategori terlebih dahulu!','warn');
-    return;
-  }
+  if(!katId){ toast('Pilih kategori terlebih dahulu!','warn'); return; }
   const btn = document.getElementById('btnSaveEditDokAdmin');
   setBtn(btn, true);
   showActionSplash('Menyimpan perubahan dokumen...');
@@ -3109,10 +3056,7 @@ async function saveEditDokAdmin(){
   }).eq('id', id);
   setBtn(btn, false, '<i class="fas fa-save"></i> Simpan');
   hideActionSplash();
-  if(error){
-    showInlineAlert('editAdminDokAlert','Gagal menyimpan: '+error.message,'err');
-    return;
-  }
+  if(error){ toast('Gagal menyimpan: '+error.message,'err'); return; }
   closeM('mEditDokAdmin');
   toast('Dokumen berhasil diperbarui ✓','ok');
   loadDokAdmin(dakPage);
@@ -3347,10 +3291,7 @@ async function saveEditDok(){
   const id  = document.getElementById('editDokId').value;
   const katId = document.getElementById('editDokKat').value;
   const ket = document.getElementById('editDokKet').value.trim();
-  if(!katId){
-    showInlineAlert('editDokAlert','Pilih kategori terlebih dahulu!','warn');
-    return;
-  }
+  if(!katId){ toast('Pilih kategori terlebih dahulu!','warn'); return; }
   const btn = document.getElementById('btnSaveEditDok');
   setBtn(btn, true);
   showActionSplash('Menyimpan perubahan dokumen...');
@@ -3362,10 +3303,7 @@ async function saveEditDok(){
   }).eq('id', id).eq('user_id', CU.id);
   setBtn(btn, false, '<i class="fas fa-save"></i> Simpan');
   hideActionSplash();
-  if(error){
-    showInlineAlert('editDokAlert','Gagal menyimpan: '+error.message,'err');
-    return;
-  }
+  if(error){ toast('Gagal menyimpan: '+error.message,'err'); return; }
   closeM('mEditDok');
   toast('Dokumen berhasil diperbarui ✓','ok');
   loadDokUser(selKatId, dukPage);
