@@ -3610,7 +3610,7 @@ async function doUpload(){
   let storTarget='r2';
   let storCheck;
   try{
-    storCheck=await cekStorageCukup(upFile.size, false);
+    storCheck=await cekStorageCukup(upFile.size);
   }catch(e){
     // Jika cek storage gagal karena error jaringan/DB — TOLAK upload untuk keamanan
     const errMsg='Gagal memeriksa kapasitas penyimpanan: '+e.message+'. Upload ditolak untuk keamanan.';
@@ -3681,20 +3681,6 @@ async function doUpload(){
     });
     if(dbErr){
       console.error('DB insert error:',dbErr);
-      // Cleanup file yang sudah terupload agar tidak orphan dan tidak duplikat
-      if(storageType==='drive' && driveFileId){
-        try{
-          const token=await getDriveToken();
-          await fetch(`https://www.googleapis.com/drive/v3/files/${driveFileId}`,{
-            method:'DELETE',headers:{Authorization:`Bearer ${token}`}
-          });
-          console.log('Drive cleanup OK setelah DB error');
-        }catch(ce){ console.warn('Drive cleanup gagal:',ce.message); }
-        driveFileId=null;
-      } else if(storageType==='r2' && r2Key){
-        try{ await r2Delete(r2Key); console.log('R2 cleanup OK'); }
-        catch(ce){ console.warn('R2 cleanup gagal:',ce.message); }
-      }
       throw new Error('Gagal simpan ke database: '+dbErr.message);
     }
 
@@ -3765,10 +3751,11 @@ async function checkStorageOnUploadPage(){
 
     if(driveConfigured && driveAutoOverflow){
       if(r2Full && driveFull){
-        disable(`🚫 Semua penyimpanan penuh. Silahkan hubungi admin.`);
+        disable(`🚫 Semua penyimpanan penuh! R2: ${fmtSz(r2Used)}/${fmtSz(r2LimitBytes)}, Drive: ${fmtSz(driveUsed)}/${fmtSz(driveLimitBytes)}.`);
         return;
       }
       if(r2Full && !driveFull){
+        // Masih bisa upload ke Drive — boleh, tapi beri info
         showInlineAlert('upSuccessAlert',`ℹ R2 penuh — file akan disimpan ke Drive (sisa: ${fmtSz(driveLimitBytes-driveUsed)}).`,'warn');
         enable(); return;
       }
@@ -3776,7 +3763,7 @@ async function checkStorageOnUploadPage(){
     }
     // Hanya R2
     if(r2Full){
-      disable(`🚫 Penyimpanan penuh. Silahkan hubungi admin.`);
+      disable(`🚫 Penyimpanan R2 penuh (${fmtSz(r2Used)}/${fmtSz(r2LimitBytes)}). Hapus dokumen atau aktifkan overflow ke Drive.`);
       return;
     }
     enable();
@@ -4811,7 +4798,7 @@ async function doUploadAdmin(){
   let adminStorTarget='r2';
   let adminStorCheck;
   try{
-    adminStorCheck=await cekStorageCukup(upAdminFile.size, true);
+    adminStorCheck=await cekStorageCukup(upAdminFile.size);
   }catch(e){
     const errMsg='Gagal memeriksa kapasitas penyimpanan: '+e.message+'. Upload ditolak untuk keamanan.';
     toast(errMsg,'err');
@@ -4866,21 +4853,7 @@ async function doUploadAdmin(){
       drive_folder_id: driveFileId?DRIVE.folderId:null,
       uploaded_at  : new Date().toISOString()
     });
-    if(dbErr){
-      console.error('DB insert error (admin):',dbErr);
-      // Cleanup file orphan
-      if(storageType==='drive' && driveFileId){
-        try{
-          const token=await getDriveToken();
-          await fetch(`https://www.googleapis.com/drive/v3/files/${driveFileId}`,{
-            method:'DELETE',headers:{Authorization:`Bearer ${token}`}
-          });
-        }catch(ce){ console.warn('Drive cleanup gagal:',ce.message); }
-      } else if(storageType==='r2' && r2Key){
-        try{ await r2Delete(r2Key); }catch(ce){}
-      }
-      throw new Error('Gagal simpan ke database: '+dbErr.message);
-    }
+    if(dbErr) throw new Error('Gagal simpan ke database: '+dbErr.message);
     setPrgAdmin(100,'Selesai!');
     document.getElementById('upAdminPrgBar').classList.add('done');
     toast(`Dokumen berhasil diupload atas nama ${upAdminPegSelected?.nama||'pegawai'} ✓`,'ok');
@@ -5027,9 +5000,9 @@ function renderStorageBar(usedBytes){
 }
 
 // Cek storage sebelum upload — ambil limit LANGSUNG dari DB, tidak pakai cache
-async function cekStorageCukup(fileSize, isAdmin=false){
-  // Ambil semua config limit segar dari DB
-  let r2LimitBytes = R2_LIMIT_BYTES;
+async function cekStorageCukup(fileSize){
+  // Ambil semua config limit segar dari DB (bukan cache)
+  let r2LimitBytes = R2_LIMIT_BYTES; // default
   let driveGb = 0;
   let driveConfigured = false;
   let driveAutoOverflow = false;
@@ -5038,7 +5011,7 @@ async function cekStorageCukup(fileSize, isAdmin=false){
     const{data:cfgRows}=await sb.from('app_config')
       .select('key,value')
       .in('key',['r2LimitBytes','driveLimitGb','driveAutoOverflow','driveJson','driveFolderId']);
-    if(cfgRows && cfgRows.length>0){
+    if(cfgRows){
       let hasR2Limit=false, hasDriveJson=false, hasDriveFid=false;
       cfgRows.forEach(r=>{
         if(r.key==='r2LimitBytes'&&r.value){ r2LimitBytes=parseInt(r.value); hasR2Limit=true; }
@@ -5048,12 +5021,13 @@ async function cekStorageCukup(fileSize, isAdmin=false){
         if(r.key==='driveFolderId'&&r.value){ hasDriveFid=true; }
       });
       driveConfigured=hasDriveJson&&hasDriveFid;
+      // Sinkronkan ke global agar UI konsisten
       if(hasR2Limit) R2_LIMIT_BYTES=r2LimitBytes;
       if(driveGb>0) DRIVE.limitGb=driveGb;
       DRIVE.autoOverflow=driveAutoOverflow;
     }
   }catch(e){
-    // Fallback RPC untuk user biasa
+    // Fallback ke RPC jika user biasa tidak bisa baca app_config
     try{
       const{data:rpc}=await sb.rpc('get_drive_config');
       if(rpc){
@@ -5063,69 +5037,54 @@ async function cekStorageCukup(fileSize, isAdmin=false){
         if(driveGb>0) DRIVE.limitGb=driveGb;
         DRIVE.autoOverflow=driveAutoOverflow;
       }
-    }catch(e2){ console.warn('cekStorage RPC fallback error:',e2.message); }
+    }catch(e2){ console.warn('cekStorage RPC error:',e2.message); }
   }
 
-  // Hard cap
-  if(r2LimitBytes > 8*1024*1024*1024) r2LimitBytes=8*1024*1024*1024;
+  // Validasi: jika driveGb masih 0, pakai DRIVE.limitGb atau default 10
   if(driveGb<=0) driveGb=(DRIVE.limitGb&&DRIVE.limitGb>0)?DRIVE.limitGb:10;
-  const driveLimitBytes=Math.round(driveGb*1024*1024*1024);
+  // Max R2 8 GB
+  if(r2LimitBytes > 8*1024*1024*1024) r2LimitBytes=8*1024*1024*1024;
+  const driveLimitBytes=driveGb*1024*1024*1024;
 
-  // Hitung usage real-time dari DB
+  // Hitung usage langsung dari DB
   const[r2Used, driveUsed]=await Promise.all([getStorageUsed(), getDriveStorageUsedFromDB()]);
   currentStorageBytes=r2Used;
   renderStorageBar(r2Used);
 
-  const r2Sisa = r2LimitBytes - r2Used;
-  const r2Full = (r2Sisa <= 0);
-  const r2TakCukup = (fileSize > r2Sisa); // file tidak muat di sisa R2
-  const driveSisa = driveLimitBytes - driveUsed;
-  const driveFull = (driveSisa <= 0);
-  const driveTakCukup = (fileSize > driveSisa);
+  const r2Sisa=r2LimitBytes-r2Used;
+  const r2Full=(r2Sisa<=0);
+  const r2TakCukup=(fileSize>r2Sisa);
+  const driveSisa=driveLimitBytes-driveUsed;
+  const driveFull=(driveSisa<=0);
 
-  // Debug log
+  // Log untuk debug
   console.log('[StorageCek]',{
-    r2Used:fmtSz(r2Used), r2Limit:fmtSz(r2LimitBytes), r2Sisa:fmtSz(r2Sisa), r2Full, r2TakCukup,
-    driveUsed:fmtSz(driveUsed), driveLimit:fmtSz(driveLimitBytes), driveSisa:fmtSz(driveSisa), driveFull,
-    driveConfigured, driveAutoOverflow, fileSize:fmtSz(fileSize), isAdmin
+    r2Used:fmtSz(r2Used), r2Limit:fmtSz(r2LimitBytes), r2Full,
+    driveUsed:fmtSz(driveUsed), driveLimit:fmtSz(driveLimitBytes), driveFull,
+    driveConfigured, driveAutoOverflow, fileSize:fmtSz(fileSize)
   });
 
-  // Pesan berbeda untuk user biasa vs admin
-  const msgR2PenuhUser =`🚫 Penyimpanan penuh. Silahkan hubungi admin.`;
-  const msgR2PenuhAdmin=`🚫 R2 penuh (${fmtSz(r2Used)}/${fmtSz(r2LimitBytes)}). Aktifkan overflow ke Drive atau hapus dokumen lama.`;
-  const msgSemuaPenuhUser =`🚫 Semua penyimpanan penuh. Silahkan hubungi admin.`;
-  const msgSemuaPenuhAdmin=`🚫 Semua penyimpanan penuh! R2: ${fmtSz(r2Used)}/${fmtSz(r2LimitBytes)}, Drive: ${fmtSz(driveUsed)}/${fmtSz(driveLimitBytes)}. Pindahkan atau hapus dokumen lama.`;
-
-  // ── Skenario: Drive aktif + autoOverflow ──
+  // Skenario 1: Drive configured + autoOverflow
   if(driveConfigured && driveAutoOverflow){
-    // R2 masih cukup → upload ke R2
     if(!r2Full && !r2TakCukup){
       return{ok:true, target:'r2', msg:''};
     }
-    // R2 penuh atau tidak muat → cek Drive
+    // R2 penuh → coba Drive
     if(driveFull){
-      return{ok:false, target:null,
-        msg: isAdmin ? msgSemuaPenuhAdmin : msgSemuaPenuhUser};
+      return{ok:false, target:null, msg:`🚫 Semua penyimpanan penuh! R2: ${fmtSz(r2Used)}/${fmtSz(r2LimitBytes)}, Drive: ${fmtSz(driveUsed)}/${fmtSz(driveLimitBytes)}. Hapus dokumen lama.`};
     }
-    if(driveTakCukup){
-      return{ok:false, target:null,
-        msg: isAdmin
-          ? `🚫 Drive tidak cukup. File: ${fmtSz(fileSize)}, sisa Drive: ${fmtSz(driveSisa)}.`
-          : `🚫 Penyimpanan tidak cukup untuk file ini. Silahkan hubungi admin.`};
+    if(fileSize>driveSisa){
+      return{ok:false, target:null, msg:`🚫 Drive tidak cukup. File: ${fmtSz(fileSize)}, sisa Drive: ${fmtSz(driveSisa)}.`};
     }
-    // Drive masih cukup → upload ke Drive
     return{ok:true, target:'drive', msg:''};
   }
 
-  // ── Skenario: Hanya R2 ──
+  // Skenario 2: Hanya R2
   if(r2Full){
-    return{ok:false, target:null, msg: isAdmin ? msgR2PenuhAdmin : msgR2PenuhUser};
+    return{ok:false, target:null, msg:`🚫 R2 penuh (${fmtSz(r2Used)}/${fmtSz(r2LimitBytes)}). Hapus dokumen atau aktifkan overflow ke Drive.`};
   }
   if(r2TakCukup){
-    return{ok:false, target:null,
-      msg: isAdmin
-        ? `🚫 Ruang R2 tidak cukup. File: ${fmtSz(fileSize)}, sisa: ${fmtSz(r2Sisa)}.`
-        : msgR2PenuhUser};
+    return{ok:false, target:null, msg:`🚫 Ruang R2 tidak cukup. File: ${fmtSz(fileSize)}, sisa: ${fmtSz(r2Sisa)}.`};
   }
   return{ok:true, target:'r2', msg:''};
 }
