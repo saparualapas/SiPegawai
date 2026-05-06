@@ -5053,12 +5053,6 @@ let   currentStorageBytes = 0;
 //         Cache diupdate otomatis setiap admin buka dashboard/setting.
 
 // Hitung TOTAL storage dari DB (hanya akurat jika dipanggil sebagai admin)
-// ═══════════════════════════════════════════════════════════════
-//  STORAGE SYSTEM — RPC sebagai sumber kebenaran utama
-//  User biasa: HANYA pakai RPC get_total_storage_used (SECURITY DEFINER)
-//  Admin: hitung langsung dari DB lalu update cache di app_config
-// ═══════════════════════════════════════════════════════════════
-
 async function _hitung_r2_dari_db(){
   let total=0, from=0, done=false;
   while(!done){
@@ -5071,7 +5065,6 @@ async function _hitung_r2_dari_db(){
   }
   return total;
 }
-
 async function _hitung_drive_dari_db(){
   let total=0, from=0, done=false;
   while(!done){
@@ -5085,71 +5078,109 @@ async function _hitung_drive_dari_db(){
   return total;
 }
 
-// Simpan cache ke app_config — HANYA dipanggil oleh admin (punya akses tulis)
+// Simpan cache ke app_config (dipanggil setelah admin hitung usage)
 async function _simpanCacheStorage(r2Bytes, driveBytes){
   try{
     const now=new Date().toISOString();
     await Promise.all([
       sb.from('app_config').upsert({key:'cachedR2Bytes',    value:String(Math.max(0,r2Bytes))},    {onConflict:'key'}),
       sb.from('app_config').upsert({key:'cachedDriveBytes', value:String(Math.max(0,driveBytes))},  {onConflict:'key'}),
-      sb.from('app_config').upsert({key:'cachedStorageAt',  value:now},                              {onConflict:'key'}),
+      sb.from('app_config').upsert({key:'cachedStorageAt',  value:now},                 {onConflict:'key'}),
     ]);
-  }catch(e){ console.warn('[storage] simpan cache gagal (normal jika user biasa):',e.message); }
+  }catch(e){ console.warn('[storage] simpan cache gagal:',e.message); }
 }
 
-// Baca usage via RPC (SECURITY DEFINER — bisa dibaca semua user, bypass RLS)
-// Ini SATU-SATUNYA cara yang akurat untuk user biasa
-async function _getUsageViaRPC(){
-  const{data,error}=await sb.rpc('get_total_storage_used');
-  if(error) throw new Error('RPC get_total_storage_used gagal: '+error.message);
-  if(!data||typeof data!=='object'||!('r2_bytes' in data))
-    throw new Error('RPC get_total_storage_used tidak ditemukan. Buat dulu di Supabase SQL Editor (lihat Pengaturan).');
-  return{
-    r2:    Math.max(0, parseInt(data.r2_bytes  ||0)),
-    drive: Math.max(0, parseInt(data.drive_bytes||0))
-  };
-}
-
-// Hitung ulang dari DB (admin only) + update cache di app_config
-async function recalcAndCacheStorage(){
-  const[r2,drive]=await Promise.all([_hitung_r2_dari_db(),_hitung_drive_dari_db()]);
-  await _simpanCacheStorage(r2,drive); // 403 untuk user biasa — diabaikan
-  return{r2,drive};
-}
-
-// Update cache setelah upload/hapus — hitung ulang dari DB lalu simpan
+// Tambah ukuran ke cache (setelah upload) — hitung ulang dari DB agar akurat 100%
 async function _updateCacheSetelahUpload(){
   try{
-    // Admin: hitung ulang + simpan cache agar user biasa bisa baca via RPC
+    // Selalu hitung ulang dari DB untuk akurasi penuh
     const[r2,drive]=await Promise.all([_hitung_r2_dari_db(),_hitung_drive_dari_db()]);
     await _simpanCacheStorage(r2,drive);
     currentStorageBytes=r2;
     renderStorageBar(r2);
-  }catch(e){ console.warn('[storage] update cache pasca upload:',e.message); }
+  }catch(e){ console.warn('[storage] update cache pasca upload gagal:',e.message); }
 }
 
+// Kurangi ukuran dari cache (setelah hapus)
 async function _updateCacheSetelahHapus(){
   try{
     const[r2,drive]=await Promise.all([_hitung_r2_dari_db(),_hitung_drive_dari_db()]);
     await _simpanCacheStorage(r2,drive);
     currentStorageBytes=r2;
     renderStorageBar(r2);
-  }catch(e){ console.warn('[storage] update cache pasca hapus:',e.message); }
+  }catch(e){ console.warn('[storage] update cache pasca hapus gagal:',e.message); }
 }
 
-// Tidak dipakai lagi tapi pertahankan untuk kompatibilitas
-async function _bacaCacheStorage(){ return null; }
+// Baca cache dari app_config (bisa dibaca siapa saja termasuk user biasa)
+async function _bacaCacheStorage(){
+  try{
+    const{data,error}=await sb.from('app_config')
+      .select('key,value')
+      .in('key',['cachedR2Bytes','cachedDriveBytes','cachedStorageAt']);
+    if(error||!data||!data.length) return null;
+    const map={};
+    data.forEach(r=>{ map[r.key]=r.value; });
+    if(!('cachedR2Bytes' in map)||!('cachedDriveBytes' in map)) return null;
+    return{
+      r2:    Math.max(0,parseInt(map.cachedR2Bytes||'0')),
+      drive: Math.max(0,parseInt(map.cachedDriveBytes||'0')),
+      at:    map.cachedStorageAt||null
+    };
+  }catch(e){ return null; }
+}
+
+// getAllStorageUsed: RPC dulu → cache → fallback DB langsung
+// Selalu return {r2, drive}
 async function getAllStorageUsed(){
-  try{ return await _getUsageViaRPC(); }catch(e){ return{r2:0,drive:0}; }
+  // 1. Coba RPC get_total_storage_used (jika sudah dibuat di Supabase)
+  try{
+    const{data,error}=await sb.rpc('get_total_storage_used');
+    if(!error && data && typeof data==='object' && 'r2_bytes' in data){
+      const r={ r2:Math.max(0,parseInt(data.r2_bytes||0)), drive:Math.max(0,parseInt(data.drive_bytes||0)) };
+      return r;
+    }
+  }catch(e){}
+
+  // 2. Baca cache dari app_config (bypass RLS — app_config bisa dibaca semua)
+  const cache=await _bacaCacheStorage();
+  if(cache!==null) return cache;
+
+  // 3. Fallback: query langsung (hanya akurat untuk admin)
+  let r2=0, drive=0, from=0, done=false;
+  while(!done){
+    const{data,error}=await sb.from('dokumen')
+      .select('ukuran_file,storage_type').range(from,from+999);
+    if(error) break;
+    if(!data||!data.length){done=true;break;}
+    data.forEach(d=>{
+      if(!d.storage_type||d.storage_type==='r2') r2+=(d.ukuran_file||0);
+      else if(d.storage_type==='drive')           drive+=(d.ukuran_file||0);
+    });
+    if(data.length<1000) done=true; else from+=1000;
+  }
+  return{r2,drive};
 }
+
+// Hitung ulang dari DB (admin) + update cache
+async function recalcAndCacheStorage(){
+  try{
+    const[r2,drive]=await Promise.all([_hitung_r2_dari_db(),_hitung_drive_dari_db()]);
+    await _simpanCacheStorage(r2,drive);
+    return{r2,drive};
+  }catch(e){
+    console.warn('[storage] recalc error:',e.message);
+    return{r2:0,drive:0};
+  }
+}
+
 async function getStorageUsed(){
-  const{r2}=await _getUsageViaRPC(); return r2;
+  const{r2}=await getAllStorageUsed(); return r2;
 }
+
+// Hitung total storage Drive (hanya storage_type='drive')
 async function getDriveStorageUsedFromDB(){
-  const{drive}=await _getUsageViaRPC(); return drive;
+  const{drive}=await getAllStorageUsed(); return drive;
 }
-// Alias
-async function getDriveUsedBytes(){ return getDriveStorageUsedFromDB(); }
 
 async function loadStorageUsage(){
   try{
@@ -5207,73 +5238,53 @@ async function cekStorageCukup(fileSize, isAdmin=false){
     if(!error && rows && rows.length){
       let hJ=false,hF=false;
       rows.forEach(r=>{
-        if(r.key==='r2LimitBytes'   && r.value){ r2LimitBytes=parseInt(r.value); R2_LIMIT_BYTES=r2LimitBytes; }
-        if(r.key==='driveLimitGb'   && r.value){ driveGb=parseFloat(r.value); DRIVE.limitGb=driveGb; }
-        if(r.key==='driveAutoOverflow')          { driveAutoOverflow=(r.value==='true'); DRIVE.autoOverflow=driveAutoOverflow; }
-        if(r.key==='driveJson'      && r.value)  hJ=true;
-        if(r.key==='driveFolderId'  && r.value)  hF=true;
+        if(r.key==='r2LimitBytes'  && r.value){ r2LimitBytes=parseInt(r.value); R2_LIMIT_BYTES=r2LimitBytes; }
+        if(r.key==='driveLimitGb'  && r.value){ driveGb=parseFloat(r.value); DRIVE.limitGb=driveGb; }
+        if(r.key==='driveAutoOverflow')         { driveAutoOverflow=(r.value==='true'); DRIVE.autoOverflow=driveAutoOverflow; }
+        if(r.key==='driveJson'     && r.value)   hJ=true;
+        if(r.key==='driveFolderId' && r.value)   hF=true;
       });
       driveConfigured=hJ&&hF;
-    } else if(error){
-      // User biasa tidak bisa baca app_config langsung → coba RPC
-      throw error;
     }
-  }catch(e){
-    // Fallback via RPC untuk user biasa
-    try{
-      const{data:rpcCfg}=await sb.rpc('get_r2_config');
-      if(rpcCfg){
-        if(rpcCfg.r2LimitBytes) { r2LimitBytes=parseInt(rpcCfg.r2LimitBytes); R2_LIMIT_BYTES=r2LimitBytes; }
-      }
-    }catch(e2){}
-    try{
-      const{data:rpcDrv}=await sb.rpc('get_drive_config');
-      if(rpcDrv){
-        if(rpcDrv.driveLimitGb)     { driveGb=parseFloat(rpcDrv.driveLimitGb); DRIVE.limitGb=driveGb; }
-        if(rpcDrv.driveAutoOverflow){ driveAutoOverflow=(rpcDrv.driveAutoOverflow==='true'); DRIVE.autoOverflow=driveAutoOverflow; }
-        driveConfigured=!!(rpcDrv.driveJson&&rpcDrv.driveFolderId);
-      }
-    }catch(e2){}
-  }
+  }catch(e){ console.warn('[cekStorage] config read error:',e.message); }
 
   if(r2LimitBytes<=0||r2LimitBytes>8*1024*1024*1024) r2LimitBytes=8*1024*1024*1024;
   if(driveGb<=0) driveGb=(DRIVE.limitGb>0)?DRIVE.limitGb:10;
   const driveLimitBytes=Math.round(driveGb*1024*1024*1024);
 
-  // ── 2. Hitung usage ─────────────────────────────────────────────────────
-  let r2Used=-1, driveUsed=-1;
+  // ── 2. Hitung / baca usage ───────────────────────────────────────────────
+  let r2Used=-1, driveUsed=-1; // -1 = belum berhasil dimuat
 
   if(isAdmin){
-    // Admin: hitung ulang langsung dari DB (akurat 100%)
+    // Admin: selalu hitung ulang dari DB (akurat 100%) + update cache
     try{
       const fresh=await recalcAndCacheStorage();
       r2Used=fresh.r2; driveUsed=fresh.drive;
-    }catch(e){
-      // Admin fallback via RPC
-      try{
-        const rpc=await _getUsageViaRPC();
-        r2Used=rpc.r2; driveUsed=rpc.drive;
-      }catch(e2){ console.warn('[cekStorage] admin error:',e2.message); }
-    }
+    }catch(e){ console.warn('[cekStorage] admin recalc error:',e.message); }
   } else {
-    // User biasa: WAJIB via RPC get_total_storage_used (SECURITY DEFINER)
-    // Tidak ada fallback lain — RPC adalah satu-satunya sumber yang akurat
+    // User: baca cache dari app_config dulu (admin pasti pernah update)
     try{
-      const rpc=await _getUsageViaRPC();
-      r2Used=rpc.r2; driveUsed=rpc.drive;
-    }catch(e){
-      // RPC gagal = function belum dibuat di Supabase → BLOK upload
-      return{ok:false, target:null,
-        msg:'🚫 Sistem belum siap. Admin perlu membuat SQL function "get_total_storage_used" di Supabase (lihat halaman Pengaturan).'};
+      const cache=await _bacaCacheStorage();
+      if(cache!==null){ r2Used=cache.r2; driveUsed=cache.drive; }
+    }catch(e){}
+    // Jika cache kosong → coba RPC
+    if(r2Used<0){
+      try{
+        const{data,error}=await sb.rpc('get_total_storage_used');
+        if(!error&&data&&'r2_bytes' in data){
+          r2Used=parseInt(data.r2_bytes||0);
+          driveUsed=parseInt(data.drive_bytes||0);
+        }
+      }catch(e){}
     }
+    // TIDAK ada fallback query langsung untuk user — RLS akan beri angka salah
+    // Jika cache dan RPC dua-duanya gagal → BLOK upload (lebih aman)
   }
 
-  // Jika usage masih -1 setelah semua upaya → BLOK
+  // FAIL-SAFE ketat: jika usage masih -1 → TOLAK upload
   if(r2Used<0||driveUsed<0){
     return{ok:false, target:null,
-      msg:isAdmin
-        ?'🚫 Gagal membaca kapasitas penyimpanan dari database. Coba refresh halaman.'
-        :'🚫 Tidak dapat memverifikasi kapasitas. Silahkan hubungi admin.'};
+      msg:'🚫 Tidak dapat memverifikasi kapasitas penyimpanan. Silahkan hubungi admin untuk memastikan kuota sudah terkonfigurasi.'};
   }
 
   currentStorageBytes=r2Used;
