@@ -3669,9 +3669,7 @@ async function delDok(id, isAdmin=false){
     catch(e){ console.warn('R2 delete warning:',e.message); }
   }
   // Hapus dari Drive (jika dokumen ada di Drive)
-  // Tidak cek DRIVE.configured dulu — panggil ensureDriveConfig() agar config ter-load
-  // walaupun user biasa (RPC get_drive_config dipakai sebagai fallback)
-  if(dok && dok.storage_type==='drive' && dok.drive_file_id){
+  if(dok && dok.storage_type==='drive' && dok.drive_file_id && DRIVE.configured){
     try{
       await ensureDriveConfig();
       if(DRIVE.serviceAccountJson){
@@ -3682,10 +3680,8 @@ async function delDok(id, isAdmin=false){
         if(res.ok||res.status===404){
           console.info('[delDok] Drive file terhapus:',dok.drive_file_id);
         } else {
-          console.warn('[delDok] Drive delete HTTP',res.status,'— file mungkin sudah tidak ada');
+          console.warn('[delDok] Drive delete HTTP',res.status);
         }
-      } else {
-        console.warn('[delDok] Drive config tidak tersedia — file Drive tidak terhapus dari storage');
       }
     }catch(e){ console.warn('[delDok] Drive delete warning:',e.message); }
   }
