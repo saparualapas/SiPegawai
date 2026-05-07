@@ -3965,10 +3965,7 @@ async function doUpload(){
       drive_file_id:driveFileId||null,
       uploaded_at:new Date().toISOString()
     };
-    // r2_key NOT NULL constraint — wajib diisi
-    // Jika Drive: set ke string kosong (file ada di drive_file_id)
-    // Jika R2: set ke r2Key yang sebenarnya
-    insertPayload.r2_key = storageType==='r2' ? r2Key : '';
+    if(storageType==='r2') insertPayload.r2_key=r2Key;
 
     // Gunakan RPC atomik — cek kapasitas + insert dalam 1 transaksi Postgres
     // Ini mencegah race condition saat 2 user upload bersamaan
@@ -4181,8 +4178,6 @@ async function r2Put(ep,bucket,key,body,ct){
   return await res.json();
 }
 async function r2Delete(key){
-  // Guard: jangan hapus jika key kosong (dokumen Drive punya r2_key='')
-  if(!key || key.trim()==='') return;
   const{data:{session}}=await sb.auth.getSession();
   const token=session?.access_token||'';
   if(!token) throw new Error('Sesi tidak aktif.');
@@ -5268,8 +5263,7 @@ async function doUploadAdmin(){
       drive_file_id: driveFileId||null,
       uploaded_at  : new Date().toISOString()
     };
-    // r2_key NOT NULL constraint — wajib diisi
-    adminInsertPayload.r2_key = storageType==='r2' ? r2Key : '';
+    if(storageType==='r2') adminInsertPayload.r2_key=r2Key;
 
     // Pastikan id selalu ada sebelum kirim ke RPC/insert
     if(!adminInsertPayload.id){
