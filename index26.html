@@ -844,17 +844,14 @@ tbody td.wrap{white-space:normal;min-width:140px;}
             4. Pilih scope <strong>https://www.googleapis.com/auth/drive</strong> → Authorize → Exchange → copy refresh_token
           </div></div>
           <div class="form-group"><label class="form-label">Folder ID Google Drive <span style="font-size:.72rem;color:var(--muted)">(dari URL: drive.google.com/drive/folders/<strong>ID_INI</strong>)</span></label><input class="form-control" id="driveFolderId" style="font-family:'JetBrains Mono',monospace;font-size:.79rem" placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms"/></div>
-          <div class="form-group"><label class="form-label">Batas Penyimpanan Drive <span style="font-size:.72rem;color:var(--danger);font-weight:600">* Wajib diisi</span></label>
+          <div class="form-group"><label class="form-label">Batas Penyimpanan Drive</label>
             <div style="display:flex;gap:.5rem;align-items:center">
-              <input class="form-control" id="driveLimitVal" type="number" min="1" max="99999" placeholder="Contoh: 10" style="max-width:100px"/>
+              <input class="form-control" id="driveLimitVal" type="number" min="1" max="99999" value="10" style="max-width:100px"/>
               <select class="form-control" id="driveLimitUnit" style="max-width:80px">
                 <option value="GB">GB</option>
                 <option value="MB">MB</option>
               </select>
-              <span style="font-size:.8rem;color:var(--muted)" id="driveLimitPreview"></span>
-            </div>
-            <div style="font-size:.75rem;color:var(--danger);margin-top:.3rem;display:none" id="driveLimitWarn">
-              <i class="fas fa-exclamation-circle"></i> Limit belum diset — upload ke Drive diblokir hingga limit diisi dan disimpan.
+              <span style="font-size:.8rem;color:var(--muted)" id="driveLimitPreview">= 10 GB</span>
             </div>
           </div>
           <div class="form-group"><label class="form-label" style="display:flex;align-items:center;gap:.5rem;cursor:pointer">
@@ -868,11 +865,6 @@ tbody td.wrap{white-space:normal;min-width:140px;}
           </div>
           <div id="driveStat" style="margin-top:.65rem;font-size:.79rem;color:var(--muted)"></div>
           <div id="driveAlert" class="alert-box" style="display:none;margin-top:.5rem"></div>
-          <!-- Kotak hasil migrasi R2→Drive — muncul setelah proses selesai -->
-          <div id="migrateResultBox" style="display:none;margin-top:.875rem;border-radius:10px;border:1.5px solid var(--border);overflow:hidden">
-            <div id="migrateResultHeader" style="padding:.6rem 1rem;font-weight:700;font-size:.82rem;display:flex;align-items:center;gap:.5rem"></div>
-            <div id="migrateResultBody" style="padding:.75rem 1rem;font-size:.8rem;line-height:1.7;border-top:1px solid var(--border)"></div>
-          </div>
           <div id="driveStorageWrap" style="display:none;margin-top:.875rem;padding:.875rem;background:var(--surface2);border-radius:10px;border:1px solid var(--border)">
             <div style="font-size:.79rem;font-weight:600;margin-bottom:.4rem;color:var(--text2)"><i class="fab fa-google-drive" style="color:#0F9D58"></i> Penggunaan Google Drive</div>
             <div class="storage-bar-bg"><div class="storage-bar-fill safe" id="driveBarFill" style="width:0%"></div></div>
@@ -1096,82 +1088,6 @@ END;
 $$;</pre>
             <div style="font-size:.77rem;color:var(--danger);margin-top:.5rem;font-weight:600">
               <i class="fas fa-exclamation-circle"></i> Tanpa function-function ini, user biasa tidak dapat mengupload dokumen dan cache storage tidak bisa diperbarui.
-            </div>
-          </div>
-        </div>
-
-        <!-- Panduan Template Email -->
-        <div class="card" style="border:2px solid var(--accent)">
-          <div class="card-hd"><span class="card-title"><i class="fas fa-envelope" style="color:var(--accent);margin-right:.4rem"></i>Template Email Supabase (Bahasa Indonesia)</span></div>
-          <div class="card-body">
-            <div style="font-size:.82rem;line-height:1.7;color:var(--text2);margin-bottom:.75rem">
-              Buka <strong>Supabase → Authentication → Email Templates</strong>, lalu ganti masing-masing template berikut.
-              <br><span style="color:var(--danger);font-weight:600"><i class="fas fa-info-circle"></i> Kenapa ada 2 email saat ubah email?</span>
-              Supabase secara default mengirim notifikasi ke <strong>email lama</strong> (sebagai keamanan) DAN konfirmasi ke <strong>email baru</strong>.
-              Untuk menonaktifkan notifikasi ke email lama: <strong>Supabase → Auth → Settings → matikan "Secure email change"</strong>.
-            </div>
-
-            <div style="font-weight:700;font-size:.82rem;margin:.75rem 0 .35rem;color:var(--text)">
-              <i class="fas fa-user-plus" style="color:var(--accent)"></i> 1. Confirm signup (Verifikasi Daftar Akun)
-            </div>
-            <pre style="background:#0f172a;color:#e2e8f0;padding:1rem;border-radius:10px;font-size:.71rem;line-height:1.6;overflow-x:auto;white-space:pre-wrap">&lt;h2 style="color:#0a2342;font-family:sans-serif"&gt;Verifikasi Email SiPegawai&lt;/h2&gt;
-&lt;p style="font-family:sans-serif;color:#333"&gt;Halo,&lt;/p&gt;
-&lt;p style="font-family:sans-serif;color:#333"&gt;Terima kasih sudah mendaftar di &lt;strong&gt;SiPegawai Lapas Kelas III Saparua&lt;/strong&gt;.&lt;br&gt;Klik tombol di bawah untuk memverifikasi email kamu:&lt;/p&gt;
-&lt;p&gt;
-  &lt;a href="{{ .ConfirmationURL }}"
-     style="background:#0a2342;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:bold;display:inline-block;font-family:sans-serif"&gt;
-    ✉️ Verifikasi Email Saya
-  &lt;/a&gt;
-&lt;/p&gt;
-&lt;p style="font-family:sans-serif;color:#555;font-size:13px"&gt;Atau salin link ini ke browser:&lt;/p&gt;
-&lt;p style="word-break:break-all;color:#1a56db;font-size:13px"&gt;{{ .ConfirmationURL }}&lt;/p&gt;
-&lt;p style="color:#999;font-size:12px;font-family:sans-serif"&gt;Abaikan email ini jika tidak merasa mendaftar. Link berlaku 1 jam.&lt;/p&gt;
-&lt;p style="font-family:sans-serif;color:#555"&gt;— SiPegawai Lapas Kelas III Saparua&lt;/p&gt;</pre>
-
-            <div style="font-weight:700;font-size:.82rem;margin:.75rem 0 .35rem;color:var(--text)">
-              <i class="fas fa-key" style="color:var(--warn)"></i> 2. Reset Password (Lupa Password)
-            </div>
-            <pre style="background:#0f172a;color:#e2e8f0;padding:1rem;border-radius:10px;font-size:.71rem;line-height:1.6;overflow-x:auto;white-space:pre-wrap">&lt;h2 style="color:#0a2342;font-family:sans-serif"&gt;Reset Password SiPegawai&lt;/h2&gt;
-&lt;p style="font-family:sans-serif;color:#333"&gt;Halo,&lt;/p&gt;
-&lt;p style="font-family:sans-serif;color:#333"&gt;Kami menerima permintaan reset password untuk akun &lt;strong&gt;{{ .Email }}&lt;/strong&gt; di SiPegawai.&lt;br&gt;Klik tombol di bawah untuk membuat password baru:&lt;/p&gt;
-&lt;p&gt;
-  &lt;a href="{{ .ConfirmationURL }}"
-     style="background:#b91c1c;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:bold;display:inline-block;font-family:sans-serif"&gt;
-    🔑 Reset Password Saya
-  &lt;/a&gt;
-&lt;/p&gt;
-&lt;p style="font-family:sans-serif;color:#555;font-size:13px"&gt;Atau salin link ini ke browser:&lt;/p&gt;
-&lt;p style="word-break:break-all;color:#1a56db;font-size:13px"&gt;{{ .ConfirmationURL }}&lt;/p&gt;
-&lt;p style="color:#999;font-size:12px;font-family:sans-serif"&gt;Jika kamu tidak meminta reset password, abaikan email ini. Link berlaku 1 jam.&lt;/p&gt;
-&lt;p style="font-family:sans-serif;color:#555"&gt;— SiPegawai Lapas Kelas III Saparua&lt;/p&gt;</pre>
-
-            <div style="font-weight:700;font-size:.82rem;margin:.75rem 0 .35rem;color:var(--text)">
-              <i class="fas fa-exchange-alt" style="color:#0F9D58"></i> 3. Change Email Address (Konfirmasi Ubah Email — dikirim ke email BARU)
-            </div>
-            <pre style="background:#0f172a;color:#e2e8f0;padding:1rem;border-radius:10px;font-size:.71rem;line-height:1.6;overflow-x:auto;white-space:pre-wrap">&lt;h2 style="color:#0a2342;font-family:sans-serif"&gt;Konfirmasi Perubahan Email SiPegawai&lt;/h2&gt;
-&lt;p style="font-family:sans-serif;color:#333"&gt;Halo,&lt;/p&gt;
-&lt;p style="font-family:sans-serif;color:#333"&gt;
-  Permintaan perubahan email diterima untuk akun SiPegawai.&lt;br&gt;
-  Email lama: &lt;strong&gt;{{ .Email }}&lt;/strong&gt;&lt;br&gt;
-  Email baru: &lt;strong&gt;{{ .NewEmail }}&lt;/strong&gt;
-&lt;/p&gt;
-&lt;p style="font-family:sans-serif;color:#333"&gt;Klik tombol di bawah untuk &lt;strong&gt;mengaktifkan email baru&lt;/strong&gt; kamu:&lt;/p&gt;
-&lt;p&gt;
-  &lt;a href="{{ .ConfirmationURL }}"
-     style="background:#0a7c42;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:bold;display:inline-block;font-family:sans-serif"&gt;
-    ✅ Konfirmasi Email Baru
-  &lt;/a&gt;
-&lt;/p&gt;
-&lt;p style="font-family:sans-serif;color:#555;font-size:13px"&gt;Atau salin link ini ke browser:&lt;/p&gt;
-&lt;p style="word-break:break-all;color:#1a56db;font-size:13px"&gt;{{ .ConfirmationURL }}&lt;/p&gt;
-&lt;p style="color:#999;font-size:12px;font-family:sans-serif"&gt;Jika kamu tidak merasa mengubah email, segera hubungi admin. Link berlaku 1 jam.&lt;/p&gt;
-&lt;p style="font-family:sans-serif;color:#555"&gt;— SiPegawai Lapas Kelas III Saparua&lt;/p&gt;</pre>
-
-            <div style="margin-top:.75rem;padding:.6rem .875rem;background:var(--surface2);border-radius:8px;border:1px solid var(--border);font-size:.77rem;color:var(--text2)">
-              <i class="fas fa-lightbulb" style="color:var(--warn)"></i>
-              <strong>Tip:</strong> Untuk menonaktifkan email notifikasi ke email lama saat ubah email:
-              Buka <strong>Supabase → Authentication → Settings → matikan "Secure email change"</strong>.
-              Dengan begitu hanya email baru yang menerima link konfirmasi.
             </div>
           </div>
         </div>
@@ -2597,17 +2513,13 @@ function fillDriveFields(){
   // Tampilkan limit: jika < 1 GB tampilkan dalam MB
   if(lValEl && lUnitEl){
     const gb=DRIVE.limitGb||0; // 0=belum diset
-    const driveLimitWarnEl=document.getElementById('driveLimitWarn');
     if(gb<=0){
       lValEl.value='';    // kosong = belum diset
       lUnitEl.value='MB';
-      if(driveLimitWarnEl) driveLimitWarnEl.style.display='block';
     } else if(gb<1){
-      if(driveLimitWarnEl) driveLimitWarnEl.style.display='none';
       lValEl.value=Math.round(gb*1024);
       lUnitEl.value='MB';
     } else {
-      if(driveLimitWarnEl) driveLimitWarnEl.style.display='none';
       lValEl.value=gb;
       lUnitEl.value='GB';
     }
@@ -2624,14 +2536,7 @@ function updateDriveLimitPreview(){
   const val=parseFloat(document.getElementById('driveLimitVal')?.value)||0;
   const unit=document.getElementById('driveLimitUnit')?.value||'GB';
   const prev=document.getElementById('driveLimitPreview');
-  const warn=document.getElementById('driveLimitWarn');
-  if(!prev) return;
-  if(val<=0){
-    prev.textContent='';
-    if(warn) warn.style.display='block';
-    return;
-  }
-  if(warn) warn.style.display='none';
+  if(!prev)return;
   const gbVal=unit==='MB'?(val/1024):val;
   if(gbVal<1) prev.textContent='= '+Math.round(gbVal*1024)+' MB';
   else prev.textContent='= '+gbVal.toFixed(gbVal%1===0?0:2)+' GB';
@@ -2901,9 +2806,6 @@ async function migrateR2ToDrive(){
   if(!confirm('Pindahkan SEMUA file dari R2 ke Google Drive?\n\nProses ini tidak bisa dibatalkan dan mungkin memakan waktu lama.')) return;
   const btn=document.getElementById('btnMigrateR2');
   if(btn) setBtn(btn,true,'<i class="fas fa-spin fa-spinner"></i> Memigrasikan...');
-  // Reset/sembunyikan result box sebelumnya
-  const rb=document.getElementById('migrateResultBox');
-  if(rb) rb.style.display='none';
   toast('Memulai migrasi R2 → Drive...','info');
 
   const{data:docs,error}=await sb.from('dokumen').select('id,r2_key,nama_file,ukuran_file,profiles:user_id(nama_lengkap),kategori_dokumen:kategori_id(nama)').eq('storage_type','r2').order('uploaded_at',{ascending:true});
@@ -2986,73 +2888,16 @@ async function migrateR2ToDrive(){
   await _updateCacheSetelahUpload().catch(()=>{});
   refreshDriveStorageUI();
 
-  // ── Tampilkan laporan hasil migrasi di UI ───────────────────────────────
-  const resultBox    = document.getElementById('migrateResultBox');
-  const resultHeader = document.getElementById('migrateResultHeader');
-  const resultBody   = document.getElementById('migrateResultBody');
-
-  const semua = ok + fail + skip;
-  const isOk  = fail===0 && skip===0;
-  const isWarn= skip>0 || fail>0;
-
-  // Header berwarna sesuai hasil
-  let headerColor, headerBg, headerIcon, headerText;
-  if(isOk){
-    headerColor='#166534'; headerBg='#dcfce7'; headerIcon='fa-check-circle'; headerText='Migrasi Selesai';
-  } else if(ok>0){
-    headerColor='#92400e'; headerBg='#fef3c7'; headerIcon='fa-exclamation-triangle'; headerText='Migrasi Selesai (Sebagian)';
-  } else {
-    headerColor='#991b1b'; headerBg='#fee2e2'; headerIcon='fa-times-circle'; headerText='Migrasi Gagal';
-  }
-
-  if(resultHeader){
-    resultHeader.style.background=headerBg;
-    resultHeader.style.color=headerColor;
-    resultHeader.innerHTML=`<i class="fas ${headerIcon}"></i> ${headerText}`;
-  }
-
-  // Body detail
-  let bodyHtml = `<table style="width:100%;border-collapse:collapse">`;
-  bodyHtml += `<tr><td style="padding:.2rem 0;color:var(--text2)">Total file R2 diproses</td><td style="text-align:right;font-weight:600">${semua} file</td></tr>`;
-  bodyHtml += `<tr><td style="padding:.2rem 0;color:#166534"><i class="fas fa-check" style="width:14px"></i> Berhasil dipindah ke Drive</td><td style="text-align:right;font-weight:600;color:#166534">${ok} file</td></tr>`;
+  // Laporan hasil migrasi
+  let migrasiMsg = `Migrasi selesai: ${ok} berhasil`;
+  if(fail>0)  migrasiMsg += `, ${fail} gagal (tetap di R2)`;
+  if(skip>0)  migrasiMsg += `, ${skip} dilewati (Drive penuh — tetap di R2)`;
+  const migrasiType = (fail===0&&skip===0)?'ok':'warn';
+  toast(migrasiMsg, migrasiType);
   if(skip>0){
-    bodyHtml += `<tr><td style="padding:.2rem 0;color:#92400e"><i class="fas fa-forward" style="width:14px"></i> Dilewati (Drive penuh — tetap di R2)</td><td style="text-align:right;font-weight:600;color:#92400e">${skip} file</td></tr>`;
+    console.info('[migrate] File dilewati (tidak muat di Drive):', skippedFiles);
+    setTimeout(()=>toast(`File tetap di R2: ${skippedFiles.slice(0,3).join(', ')}${skippedFiles.length>3?' dan '+(skippedFiles.length-3)+' lainnya':''}`, 'info'), 1500);
   }
-  if(fail>0){
-    bodyHtml += `<tr><td style="padding:.2rem 0;color:#991b1b"><i class="fas fa-times" style="width:14px"></i> Gagal (tetap di R2, coba lagi)</td><td style="text-align:right;font-weight:600;color:#991b1b">${fail} file</td></tr>`;
-  }
-  bodyHtml += `</table>`;
-
-  // Daftar file yang dilewati (maks 10)
-  if(skippedFiles.length>0){
-    bodyHtml += `<div style="margin-top:.6rem;padding:.5rem .7rem;background:var(--surface2);border-radius:6px;border:1px solid var(--border)">`;
-    bodyHtml += `<div style="font-weight:600;margin-bottom:.3rem;color:var(--text2)"><i class="fas fa-list"></i> File tetap di R2 (tidak muat di Drive):</div>`;
-    bodyHtml += `<ul style="margin:0;padding-left:1.2rem;color:var(--muted);font-size:.77rem">`;
-    skippedFiles.slice(0,10).forEach(f=>{
-      bodyHtml += `<li>${f}</li>`;
-    });
-    if(skippedFiles.length>10) bodyHtml += `<li style="font-style:italic">...dan ${skippedFiles.length-10} file lainnya</li>`;
-    bodyHtml += `</ul></div>`;
-  }
-
-  // Saran tindakan
-  if(skip>0){
-    bodyHtml += `<div style="margin-top:.6rem;padding:.5rem .7rem;background:#fffbeb;border-radius:6px;border:1px solid #fcd34d;font-size:.77rem;color:#92400e">`;
-    bodyHtml += `<i class="fas fa-lightbulb"></i> <strong>Saran:</strong> Hapus dokumen Drive yang sudah tidak diperlukan atau naikkan Batas Penyimpanan Drive, lalu jalankan migrasi lagi untuk file yang tersisa.`;
-    bodyHtml += `</div>`;
-  }
-
-  if(resultBody) resultBody.innerHTML = bodyHtml;
-  if(resultBox)  resultBox.style.display = 'block';
-
-  // Scroll ke hasil
-  if(resultBox) resultBox.scrollIntoView({behavior:'smooth', block:'nearest'});
-
-  // Toast ringkas
-  const toastMsg = isOk
-    ? `✓ Migrasi selesai: ${ok} file dipindah ke Drive`
-    : `Migrasi: ${ok} berhasil, ${skip} dilewati (Drive penuh), ${fail} gagal`;
-  toast(toastMsg, isOk?'ok':'warn');
 }
 
 async function loadDash(){
