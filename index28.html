@@ -2519,69 +2519,71 @@ async function testDriveConfig(){
 async function refreshDriveStorageUI(){
   if(!DRIVE.configured) return;
   try{
-    // Baca limit Drive dari app_config (sumber kebenaran)
-    let limitGb = DRIVE.limitGb || 0;
-    try{
-      const{data:cfgR}=await sb.from('app_config').select('key,value').eq('key','driveLimitGb');
-      if(cfgR&&cfgR[0]) limitGb=parseFloat(cfgR[0].value)||0;
-    }catch(e2){}
-
-    const wrap=document.getElementById('driveStorageWrap');
-    if(wrap) wrap.style.display='block';
-
-    // Jika limit belum diset → tampilkan warning
-    if(limitGb<=0){
+    // Admin: hitung ulang dan update cache agar user dapat data terkini
+    const{r2:r2Fresh, drive:usedFresh}=await recalcAndCacheStorage();
+    currentStorageBytes=r2Fresh;
+    const used=usedFresh;
+    // Jika limitGb tidak diset (=0), tampilkan peringatan konfigurasi
+    if(!DRIVE.limitGb || DRIVE.limitGb<=0){
+      const wrap=document.getElementById('driveStorageWrap');
+      if(wrap) wrap.style.display='block';
       const ul=document.getElementById('driveUsedLabel');
+      if(ul) ul.textContent=fmtSz(used)+' dipakai';
       const ll=document.getElementById('driveLimitLabel');
-      const fill=document.getElementById('driveBarFill');
-      const warn=document.getElementById('driveFullWarn');
-      if(ul) ul.textContent='— dipakai';
       if(ll) ll.textContent='Limit: belum diset!';
+      const fill=document.getElementById('driveBarFill');
       if(fill){ fill.style.width='100%'; fill.className='storage-bar-fill danger'; }
-      if(warn){ warn.style.display='flex'; warn.innerHTML='<i class="fas fa-exclamation-triangle"></i><div><strong>Limit Drive belum diset!</strong> Upload ke Drive diblokir hingga limit diisi.</div>'; }
+      const warn=document.getElementById('driveFullWarn');
+      if(warn){ warn.style.display='flex'; warn.innerHTML='<i class="fas fa-exclamation-triangle"></i><div><strong>Limit Drive belum diset!</strong> Upload ke Drive diblokir hingga limit diisi. Isi angka limit di atas lalu simpan.</div>'; }
       return;
     }
-
-    // Hitung Drive & R2 dari DB (admin: langsung, akurat 100%)
-    const[r2Used, driveUsed]=await Promise.all([_hitung_r2_dari_db(), _hitung_drive_dari_db()]);
-
-    // Simpan cache agar user biasa juga bisa baca
-    await _simpanCacheStorage(r2Used, driveUsed).catch(()=>{});
-
-    // Update R2 bar juga (sinkronkan)
-    currentStorageBytes=r2Used;
-    renderStorageBar(r2Used);
-
-    // Render Drive bar
-    const limitBytes=Math.round(limitGb*1024*1024*1024);
-    const rawPct=(driveUsed/limitBytes)*100;
-    const pct=Math.min(100,rawPct);
+    // Baca limit dari app_config (sumber kebenaran — bukan DRIVE.limitGb yang mungkin stale)
+    let driveLimitGbFresh = DRIVE.limitGb || 0;
+    try{
+      const{data:cfgR}=await sb.from('app_config').select('key,value').eq('key','driveLimitGb');
+      if(cfgR&&cfgR[0]) driveLimitGbFresh=parseFloat(cfgR[0].value)||0;
+    }catch(e2){}
+    if(driveLimitGbFresh<=0){
+      const wrap=document.getElementById('driveStorageWrap');
+      if(wrap) wrap.style.display='block';
+      const ul=document.getElementById('driveUsedLabel');
+      if(ul) ul.textContent=fmtSz(used)+' dipakai';
+      const ll=document.getElementById('driveLimitLabel');
+      if(ll) ll.textContent='Limit: belum diset!';
+      const fill=document.getElementById('driveBarFill');
+      if(fill){ fill.style.width='100%'; fill.className='storage-bar-fill danger'; }
+      const warn=document.getElementById('driveFullWarn');
+      if(warn){ warn.style.display='flex'; warn.innerHTML='<i class="fas fa-exclamation-triangle"></i><div><strong>Limit Drive belum diset!</strong> Upload ke Drive diblokir hingga limit diisi. Isi angka limit di atas lalu simpan.</div>'; }
+      return;
+    }
+    const limitBytes=Math.round(driveLimitGbFresh*1024*1024*1024);
+    const rawPct=(used/limitBytes)*100;
+    const pct=Math.min(100, rawPct);
     const isFull=rawPct>=100;
-
+    const wrap=document.getElementById('driveStorageWrap');
+    if(wrap) wrap.style.display='block';
     const fill=document.getElementById('driveBarFill');
     if(fill){ fill.style.width=pct.toFixed(1)+'%'; fill.className='storage-bar-fill '+(isFull?'danger':pct>85?'danger':pct>60?'warn':'safe'); }
-
     const ul=document.getElementById('driveUsedLabel');
     const ll=document.getElementById('driveLimitLabel');
-    const limitLabel=limitGb<1?(Math.round(limitGb*1024)+' MB'):(limitGb+' GB');
-    if(ul) ul.textContent=fmtSz(driveUsed)+' dipakai ('+rawPct.toFixed(1)+'%)'+(isFull?' 🚫 PENUH':'');
+    if(ul) ul.textContent=fmtSz(used)+' dipakai ('+rawPct.toFixed(1)+'%)'+(isFull?' 🚫 PENUH':'');
+    const limitLabel=driveLimitGbFresh<1?(Math.round(driveLimitGbFresh*1024)+' MB'):(driveLimitGbFresh+' GB');
     if(ll) ll.textContent='Limit: '+limitLabel;
-
     const warn=document.getElementById('driveFullWarn');
     if(warn){
       if(isFull){
         warn.style.display='flex';
+        warn.innerHTML='<i class="fas fa-ban"></i><div><strong>Drive PENUH ('+rawPct.toFixed(1)+'%)!</strong> Upload ke Drive diblokir. Hapus dokumen lama atau buat folder baru dan perbarui Folder ID.</div>';
         warn.className='alert-danger alert-box';
-        warn.innerHTML='<i class="fas fa-ban"></i><div><strong>Drive PENUH ('+rawPct.toFixed(1)+'%)!</strong> Upload ke Drive diblokir.</div>';
       } else if(pct>85){
         warn.style.display='flex';
+        warn.innerHTML='<i class="fas fa-exclamation-triangle"></i><div>Drive mendekati penuh ('+pct.toFixed(1)+'%)! Segera buat folder Drive baru dan perbarui Folder ID.</div>';
         warn.className='alert-warn alert-box';
-        warn.innerHTML='<i class="fas fa-exclamation-triangle"></i><div>Drive mendekati penuh ('+pct.toFixed(1)+'%).</div>';
       } else {
         warn.style.display='none';
       }
     }
-  }catch(e){ console.warn('[refreshDriveStorageUI]',e.message); }
+  }catch(e){ console.warn('Drive storage UI error:',e.message); }
 }
 
 async function getDriveUsedBytes(){
@@ -2786,21 +2788,8 @@ async function migrateR2ToDrive(){
     }
   }
   if(btn) setBtn(btn,false,'<i class="fas fa-exchange-alt"></i> Pindahkan R2 ke Drive');
-  // Update cache + render KEDUA bar (R2 berkurang, Drive bertambah) setelah migrasi
-  // Hitung langsung dari DB agar akurat (admin punya akses penuh)
-  try{
-    const[r2New, driveNew]=await Promise.all([_hitung_r2_dari_db(), _hitung_drive_dari_db()]);
-    await _simpanCacheStorage(r2New, driveNew);
-    // Update R2 bar di dashboard
-    currentStorageBytes=r2New;
-    renderStorageBar(r2New);
-    // Update Drive bar di halaman pengaturan
-    _renderDriveBar(driveNew);
-    console.info(`[migrate] Cache diperbarui: R2=${fmtSz(r2New)}, Drive=${fmtSz(driveNew)}`);
-  }catch(eCache){
-    console.warn('[migrate] Gagal update cache:',eCache.message);
-  }
-  // Refresh Drive UI lengkap (bar + label + warning)
+  // Update cache storage setelah migrasi
+  await _updateCacheSetelahUpload().catch(()=>{});
   refreshDriveStorageUI();
 
   // ── Tampilkan laporan hasil migrasi di UI ───────────────────────────────
@@ -5410,89 +5399,47 @@ async function _getUsageViaRPC(){
   };
 }
 
-// Hitung ulang dari DB (admin: langsung query, user: via RPC) + simpan cache
+// Hitung ulang dari DB (admin only) + update cache di app_config
 async function recalcAndCacheStorage(){
   const[r2,drive]=await Promise.all([_hitung_r2_dari_db(),_hitung_drive_dari_db()]);
-  await _simpanCacheStorage(r2,drive);
+  await _simpanCacheStorage(r2,drive); // 403 untuk user biasa — diabaikan
   return{r2,drive};
 }
 
-// Hitung usage terbaru — admin: DB langsung (paling akurat), user: RPC fallback
-async function _getUsageFresh(){
-  // Coba hitung dari DB langsung dulu (admin bisa, user biasa tidak bisa baca semua dokumen)
+// Update cache setelah upload/hapus
+// User biasa: pakai RPC get_total_storage_used (SECURITY DEFINER) sebagai sumber kebenaran
+// Admin: hitung ulang dari DB langsung, lalu simpan cache
+async function _updateCacheSetelahUpload(){
   try{
-    const[r2,drive]=await Promise.all([_hitung_r2_dari_db(),_hitung_drive_dari_db()]);
-    // Jika berhasil (admin), nilai r2+drive dari DB adalah sumber kebenaran
-    return{r2,drive,source:'db'};
-  }catch(e){
-    // User biasa: fallback ke RPC SECURITY DEFINER
+    let r2=0,drive=0;
     try{
+      // Utama: RPC SECURITY DEFINER (akurat untuk semua role)
       const rpc=await _getUsageViaRPC();
-      return{r2:rpc.r2,drive:rpc.drive,source:'rpc'};
-    }catch(e2){
-      throw new Error('Tidak dapat menghitung storage: '+e2.message);
+      r2=rpc.r2; drive=rpc.drive;
+    }catch(e){
+      // Fallback admin: hitung dari DB langsung
+      try{ const d=await Promise.all([_hitung_r2_dari_db(),_hitung_drive_dari_db()]); r2=d[0]; drive=d[1]; }catch(e2){}
     }
-  }
-}
-
-// Update cache + render KEDUA bar (R2 dan Drive) sekaligus
-async function _updateCacheAndRenderAll(){
-  try{
-    const{r2,drive}=await _getUsageFresh();
     await _simpanCacheStorage(r2,drive);
-    // Update R2 bar
     currentStorageBytes=r2;
     renderStorageBar(r2);
-    // Update Drive bar jika ada elemen di halaman
-    _renderDriveBar(drive);
-    return{r2,drive};
-  }catch(e){
-    console.warn('[storage] update cache & render gagal:',e.message);
-    return{r2:0,drive:0};
-  }
+  }catch(e){ console.warn('[storage] update cache pasca upload:',e.message); }
 }
 
-// Render Drive bar langsung dari nilai bytes (tanpa fetch ulang)
-function _renderDriveBar(driveBytes){
+async function _updateCacheSetelahHapus(){
   try{
-    const limitGb=DRIVE.limitGb||0;
-    if(limitGb<=0) return; // belum dikonfigurasi
-    const limitBytes=Math.round(limitGb*1024*1024*1024);
-    const rawPct=(driveBytes/limitBytes)*100;
-    const pct=Math.min(100,rawPct);
-    const isFull=rawPct>=100;
-    const wrap=document.getElementById('driveStorageWrap');
-    if(wrap) wrap.style.display='block';
-    const fill=document.getElementById('driveBarFill');
-    if(fill){
-      fill.style.width=pct.toFixed(1)+'%';
-      fill.className='storage-bar-fill '+(isFull?'danger':pct>85?'danger':pct>60?'warn':'safe');
+    let r2=0,drive=0;
+    try{
+      const rpc=await _getUsageViaRPC();
+      r2=rpc.r2; drive=rpc.drive;
+    }catch(e){
+      try{ const d=await Promise.all([_hitung_r2_dari_db(),_hitung_drive_dari_db()]); r2=d[0]; drive=d[1]; }catch(e2){}
     }
-    const ul=document.getElementById('driveUsedLabel');
-    const ll=document.getElementById('driveLimitLabel');
-    const limitLabel=limitGb<1?(Math.round(limitGb*1024)+' MB'):(limitGb+' GB');
-    if(ul) ul.textContent=fmtSz(driveBytes)+' dipakai ('+rawPct.toFixed(1)+'%)'+(isFull?' 🚫 PENUH':'');
-    if(ll) ll.textContent='Limit: '+limitLabel;
-    const warn=document.getElementById('driveFullWarn');
-    if(warn){
-      if(isFull){
-        warn.style.display='flex';
-        warn.className='alert-danger alert-box';
-        warn.innerHTML='<i class="fas fa-ban"></i><div><strong>Drive PENUH ('+rawPct.toFixed(1)+'%)!</strong> Upload ke Drive diblokir.</div>';
-      } else if(pct>85){
-        warn.style.display='flex';
-        warn.className='alert-warn alert-box';
-        warn.innerHTML='<i class="fas fa-exclamation-triangle"></i><div>Drive mendekati penuh ('+pct.toFixed(1)+'%).</div>';
-      } else {
-        warn.style.display='none';
-      }
-    }
-  }catch(e){ console.warn('[driveBar]',e.message); }
+    await _simpanCacheStorage(r2,drive);
+    currentStorageBytes=r2;
+    renderStorageBar(r2);
+  }catch(e){ console.warn('[storage] update cache pasca hapus:',e.message); }
 }
-
-// Alias untuk kompatibilitas
-async function _updateCacheSetelahUpload(){ return _updateCacheAndRenderAll(); }
-async function _updateCacheSetelahHapus(){  return _updateCacheAndRenderAll(); }
 
 // Tidak dipakai lagi tapi pertahankan untuk kompatibilitas
 async function _bacaCacheStorage(){ return null; }
@@ -5510,13 +5457,10 @@ async function getDriveUsedBytes(){ return getDriveStorageUsedFromDB(); }
 
 async function loadStorageUsage(){
   try{
-    // Admin: hitung langsung dari DB (akurat 100%)
-    const[r2,drive]=await Promise.all([_hitung_r2_dari_db(), _hitung_drive_dari_db()]);
-    await _simpanCacheStorage(r2,drive).catch(()=>{});
+    // Admin: hitung ulang dari DB dan update cache agar user dapat angka benar
+    const{r2,drive}=await recalcAndCacheStorage();
     currentStorageBytes=r2;
     renderStorageBar(r2);
-    // Render Drive bar juga agar sinkron (jika elemen ada di halaman)
-    _renderDriveBar(drive);
     return{r2,drive};
   }catch(e){ console.warn('Storage usage error:', e.message); return{r2:0,drive:0}; }
 }
@@ -5712,7 +5656,7 @@ const PAGE_LOADERS={
   backupUser:()=>loadUserBackupPage(),
   dokUser:()=>loadDokUser(selKatId,1),
   upload:()=>checkStorageOnUploadPage(),
-  setting:()=>{ loadR2(); loadDriveConfig().then(()=>refreshDriveStorageUI()).catch(()=>{}); },
+  setting:()=>{ loadR2(); },
   backup:()=>{ loadBackupPage(); },
 };
 
