@@ -2772,7 +2772,8 @@ async function migrateR2ToDrive(){
       // PENTING: simpan r2_key asli sebagai backup, jangan di-null agar tidak langgar constraint
       const{error:dbUpdateErr,data:dbUpdateData}=await sb.from('dokumen').update({
         storage_type:'drive',
-        drive_file_id:driveFileId
+        drive_file_id:driveFileId,
+        drive_folder_id:DRIVE.folderId
       }).eq('id',doc.id).select('id,storage_type');
 
       if(dbUpdateErr) throw new Error('DB update gagal ('+dbUpdateErr.code+'): '+dbUpdateErr.message);
@@ -2793,16 +2794,14 @@ async function migrateR2ToDrive(){
   // Update cache + render KEDUA bar (R2 berkurang, Drive bertambah) setelah migrasi
   // Hitung langsung dari DB agar akurat (admin punya akses penuh)
   try{
-    // Hitung ulang dari DB setelah semua update selesai
-    const r2New   = await _hitung_r2_dari_db();   // return number, tidak throw
-    const driveNew= await _hitung_drive_dari_db(); // return number, tidak throw
+    const[r2New, driveNew]=await Promise.all([_hitung_r2_dari_db(), _hitung_drive_dari_db()]);
     await _simpanCacheStorage(r2New, driveNew);
     // Update R2 bar di dashboard
     currentStorageBytes=r2New;
     renderStorageBar(r2New);
     // Update Drive bar di halaman pengaturan
     _renderDriveBar(driveNew);
-    console.info('[migrate] Cache diperbarui: R2='+fmtSz(r2New)+', Drive='+fmtSz(driveNew));
+    console.info(`[migrate] Cache diperbarui: R2=${fmtSz(r2New)}, Drive=${fmtSz(driveNew)}`);
   }catch(eCache){
     console.warn('[migrate] Gagal update cache:',eCache.message);
   }
@@ -3950,6 +3949,7 @@ async function doUpload(){
       ukuran_file:upFile.size,
       storage_type:storageType,
       drive_file_id:driveFileId||null,
+      drive_folder_id:driveFileId?DRIVE.folderId:null,
       uploaded_at:new Date().toISOString()
     };
     if(storageType==='r2') insertPayload.r2_key=r2Key;
@@ -5210,6 +5210,7 @@ async function doUploadAdmin(){
       ukuran_file  : upAdminFile.size,
       storage_type : storageType,
       drive_file_id: driveFileId||null,
+      drive_folder_id: driveFileId?DRIVE.folderId:null,
       uploaded_at  : new Date().toISOString()
     };
     if(storageType==='r2') adminInsertPayload.r2_key=r2Key;
@@ -5378,34 +5379,34 @@ let   currentStorageBytes = 0;
 // ═══════════════════════════════════════════════════════════════
 
 async function _hitung_r2_dari_db(){
-  let total=0;
-  try{
-    // Hitung semua dokumen yang bukan di Drive (storage_type IS NULL atau 'r2')
+  // Filter langsung di DB: hanya ambil dokumen yang bukan di Drive
+  // storage_type bisa null (lama) atau 'r2' — keduanya dianggap R2
+  let total=0, from=0, done=false;
+  while(!done){
     const{data,error}=await sb.from('dokumen')
-      .select('ukuran_file,storage_type');
+      .select('ukuran_file')
+      .or('storage_type.is.null,storage_type.eq.r2')
+      .range(from,from+999);
     if(error) throw error;
-    (data||[]).forEach(d=>{
-      const st=d.storage_type||'r2';
-      if(st==='r2'||st==='') total+=(d.ukuran_file||0);
-    });
-  }catch(e){
-    console.warn('[_hitung_r2_dari_db] error:',e.message);
-    // Jangan throw — return 0 agar caller tidak crash
+    if(!data||!data.length){done=true;break;}
+    data.forEach(d=>{ total+=(d.ukuran_file||0); });
+    if(data.length<1000) done=true; else from+=1000;
   }
   return total;
 }
 
 async function _hitung_drive_dari_db(){
-  let total=0;
-  try{
+  // Filter langsung di DB: hanya ambil dokumen yang storage_type='drive'
+  let total=0, from=0, done=false;
+  while(!done){
     const{data,error}=await sb.from('dokumen')
-      .select('ukuran_file,storage_type')
-      .eq('storage_type','drive');
-    if(error) throw error;
-    (data||[]).forEach(d=>{ total+=(d.ukuran_file||0); });
-  }catch(e){
-    console.warn('[_hitung_drive_dari_db] error:',e.message);
-    // Jangan throw — return 0 agar caller tidak crash
+      .select('ukuran_file')
+      .eq('storage_type','drive')
+      .range(from,from+999);
+    if(error){ console.warn('[_hitung_drive_dari_db]',error.message); break; }
+    if(!data||!data.length){done=true;break;}
+    data.forEach(d=>{ total+=(d.ukuran_file||0); });
+    if(data.length<1000) done=true; else from+=1000;
   }
   return total;
 }
@@ -5644,11 +5645,17 @@ async function cekStorageCukup(fileSize, isAdmin=false){
   let r2Used=-1, driveUsed=-1;
 
   if(isAdmin){
-    // Admin: hitung langsung dari DB — _hitung_r2/drive tidak throw, selalu return angka
-    [r2Used, driveUsed]=await Promise.all([_hitung_r2_dari_db(), _hitung_drive_dari_db()]);
-    // Simpan cache sekaligus agar user biasa bisa baca
-    _simpanCacheStorage(r2Used, driveUsed).catch(()=>{});
-    console.info('[cekStorage] admin DB:', 'R2='+fmtSz(r2Used), 'Drive='+fmtSz(driveUsed));
+    // Admin: hitung ulang langsung dari DB (akurat 100%)
+    try{
+      const fresh=await recalcAndCacheStorage();
+      r2Used=fresh.r2; driveUsed=fresh.drive;
+    }catch(e){
+      // Admin fallback via RPC
+      try{
+        const rpc=await _getUsageViaRPC();
+        r2Used=rpc.r2; driveUsed=rpc.drive;
+      }catch(e2){ console.warn('[cekStorage] admin error:',e2.message); }
+    }
   } else {
     // User biasa: WAJIB via RPC get_total_storage_used (SECURITY DEFINER)
     // Tidak ada fallback lain — RPC adalah satu-satunya sumber yang akurat
