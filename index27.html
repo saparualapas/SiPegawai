@@ -809,9 +809,7 @@ tbody td.wrap{white-space:normal;min-width:140px;}
     <!-- PENGATURAN -->
     <div id="pageSetting" style="display:none">
       <div class="topbar"><div><div class="page-title">Pengaturan</div></div></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.375rem;max-width:1100px;align-items:start">
-        <!-- KOLOM KIRI: Cloudflare R2 -->
-        <div>
+      <div style="max-width:520px">
         <div class="card"><div class="card-hd"><span class="card-title"><i class="fas fa-cloud" style="color:var(--accent);margin-right:.4rem"></i>Cloudflare R2</span></div><div class="card-body">
           <div class="alert-info alert-box"><i class="fas fa-lock"></i><div>Hanya admin yang dapat mengubah konfigurasi R2.</div></div>
           <div class="form-group"><label class="form-label">Account ID</label><input class="form-control" id="r2AID" style="font-family:'JetBrains Mono',monospace;font-size:.79rem"/></div>
@@ -834,10 +832,8 @@ tbody td.wrap{white-space:normal;min-width:140px;}
           <div id="r2Stat" style="margin-top:.65rem;font-size:.79rem;color:var(--muted)"></div>
         </div></div>
 
-        </div><!-- end kolom kiri -->
-        <!-- KOLOM KANAN: Google Drive -->
-        <div>
-        <div class="card"><div class="card-hd"><span class="card-title"><i class="fab fa-google-drive" style="color:#0F9D58;margin-right:.4rem"></i>Google Drive (Overflow Storage)</span></div><div class="card-body">
+        <!-- GOOGLE DRIVE CONFIG -->
+        <div class="card" style="margin-top:1.25rem"><div class="card-hd"><span class="card-title"><i class="fab fa-google-drive" style="color:#0F9D58;margin-right:.4rem"></i>Google Drive (Overflow Storage)</span></div><div class="card-body">
           <div class="alert-info alert-box" style="margin-bottom:.875rem"><i class="fas fa-info-circle"></i><div>Gunakan <strong>Service Account</strong> dari Google Cloud Console. File akan otomatis disimpan ke Drive saat R2 penuh, dan tetap bisa dibuka dari website.</div></div>
           <div class="form-group"><label class="form-label">Konfigurasi Drive JSON <span style="font-size:.72rem;color:var(--muted)">(format OAuth2 — lihat panduan di bawah)</span></label><textarea class="form-control" id="driveJson" rows="5" style="font-family:'JetBrains Mono',monospace;font-size:.72rem;resize:vertical" placeholder='{"type":"oauth2","client_id":"xxxxx.apps.googleusercontent.com","client_secret":"GOCSPX-xxxxx","refresh_token":"1//xxxxx"}'></textarea>
           <div style="margin-top:.4rem;font-size:.72rem;color:var(--muted);line-height:1.6">
@@ -887,30 +883,8 @@ tbody td.wrap{white-space:normal;min-width:140px;}
             <div id="driveFullWarn" style="display:none;margin-top:.5rem" class="alert-warn alert-box"><i class="fas fa-exclamation-triangle"></i><div>Drive mendekati penuh! Buat folder Drive baru dan perbarui Folder ID di atas.</div></div>
           </div>
         </div></div>
-        </div><!-- end kolom kanan -->
-        <!-- Panduan Recovery — span 2 kolom -->
-        <div class="card" style="grid-column:1/-1">
-          <div class="card-hd"><span class="card-title"><i class="fas fa-life-ring" style="color:var(--danger);margin-right:.4rem"></i>Panduan Recovery</span></div>
-          <div class="card-body">
-            <div style="font-size:.82rem;line-height:1.7;color:var(--text2)">
-              <div style="font-weight:700;color:var(--danger);margin-bottom:.5rem"><i class="fas fa-exclamation-triangle"></i> Jika file R2 terhapus:</div>
-              <ol style="padding-left:1.1rem;margin:0 0 .875rem">
-                <li>Download <strong>Manifest Dokumen</strong> sekarang (sebelum terjadi masalah)</li>
-                <li>Buka Cloudflare R2 Dashboard → bucket kamu</li>
-                <li>Cocokkan kolom <code style="background:var(--surface2);padding:.1rem .3rem;border-radius:4px">r2_key</code> di CSV dengan file yang masih ada</li>
-                <li>File yang hilang tandai di kolom <code style="background:var(--surface2);padding:.1rem .3rem;border-radius:4px">status_recovery</code></li>
-                <li>Minta ulang file dari pegawai yang bersangkutan</li>
-              </ol>
-              <div style="font-weight:700;color:var(--warn);margin-bottom:.5rem"><i class="fas fa-exclamation-triangle"></i> Jika konfigurasi R2 salah:</div>
-              <ol style="padding-left:1.1rem;margin:0">
-                <li>Jangan hapus data di tabel <code style="background:var(--surface2);padding:.1rem .3rem;border-radius:4px">dokumen</code> — r2_key masih valid</li>
-                <li>Perbaiki config di halaman <strong>Pengaturan → Cloudflare R2</strong></li>
-                <li>Test dengan upload 1 file kecil setelah perbaikan</li>
-              </ol>
-            </div>
-          </div>
-        </div>
-      </div><!-- end grid -->
+
+      </div>
     </div>
 
     <!-- BACKUP & EXPORT -->
@@ -1004,8 +978,228 @@ tbody td.wrap{white-space:normal;min-width:140px;}
           </div>
         </div>
 
+        <!-- SQL Setup Required -->
+        <div class="card" style="border:2px solid var(--warn)">
+          <div class="card-hd"><span class="card-title"><i class="fas fa-database" style="color:var(--warn);margin-right:.4rem"></i>Wajib: SQL Function Supabase</span></div>
+          <div class="card-body">
+            <div style="font-size:.82rem;line-height:1.7;color:var(--text2);margin-bottom:.75rem">
+              Buat function berikut di <strong>Supabase → SQL Editor</strong> agar pengecekan storage berfungsi untuk semua user (bukan hanya admin):
+            </div>
+            <pre style="background:#0f172a;color:#e2e8f0;padding:1rem;border-radius:10px;font-size:.72rem;line-height:1.6;overflow-x:auto;white-space:pre-wrap">-- ── 1. Hitung total storage (WAJIB, untuk cek kapasitas) ───────────────────
+CREATE OR REPLACE FUNCTION get_total_storage_used()
+RETURNS json
+LANGUAGE sql
+SECURITY DEFINER
+AS $$
+  SELECT json_build_object(
+    'r2_bytes',    COALESCE(SUM(CASE WHEN storage_type IS NULL OR storage_type='r2'    THEN ukuran_file ELSE 0 END),0),
+    'drive_bytes', COALESCE(SUM(CASE WHEN storage_type='drive' THEN ukuran_file ELSE 0 END),0)
+  )
+  FROM dokumen;
+$$;
+
+-- ── 2. Insert dokumen DENGAN cek kapasitas atomik ────────────────────────────
+-- Cek dilakukan BERSAMAAN dengan insert dalam 1 transaksi — tidak ada celah race condition
+CREATE OR REPLACE FUNCTION insert_dokumen_safe(
+  p_payload    jsonb,
+  p_r2_limit   bigint,
+  p_drive_limit bigint,
+  p_storage_type text  -- 'r2' atau 'drive'
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_r2_used    bigint;
+  v_drive_used bigint;
+  v_file_size  bigint;
+  v_new_id     uuid;
+BEGIN
+  -- Hitung usage saat ini (dalam transaksi yang sama = consistent read)
+  SELECT
+    COALESCE(SUM(CASE WHEN storage_type IS NULL OR storage_type='r2'  THEN ukuran_file ELSE 0 END), 0),
+    COALESCE(SUM(CASE WHEN storage_type='drive' THEN ukuran_file ELSE 0 END), 0)
+  INTO v_r2_used, v_drive_used
+  FROM dokumen;
+
+  v_file_size := (p_payload->>'ukuran_file')::bigint;
+
+  -- Validasi kapasitas
+  IF p_storage_type = 'r2' THEN
+    IF (v_r2_used + v_file_size) > p_r2_limit THEN
+      RETURN jsonb_build_object('ok', false, 'error', 'R2_FULL',
+        'r2_used', v_r2_used, 'r2_limit', p_r2_limit, 'file_size', v_file_size);
+    END IF;
+  ELSIF p_storage_type = 'drive' THEN
+    -- Blokir jika drive_limit tidak diset (= 0 artinya belum dikonfigurasi)
+    IF p_drive_limit <= 0 THEN
+      RETURN jsonb_build_object('ok', false, 'error', 'DRIVE_NOT_CONFIGURED',
+        'drive_used', v_drive_used, 'drive_limit', 0);
+    END IF;
+    IF (v_drive_used + v_file_size) > p_drive_limit THEN
+      RETURN jsonb_build_object('ok', false, 'error', 'DRIVE_FULL',
+        'drive_used', v_drive_used, 'drive_limit', p_drive_limit, 'file_size', v_file_size);
+    END IF;
+  END IF;
+
+  -- Insert dokumen (pastikan id selalu terisi)
+  INSERT INTO dokumen
+  SELECT * FROM jsonb_populate_record(
+    null::dokumen,
+    p_payload || jsonb_build_object('id', COALESCE(p_payload->>'id', gen_random_uuid()::text))
+  )
+  RETURNING id INTO v_new_id;
+
+  RETURN jsonb_build_object('ok', true, 'id', v_new_id);
+EXCEPTION WHEN OTHERS THEN
+  RETURN jsonb_build_object('ok', false, 'error', SQLERRM);
+END;
+$$;
+
+-- ── 3. Config R2 (untuk user biasa) ────────────────────────────────────────
+CREATE OR REPLACE FUNCTION get_r2_config()
+RETURNS json
+LANGUAGE sql
+SECURITY DEFINER
+AS $$
+  SELECT json_object_agg(key, value)
+  FROM app_config
+  WHERE key IN ('accountId','bucket','accessKey','secretKey','r2LimitBytes');
+$$;
+
+-- ── 4. Config Drive (untuk user biasa) ─────────────────────────────────────
+CREATE OR REPLACE FUNCTION get_drive_config()
+RETURNS json
+LANGUAGE sql
+SECURITY DEFINER
+AS $$
+  SELECT json_object_agg(key, value)
+  FROM app_config
+  WHERE key IN ('driveJson','driveFolderId','driveLimitGb','driveAutoOverflow');
+$$;
+
+-- ── 5. Update cache storage (WAJIB agar user biasa bisa simpan cache setelah upload)
+-- User biasa tidak punya RLS WRITE ke app_config, jadi harus via SECURITY DEFINER
+CREATE OR REPLACE FUNCTION update_storage_cache(p_r2_bytes bigint, p_drive_bytes bigint)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  INSERT INTO app_config(key, value) VALUES
+    ('cachedR2Bytes',    p_r2_bytes::text),
+    ('cachedDriveBytes', p_drive_bytes::text),
+    ('cachedStorageAt',  now()::text)
+  ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
+END;
+$$;</pre>
+            <div style="font-size:.77rem;color:var(--danger);margin-top:.5rem;font-weight:600">
+              <i class="fas fa-exclamation-circle"></i> Tanpa function-function ini, user biasa tidak dapat mengupload dokumen dan cache storage tidak bisa diperbarui.
+            </div>
+          </div>
         </div>
 
+        <!-- Panduan Template Email -->
+        <div class="card" style="border:2px solid var(--accent)">
+          <div class="card-hd"><span class="card-title"><i class="fas fa-envelope" style="color:var(--accent);margin-right:.4rem"></i>Template Email Supabase (Bahasa Indonesia)</span></div>
+          <div class="card-body">
+            <div style="font-size:.82rem;line-height:1.7;color:var(--text2);margin-bottom:.75rem">
+              Buka <strong>Supabase → Authentication → Email Templates</strong>, lalu ganti masing-masing template berikut.
+              <br><span style="color:var(--danger);font-weight:600"><i class="fas fa-info-circle"></i> Kenapa ada 2 email saat ubah email?</span>
+              Supabase secara default mengirim notifikasi ke <strong>email lama</strong> (sebagai keamanan) DAN konfirmasi ke <strong>email baru</strong>.
+              Untuk menonaktifkan notifikasi ke email lama: <strong>Supabase → Auth → Settings → matikan "Secure email change"</strong>.
+            </div>
+
+            <div style="font-weight:700;font-size:.82rem;margin:.75rem 0 .35rem;color:var(--text)">
+              <i class="fas fa-user-plus" style="color:var(--accent)"></i> 1. Confirm signup (Verifikasi Daftar Akun)
+            </div>
+            <pre style="background:#0f172a;color:#e2e8f0;padding:1rem;border-radius:10px;font-size:.71rem;line-height:1.6;overflow-x:auto;white-space:pre-wrap">&lt;h2 style="color:#0a2342;font-family:sans-serif"&gt;Verifikasi Email SiPegawai&lt;/h2&gt;
+&lt;p style="font-family:sans-serif;color:#333"&gt;Halo,&lt;/p&gt;
+&lt;p style="font-family:sans-serif;color:#333"&gt;Terima kasih sudah mendaftar di &lt;strong&gt;SiPegawai Lapas Kelas III Saparua&lt;/strong&gt;.&lt;br&gt;Klik tombol di bawah untuk memverifikasi email kamu:&lt;/p&gt;
+&lt;p&gt;
+  &lt;a href="{{ .ConfirmationURL }}"
+     style="background:#0a2342;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:bold;display:inline-block;font-family:sans-serif"&gt;
+    ✉️ Verifikasi Email Saya
+  &lt;/a&gt;
+&lt;/p&gt;
+&lt;p style="font-family:sans-serif;color:#555;font-size:13px"&gt;Atau salin link ini ke browser:&lt;/p&gt;
+&lt;p style="word-break:break-all;color:#1a56db;font-size:13px"&gt;{{ .ConfirmationURL }}&lt;/p&gt;
+&lt;p style="color:#999;font-size:12px;font-family:sans-serif"&gt;Abaikan email ini jika tidak merasa mendaftar. Link berlaku 1 jam.&lt;/p&gt;
+&lt;p style="font-family:sans-serif;color:#555"&gt;— SiPegawai Lapas Kelas III Saparua&lt;/p&gt;</pre>
+
+            <div style="font-weight:700;font-size:.82rem;margin:.75rem 0 .35rem;color:var(--text)">
+              <i class="fas fa-key" style="color:var(--warn)"></i> 2. Reset Password (Lupa Password)
+            </div>
+            <pre style="background:#0f172a;color:#e2e8f0;padding:1rem;border-radius:10px;font-size:.71rem;line-height:1.6;overflow-x:auto;white-space:pre-wrap">&lt;h2 style="color:#0a2342;font-family:sans-serif"&gt;Reset Password SiPegawai&lt;/h2&gt;
+&lt;p style="font-family:sans-serif;color:#333"&gt;Halo,&lt;/p&gt;
+&lt;p style="font-family:sans-serif;color:#333"&gt;Kami menerima permintaan reset password untuk akun &lt;strong&gt;{{ .Email }}&lt;/strong&gt; di SiPegawai.&lt;br&gt;Klik tombol di bawah untuk membuat password baru:&lt;/p&gt;
+&lt;p&gt;
+  &lt;a href="{{ .ConfirmationURL }}"
+     style="background:#b91c1c;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:bold;display:inline-block;font-family:sans-serif"&gt;
+    🔑 Reset Password Saya
+  &lt;/a&gt;
+&lt;/p&gt;
+&lt;p style="font-family:sans-serif;color:#555;font-size:13px"&gt;Atau salin link ini ke browser:&lt;/p&gt;
+&lt;p style="word-break:break-all;color:#1a56db;font-size:13px"&gt;{{ .ConfirmationURL }}&lt;/p&gt;
+&lt;p style="color:#999;font-size:12px;font-family:sans-serif"&gt;Jika kamu tidak meminta reset password, abaikan email ini. Link berlaku 1 jam.&lt;/p&gt;
+&lt;p style="font-family:sans-serif;color:#555"&gt;— SiPegawai Lapas Kelas III Saparua&lt;/p&gt;</pre>
+
+            <div style="font-weight:700;font-size:.82rem;margin:.75rem 0 .35rem;color:var(--text)">
+              <i class="fas fa-exchange-alt" style="color:#0F9D58"></i> 3. Change Email Address (Konfirmasi Ubah Email — dikirim ke email BARU)
+            </div>
+            <pre style="background:#0f172a;color:#e2e8f0;padding:1rem;border-radius:10px;font-size:.71rem;line-height:1.6;overflow-x:auto;white-space:pre-wrap">&lt;h2 style="color:#0a2342;font-family:sans-serif"&gt;Konfirmasi Perubahan Email SiPegawai&lt;/h2&gt;
+&lt;p style="font-family:sans-serif;color:#333"&gt;Halo,&lt;/p&gt;
+&lt;p style="font-family:sans-serif;color:#333"&gt;
+  Permintaan perubahan email diterima untuk akun SiPegawai.&lt;br&gt;
+  Email lama: &lt;strong&gt;{{ .Email }}&lt;/strong&gt;&lt;br&gt;
+  Email baru: &lt;strong&gt;{{ .NewEmail }}&lt;/strong&gt;
+&lt;/p&gt;
+&lt;p style="font-family:sans-serif;color:#333"&gt;Klik tombol di bawah untuk &lt;strong&gt;mengaktifkan email baru&lt;/strong&gt; kamu:&lt;/p&gt;
+&lt;p&gt;
+  &lt;a href="{{ .ConfirmationURL }}"
+     style="background:#0a7c42;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:bold;display:inline-block;font-family:sans-serif"&gt;
+    ✅ Konfirmasi Email Baru
+  &lt;/a&gt;
+&lt;/p&gt;
+&lt;p style="font-family:sans-serif;color:#555;font-size:13px"&gt;Atau salin link ini ke browser:&lt;/p&gt;
+&lt;p style="word-break:break-all;color:#1a56db;font-size:13px"&gt;{{ .ConfirmationURL }}&lt;/p&gt;
+&lt;p style="color:#999;font-size:12px;font-family:sans-serif"&gt;Jika kamu tidak merasa mengubah email, segera hubungi admin. Link berlaku 1 jam.&lt;/p&gt;
+&lt;p style="font-family:sans-serif;color:#555"&gt;— SiPegawai Lapas Kelas III Saparua&lt;/p&gt;</pre>
+
+            <div style="margin-top:.75rem;padding:.6rem .875rem;background:var(--surface2);border-radius:8px;border:1px solid var(--border);font-size:.77rem;color:var(--text2)">
+              <i class="fas fa-lightbulb" style="color:var(--warn)"></i>
+              <strong>Tip:</strong> Untuk menonaktifkan email notifikasi ke email lama saat ubah email:
+              Buka <strong>Supabase → Authentication → Settings → matikan "Secure email change"</strong>.
+              Dengan begitu hanya email baru yang menerima link konfirmasi.
+            </div>
+          </div>
+        </div>
+
+        <!-- Panduan Recovery -->
+        <div class="card">
+          <div class="card-hd"><span class="card-title"><i class="fas fa-life-ring" style="color:var(--danger);margin-right:.4rem"></i>Panduan Recovery</span></div>
+          <div class="card-body">
+            <div style="font-size:.82rem;line-height:1.7;color:var(--text2)">
+              <div style="font-weight:700;color:var(--danger);margin-bottom:.5rem"><i class="fas fa-exclamation-triangle"></i> Jika file R2 terhapus:</div>
+              <ol style="padding-left:1.1rem;margin:0 0 .875rem">
+                <li>Download <strong>Manifest Dokumen</strong> sekarang (sebelum terjadi masalah)</li>
+                <li>Buka Cloudflare R2 Dashboard → bucket kamu</li>
+                <li>Cocokkan kolom <code style="background:var(--surface2);padding:.1rem .3rem;border-radius:4px">r2_key</code> di CSV dengan file yang masih ada</li>
+                <li>File yang hilang tandai di kolom <code style="background:var(--surface2);padding:.1rem .3rem;border-radius:4px">status_recovery</code></li>
+                <li>Minta ulang file dari pegawai yang bersangkutan</li>
+              </ol>
+              <div style="font-weight:700;color:var(--warn);margin-bottom:.5rem"><i class="fas fa-exclamation-triangle"></i> Jika konfigurasi R2 salah:</div>
+              <ol style="padding-left:1.1rem;margin:0">
+                <li>Jangan hapus data di tabel <code style="background:var(--surface2);padding:.1rem .3rem;border-radius:4px">dokumen</code> — r2_key masih valid</li>
+                <li>Perbaiki config di halaman <strong>Pengaturan → Cloudflare R2</strong></li>
+                <li>Test dengan upload 1 file kecil setelah perbaikan</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+
+      </div>
 
       <!-- Riwayat Backup -->
       <div style="max-width:1000px;margin-top:1.375rem">
