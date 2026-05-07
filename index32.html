@@ -3394,18 +3394,13 @@ async function delDokAdmin(id, r2Key, driveFileId){
 
 async function adminOpenDok(r2Key, nama, driveFileId){
   if(!r2Key && !driveFileId){toast('File tidak ditemukan!','err');return;}
-  showActionSplash('Mempersiapkan file...','Mengambil dari penyimpanan, mohon tunggu');
   try{
+    toast('Menyiapkan file...','info');
     let blob;
-    if(driveFileId){
-      // File di Drive — muat config dulu (tidak pakai DRIVE.configured yang bisa false)
-      if(!DRIVE.serviceAccountJson) await ensureDriveConfig();
-      if(!DRIVE.serviceAccountJson) throw new Error('Konfigurasi Drive tidak tersedia. Hubungi admin.');
-      showActionSplash('Mengunduh dari Google Drive...','Mohon tunggu sebentar');
+    if(driveFileId && DRIVE.configured){
       const res=await driveDownload(driveFileId);
       blob=await res.blob();
     } else if(r2Key){
-      showActionSplash('Mengunduh dari Cloudflare R2...','Mohon tunggu sebentar');
       const token=await getWorkerToken();
       const encodedKey=r2Key.split('/').map(encodeURIComponent).join('/');
       const res=await fetch(`${WORKER_URL}/file/${encodedKey}`,{
@@ -3413,13 +3408,12 @@ async function adminOpenDok(r2Key, nama, driveFileId){
       });
       if(!res.ok){
         const d=await res.json().catch(()=>({}));
-        throw new Error(d.error||`Gagal mengambil file (${res.status})`);
+        throw new Error(d.error||`Gagal (${res.status})`);
       }
       blob=await res.blob();
     } else {
       throw new Error('File tidak dapat ditemukan di R2 maupun Drive');
     }
-    hideActionSplash();
     const a=document.createElement('a');
     a.href=URL.createObjectURL(blob);
     a.target='_blank';
@@ -3427,9 +3421,7 @@ async function adminOpenDok(r2Key, nama, driveFileId){
     document.body.appendChild(a);
     a.click();
     setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(a.href);},1000);
-    toast(`✓ File "${nama}" siap dibuka`,'ok');
   }catch(e){
-    hideActionSplash();
     console.error('adminOpenDok error:',e);
     toast('Gagal membuka file: '+e.message,'err');
   }
@@ -3729,37 +3721,36 @@ async function getWorkerToken(){
 // Buka/download file — support R2 dan Google Drive
 async function openDokNewTab(r2Key, nama, driveFileId){
   if(!r2Key && !driveFileId){toast('File tidak ditemukan!','err');return;}
-  showActionSplash('Mempersiapkan file...','Mengambil dari penyimpanan, mohon tunggu');
   try{
+    toast('Menyiapkan file...','info');
     let blob;
     if(driveFileId){
-      // File di Google Drive — muat config dulu
-      if(!DRIVE.serviceAccountJson) await ensureDriveConfig();
-      if(!DRIVE.serviceAccountJson) throw new Error('Konfigurasi Drive tidak tersedia. Hubungi admin.');
-      showActionSplash('Mengunduh dari Google Drive...','Mohon tunggu sebentar');
+      // File ada di Google Drive — pastikan konfigurasi Drive dimuat dulu
+      if(!DRIVE.serviceAccountJson){
+        // Coba muat config Drive langsung (untuk user biasa yang mungkin cache belum ada)
+        await ensureDriveConfig();
+      }
+      if(!DRIVE.serviceAccountJson){
+        throw new Error('File tersimpan di Google Drive namun konfigurasi Drive belum tersedia. Hubungi admin.');
+      }
       const res=await driveDownload(driveFileId);
       blob=await res.blob();
     } else if(r2Key){
-      showActionSplash('Mengunduh dari Cloudflare R2...','Mohon tunggu sebentar');
+      // Ambil dari R2 via Worker
       const token=await getWorkerToken();
       const encodedKey=r2Key.split('/').map(encodeURIComponent).join('/');
       const res=await fetch(`${WORKER_URL}/file/${encodedKey}`,{
         headers:{'Authorization':`Bearer ${token}`}
       });
-      if(!res.ok){const d=await res.json().catch(()=>({}));throw new Error(d.error||`Gagal mengambil file (${res.status})`);}
+      if(!res.ok){const d=await res.json().catch(()=>({}));throw new Error(d.error||`Gagal (${res.status})`);}
       blob=await res.blob();
     } else {
       throw new Error('File tidak dapat ditemukan di R2 maupun Drive');
     }
-    hideActionSplash();
     const objUrl=URL.createObjectURL(blob);
     window.open(objUrl,'_blank');
     setTimeout(()=>URL.revokeObjectURL(objUrl),60000);
-    toast(`✓ File "${nama}" siap dibuka`,'ok');
-  }catch(e){
-    hideActionSplash();
-    toast('Gagal membuka file: '+e.message,'err');
-  }
+  }catch(e){toast('Gagal membuka file: '+e.message,'err');}
 }
 
 // Pastikan DRIVE config termuat — untuk user biasa yang mungkin RLS block app_config
@@ -5098,44 +5089,6 @@ function setUpAdminFile(f){
   const s=document.getElementById('upAdminFileSel');
   s.style.display='flex';
   document.getElementById('upAdminFileName').textContent=f.name+' ('+fmtSz(f.size)+')';
-
-  // ── Cek limit storage segera setelah file dipilih ──
-  // Ini memberi tahu admin SEBELUM tombol upload diklik
-  _checkAdminStorageLimit(f.size);
-}
-
-async function _checkAdminStorageLimit(fileSize){
-  try{
-    const alertBox=document.getElementById('upAdminSizeAlert');
-    const alertTxt=document.getElementById('upAdminSizeAlertTxt');
-    if(!alertBox||!alertTxt) return;
-    // Hitung fresh dari DB
-    const r2Used=await _hitung_r2_dari_db();
-    const driveUsed=await _hitung_drive_dari_db();
-    const r2Limit=R2_LIMIT_BYTES||0;
-    const r2Sisa=Math.max(0,r2Limit-r2Used);
-    const driveConfigOk=DRIVE.configured&&DRIVE.autoOverflow&&(DRIVE.limitGb||0)>0;
-    const driveLimitBytes=driveConfigOk?Math.round(DRIVE.limitGb*1024*1024*1024):0;
-    const driveSisa=driveConfigOk?Math.max(0,driveLimitBytes-driveUsed):0;
-
-    if(fileSize>r2Sisa && !driveConfigOk){
-      // R2 tidak cukup dan Drive tidak aktif/belum diset
-      alertTxt.innerHTML=`<strong>🚫 R2 tidak cukup!</strong> File: <strong>${fmtSz(fileSize)}</strong>, sisa R2: <strong>${fmtSz(r2Sisa)}</strong> dari ${fmtSz(r2Limit)}.<br><small>Hapus dokumen lama atau aktifkan overflow ke Google Drive.</small>`;
-      alertBox.style.display='flex';
-    } else if(fileSize>r2Sisa && driveConfigOk && fileSize>driveSisa){
-      // R2 tidak cukup, Drive juga tidak cukup
-      alertTxt.innerHTML=`<strong>🚫 Semua storage penuh!</strong> File: <strong>${fmtSz(fileSize)}</strong>.<br>Sisa R2: ${fmtSz(r2Sisa)}, sisa Drive: ${fmtSz(driveSisa)}.<br><small>Hapus dokumen lama atau naikkan limit Drive di Pengaturan.</small>`;
-      alertBox.style.display='flex';
-    } else if(fileSize>r2Sisa && driveConfigOk){
-      // R2 tidak cukup tapi Drive masih ada — tampilkan info (bukan error)
-      alertTxt.innerHTML=`<i class="fas fa-info-circle"></i> R2 penuh — file ini akan diarahkan ke Google Drive (sisa Drive: ${fmtSz(driveSisa)}).`;
-      alertBox.style.display='flex';
-      alertBox.className='alert-box'; // info style
-    } else {
-      // Aman — sembunyikan alert jika sebelumnya tampil
-      alertBox.style.display='none';
-    }
-  }catch(e){ /* silent — cek akan dilakukan lagi saat doUploadAdmin */ }
 }
 
 function clearUpAdminFile(){
@@ -5331,9 +5284,7 @@ async function doUploadAdmin(){
       setPrgAdmin(0,'');
     },2000);
   }catch(e){
-    const errMsg=e.message||'Error tidak diketahui';
-    toast('Upload gagal: '+errMsg,'err');
-    showInlineAlert('upAdminSuccessAlert','🚫 '+errMsg,'err');
+    toast('Upload gagal: '+e.message,'err');
     setPrgAdmin(0,'');
     document.getElementById('upAdminPrgWrap').style.display='none';
   }
