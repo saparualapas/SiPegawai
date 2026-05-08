@@ -8,11 +8,6 @@
 <meta name="referrer" content="strict-origin-when-cross-origin"/>
 <title>SiPegawai - Lapas Kelas III Saparua</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%230a2342'/><text x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' font-size='36' font-family='Arial,sans-serif' font-weight='900' fill='%232a9d8f'>S</text><circle cx='47' cy='17' r='8' fill='%23f4a261'/></svg>"/>
-<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin/>
-<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin/>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link rel="preconnect" href="https://guxxelwwalcwhpeujnqj.supabase.co" crossorigin/>
-<link rel="dns-prefetch" href="https://cdn.jsdelivr.net"/>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet"/>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -675,14 +670,14 @@ tbody td.wrap{white-space:normal;min-width:140px;}
     <!-- APPROVAL -->
     <div id="pageApproval" style="display:none">
       <div class="topbar"><div><div class="page-title">Approval User</div><div class="page-sub">Setujui atau tolak pendaftaran pegawai</div></div></div>
-      <div class="toolbar"><div class="srch"><i class="fas fa-search"></i><input type="text" id="approvalQ" placeholder="Cari nama atau NIP..." oninput="dFilterApproval()"/></div><select class="fsel" id="approvalF" onchange="filterApproval()"><option value="">Semua Status</option><option value="pending">Pending</option><option value="approved">Approved</option><option value="rejected">Rejected</option></select></div>
+      <div class="toolbar"><div class="srch"><i class="fas fa-search"></i><input type="text" id="approvalQ" placeholder="Cari nama atau NIP..." oninput="filterApproval()"/></div><select class="fsel" id="approvalF" onchange="filterApproval()"><option value="">Semua Status</option><option value="pending">Pending</option><option value="approved">Approved</option><option value="rejected">Rejected</option></select></div>
       <div class="card"><div class="tbl-scroll-hint"><i class="fas fa-arrows-alt-h"></i> Geser ke samping untuk melihat semua kolom</div><div class="tbl-wrap"><div id="approvalList"><div class="loading"><div class="spinner"></div>Memuat...</div></div><div id="approvalPgn" class="pgn" style="display:none"></div></div></div>
     </div>
 
     <!-- SEMUA PEGAWAI -->
     <div id="pagePegawai" style="display:none">
       <div class="topbar"><div><div class="page-title">Semua Pegawai</div></div></div>
-      <div class="toolbar"><div class="srch"><i class="fas fa-search"></i><input type="text" id="pegQ" placeholder="Cari nama atau NIP..." oninput="dFilterPeg()"/></div><select class="fsel" id="pegJabF" onchange="filterPeg()"><option value="">Semua Jabatan</option></select></div>
+      <div class="toolbar"><div class="srch"><i class="fas fa-search"></i><input type="text" id="pegQ" placeholder="Cari nama atau NIP..." oninput="filterPeg()"/></div><select class="fsel" id="pegJabF" onchange="filterPeg()"><option value="">Semua Jabatan</option></select></div>
       <div class="card"><div class="tbl-scroll-hint"><i class="fas fa-arrows-alt-h"></i> Geser ke samping untuk melihat semua kolom</div><div class="tbl-wrap"><table><thead><tr><th>Pegawai</th><th>NIP</th><th>Jabatan</th><th>Email</th><th>Update</th><th>Aksi</th></tr></thead><tbody id="pegList"></tbody></table><div id="pegSkel"></div><div id="pegEmpty" class="empty" style="display:none"><i class="fas fa-search"></i><p>Tidak ada data.</p></div><div id="pegPgn" class="pgn" style="display:none"></div></div></div>
     </div>
 
@@ -699,7 +694,7 @@ tbody td.wrap{white-space:normal;min-width:140px;}
               <span id="dakPegTotal" style="font-size:.72rem;color:var(--muted)"></span>
             </div>
             <div style="padding:.6rem .75rem;border-bottom:1px solid var(--border)">
-              <div class="srch"><i class="fas fa-search"></i><input type="text" id="dakPegSearch" placeholder="Cari pegawai..." oninput="dFilterDakPeg()"/></div>
+              <div class="srch"><i class="fas fa-search"></i><input type="text" id="dakPegSearch" placeholder="Cari pegawai..." oninput="filterDakPeg()"/></div>
             </div>
             <div id="dakPegList" class="dak-peg-scroll">
               <div class="loading"><div class="spinner"></div>Memuat...</div>
@@ -732,7 +727,7 @@ tbody td.wrap{white-space:normal;min-width:140px;}
 
           <!-- Filter -->
           <div class="toolbar">
-            <div class="srch"><i class="fas fa-search"></i><input type="text" id="dokAdminQ" placeholder="Cari nama file..." oninput="dFilterDokAdmin()"/></div>
+            <div class="srch"><i class="fas fa-search"></i><input type="text" id="dokAdminQ" placeholder="Cari nama file..." oninput="filterDokAdmin()"/></div>
             <select class="fsel" id="dokAdminKatF" onchange="filterDokAdmin()"><option value="">Semua Kategori</option></select>
           </div>
 
@@ -759,14 +754,14 @@ tbody td.wrap{white-space:normal;min-width:140px;}
     <!-- JABATAN -->
     <div id="pageJabatan" style="display:none">
       <div class="topbar"><div><div class="page-title">Kelola Jabatan</div><div class="page-sub">Jabatan tersedia saat pendaftaran pegawai</div></div><button class="btn-p" onclick="openMJabatan()"><i class="fas fa-plus"></i> Tambah Jabatan</button></div>
-      <div class="toolbar"><div class="srch"><i class="fas fa-search"></i><input type="text" id="jabQ" placeholder="Cari nama jabatan..." oninput="dFilterJab()"/></div></div>
+      <div class="toolbar"><div class="srch"><i class="fas fa-search"></i><input type="text" id="jabQ" placeholder="Cari nama jabatan..." oninput="filterJab()"/></div></div>
       <div class="card"><div class="card-hd"><span class="card-title"><i class="fas fa-id-badge" style="color:var(--accent);margin-right:.4rem"></i>Daftar Jabatan</span></div><div class="tbl-wrap"><table><thead><tr><th>Nama Jabatan</th><th>Dibuat</th><th>Aksi</th></tr></thead><tbody id="jabList"></tbody></table><div id="jabSkel"></div><div id="jabEmpty" class="empty" style="display:none"><i class="fas fa-id-badge"></i><p>Belum ada jabatan.</p></div><div id="jabPgn" class="pgn" style="display:none"></div></div></div>
     </div>
 
     <!-- KATEGORI -->
     <div id="pageKategori" style="display:none">
       <div class="topbar"><div><div class="page-title">Kategori Dokumen</div><div class="page-sub">Kelola kategori dokumen pegawai</div></div><button class="btn-p" onclick="openMKategori()"><i class="fas fa-plus"></i> Tambah Kategori</button></div>
-      <div class="toolbar"><div class="srch"><i class="fas fa-search"></i><input type="text" id="katQ" placeholder="Cari nama kategori..." oninput="dFilterKat()"/></div></div>
+      <div class="toolbar"><div class="srch"><i class="fas fa-search"></i><input type="text" id="katQ" placeholder="Cari nama kategori..." oninput="filterKat()"/></div></div>
       <div class="card"><div class="card-hd"><span class="card-title"><i class="fas fa-tags" style="color:var(--accent);margin-right:.4rem"></i>Daftar Kategori</span></div><div class="tbl-wrap"><table><thead><tr><th>Nama Kategori</th><th>Deskripsi</th><th>Aksi</th></tr></thead><tbody id="katList"></tbody></table><div id="katSkel"></div><div id="katEmpty" class="empty" style="display:none"><i class="fas fa-tags"></i><p>Belum ada kategori.</p></div><div id="katPgn" class="pgn" style="display:none"></div></div></div>
     </div>
 
@@ -808,7 +803,7 @@ tbody td.wrap{white-space:normal;min-width:140px;}
         <div class="alert-info alert-box" style="margin-bottom:1rem"><i class="fas fa-info-circle"></i><div>Pilih pegawai terlebih dahulu, lalu upload dokumen atas namanya. Dokumen akan tercatat sebagai milik pegawai yang dipilih dan diunggah oleh admin.</div></div>
         <div class="form-group">
           <label class="form-label">Pegawai *</label>
-          <div style="position:relative;margin-bottom:.4rem"><i class="fas fa-search" style="position:absolute;left:.85rem;top:50%;transform:translateY(-50%);color:var(--muted);font-size:.78rem;pointer-events:none"></i><input type="text" class="form-control" id="upAdminPegQ" placeholder="Ketik nama atau NIP pegawai..." oninput="dSearchUpAdminPeg()" style="padding-left:2.3rem"/></div>
+          <div style="position:relative;margin-bottom:.4rem"><i class="fas fa-search" style="position:absolute;left:.85rem;top:50%;transform:translateY(-50%);color:var(--muted);font-size:.78rem;pointer-events:none"></i><input type="text" class="form-control" id="upAdminPegQ" placeholder="Ketik nama atau NIP pegawai..." oninput="searchUpAdminPeg()" style="padding-left:2.3rem"/></div>
           <div id="upAdminPegList" style="display:none;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;max-height:200px;overflow-y:auto;box-shadow:var(--shadow);margin-bottom:.4rem"></div>
           <div id="upAdminPegSel" style="display:none;background:var(--accent-l);border:1.5px solid var(--accent);border-radius:10px;padding:.6rem .9rem;align-items:center;gap:.7rem">
             <div class="av" style="width:32px;height:32px;border-radius:8px;font-size:.75rem;flex-shrink:0" id="upAdminPegAv">?</div>
@@ -1097,7 +1092,7 @@ tbody td.wrap{white-space:normal;min-width:140px;}
     <div id="pageDokUser" style="display:none">
       <div class="topbar"><div><div class="page-title">Dokumen Saya</div></div><button class="btn-p" onclick="showPage('upload')"><i class="fas fa-plus"></i> Upload</button></div>
       <div id="katCards" class="kat-grid"></div>
-      <div class="toolbar"><div class="srch"><i class="fas fa-search"></i><input type="text" id="dokUserQ" placeholder="Cari nama file atau keterangan..." oninput="dFilterDokUser()"/></div><button class="btn-s" id="btnBackKat" onclick="loadDokUser(null)" style="display:none;font-size:.74rem;padding:.55rem .8rem">← Semua Kategori</button></div>
+      <div class="toolbar"><div class="srch"><i class="fas fa-search"></i><input type="text" id="dokUserQ" placeholder="Cari nama file atau keterangan..." oninput="filterDokUser()"/></div><button class="btn-s" id="btnBackKat" onclick="loadDokUser(null)" style="display:none;font-size:.74rem;padding:.55rem .8rem">← Semua Kategori</button></div>
       <div class="card"><div class="card-hd"><span class="card-title" id="dokUserTitle">Semua Dokumen</span></div><div class="card-body" id="dokUserList"><div class="loading"><div class="spinner"></div>Memuat...</div></div><div id="dokUserPgn" class="pgn" style="display:none"></div></div>
     </div>
 
@@ -1463,12 +1458,6 @@ function esc(str){
     .replace(/"/g,'&quot;')
     .replace(/'/g,'&#x27;')
     .replace(/\//g,'&#x2F;');
-}
-
-// ── Performa: Debounce untuk filter/search ──────────────────────────────────
-// Mencegah query DB terpicu setiap keystroke saat mengetik di kolom pencarian
-function debounce(fn, ms=300){
-  let t; return function(...args){ clearTimeout(t); t=setTimeout(()=>fn.apply(this,args),ms); };
 }
 
 // ── Keamanan: Rate limiter login (sessionStorage — lebih sulit bypass) ────────
@@ -1906,7 +1895,7 @@ async function loadSession(user){
 
   let prof=null;
   for(let i=0;i<3;i++){
-    const{data}=await sb.from('profiles').select('id,nama_lengkap,nip,email,role,status_akun,jabatan_id,created_at,updated_at,jabatan(nama)').eq('id',user.id).maybeSingle();
+    const{data}=await sb.from('profiles').select('*,jabatan(nama)').eq('id',user.id).maybeSingle();
     if(data){prof=data;break;}
     await new Promise(r=>setTimeout(r,700));
   }
@@ -2156,25 +2145,17 @@ function setSidebar(p){
 // ═══════════════════════════════
 //  JABATAN
 // ═══════════════════════════════
-// Cache jabatan & kategori — hindari re-fetch jika data sudah segar (5 menit)
-let _jabatanCacheTs=0, _kategoriCacheTs=0;
-const JAB_KAT_TTL=5*60*1000;
-
 async function loadJabatan(){
-  // Gunakan cache jika masih segar (5 menit) — tidak query DB
-  if(allJabatan.length && (Date.now()-_jabatanCacheTs)<JAB_KAT_TTL){
-    // Render ulang dropdown dari cache tanpa hit DB
-  } else {
-    // Query DB — cache miss atau expired
-    let{data,error}=await sb.from('jabatan').select('id,nama,created_at').order('nama');
-    // Fallback RPC jika belum login (anon user di halaman daftar)
-    if(error || !data || !data.length){
-      const res=await sb.rpc('get_jabatan_publik');
-      if(!res.error && res.data) data=res.data;
-    }
-    allJabatan=data||[];
-    _jabatanCacheTs=Date.now();
+  // Coba query langsung (berhasil jika sudah login / RLS izinkan authenticated)
+  let{data,error}=await sb.from('jabatan').select('*').order('nama');
+
+  // Jika gagal (user belum login / anon), gunakan RPC publik
+  if(error || !data || !data.length){
+    const res=await sb.rpc('get_jabatan_publik');
+    if(!res.error && res.data) data=res.data;
   }
+
+  allJabatan=data||[];
   ['rJabatan','eJabatan','pegJabF'].forEach(id=>{
     const el=document.getElementById(id);if(!el)return;
     const cur=el.value,isF=id==='pegJabF';
@@ -2187,7 +2168,7 @@ let jabF={q:''};
 async function loadJabPage(p=1){
   skel('jabSkel');document.getElementById('jabList').innerHTML='';document.getElementById('jabEmpty').style.display='none';
   const from=(p-1)*PS,to=from+PS-1;
-  let q=sb.from('jabatan').select('id,nama,created_at',{count:'exact'}).order('nama');
+  let q=sb.from('jabatan').select('*',{count:'exact'}).order('nama');
   if(jabF.q) q=q.ilike('nama','%'+jabF.q+'%');
   const{data,count}=await q.range(from,to);
   document.getElementById('jabSkel').innerHTML='';
@@ -2202,7 +2183,6 @@ async function loadJabPage(p=1){
     </div></td></tr>`).join('');
 }
 function filterJab(){jabF.q=document.getElementById('jabQ')?.value.trim()||'';loadJabPage(1);}
-const dFilterJab=debounce(filterJab,350);
 
 function openMJabatan(){
   document.getElementById('mJabId').value='';
@@ -2236,30 +2216,24 @@ async function saveJab(){
   }
   closeM('mJabatan');
   toast((eid?'Jabatan diperbarui':'Jabatan ditambahkan')+' ✓','ok');
-  _invalidateJabKatCache(); await loadJabatan();loadJabPage();
+  await loadJabatan();loadJabPage();
 }
 
-function _invalidateJabKatCache(){ _jabatanCacheTs=0; _kategoriCacheTs=0; allJabatan=[]; allKategori=[]; }
 async function delJab(id){
   showActionSplash('Menghapus jabatan...','Data akan dihapus permanen');
   const{error}=await sb.from('jabatan').delete().eq('id',id);
   hideActionSplash();
   if(error){ toast('Gagal hapus jabatan: '+error.message,'err'); return; }
   toast('Jabatan dihapus ✓','ok');
-  _invalidateJabKatCache(); await loadJabatan();loadJabPage();
+  await loadJabatan();loadJabPage();
 }
 
 // ═══════════════════════════════
 //  KATEGORI
 // ═══════════════════════════════
 async function loadKategori(){
-  if(allKategori.length && (Date.now()-_kategoriCacheTs)<JAB_KAT_TTL){
-    // Cache hit — render dari memory
-  } else {
-    const{data}=await sb.from('kategori_dokumen').select('id,nama,deskripsi,created_at').order('created_at');
-    allKategori=data||[];
-    _kategoriCacheTs=Date.now();
-  }
+  const{data}=await sb.from('kategori_dokumen').select('*').order('created_at');
+  allKategori=data||[];
   ['upKat','dokAdminKatF'].forEach(id=>{
     const el=document.getElementById(id);if(!el)return;
     const cur=el.value,isF=id==='dokAdminKatF';
@@ -2272,7 +2246,7 @@ let katF={q:''};
 async function loadKatPage(p=1){
   skel('katSkel');document.getElementById('katList').innerHTML='';document.getElementById('katEmpty').style.display='none';
   const from=(p-1)*PS,to=from+PS-1;
-  let q=sb.from('kategori_dokumen').select('id,nama,deskripsi,created_at',{count:'exact'}).order('created_at');
+  let q=sb.from('kategori_dokumen').select('*',{count:'exact'}).order('created_at');
   if(katF.q) q=q.ilike('nama','%'+katF.q+'%');
   const{data,count}=await q.range(from,to);
   document.getElementById('katSkel').innerHTML='';
@@ -2287,7 +2261,6 @@ async function loadKatPage(p=1){
     </div></td></tr>`).join('');
 }
 function filterKat(){katF.q=document.getElementById('katQ')?.value.trim()||'';loadKatPage(1);}
-const dFilterKat=debounce(filterKat,350);
 
 function openMKategori(){
   document.getElementById('mKatId').value='';
@@ -2323,7 +2296,7 @@ async function saveKat(){
   }
   closeM('mKategori');
   toast((eid?'Kategori diperbarui':'Kategori ditambahkan')+' ✓','ok');
-  _invalidateJabKatCache(); await loadKategori();loadKatPage();
+  await loadKategori();loadKatPage();
 }
 
 async function delKat(id){
@@ -2332,7 +2305,7 @@ async function delKat(id){
   hideActionSplash();
   if(error){ toast('Gagal hapus kategori: '+error.message,'err'); return; }
   toast('Kategori dihapus ✓','ok');
-  _invalidateJabKatCache(); await loadKategori();loadKatPage();
+  await loadKategori();loadKatPage();
 }
 
 // ═══════════════════════════════
@@ -3009,18 +2982,18 @@ async function loadDash(){
   badges(pend);
   // Load storage usage (async, tidak blokir UI)
   loadStorageUsage();
-  const{data:rec}=await sb.from('profiles').select('id,nama_lengkap,nip,jabatan(nama),created_at').eq('status_akun','pending').order('created_at',{ascending:false}).limit(5);
+  const{data:rec}=await sb.from('profiles').select('*,jabatan(nama)').eq('status_akun','pending').order('created_at',{ascending:false}).limit(5);
   const box=document.getElementById('dashPendingList');
   if(!rec||!rec.length){box.innerHTML='<div class="empty"><i class="fas fa-check-circle"></i><p>Tidak ada pendaftaran pending.</p></div>';return;}
   box.innerHTML=`<div class="tbl-scroll-hint"><i class="fas fa-arrows-alt-h"></i> Geser ke samping untuk melihat semua kolom</div><div class="tbl-wrap"><table><thead><tr><th>Pegawai</th><th>NIP</th><th>Jabatan</th><th>Terdaftar</th><th>Aksi</th></tr></thead><tbody>`+
     rec.map(p=>`<tr>
-      <td><div class="av-wrap"><div class="av">${ini(esc(p.nama_lengkap))}</div><div><div class="emp-name">${esc(p.nama_lengkap)||'<span style="color:var(--danger);font-size:.75rem">Data kosong</span>'}</div></div></div></td>
-      <td><span class="emp-nip">${esc(p.nip)||'—'}</span></td>
-      <td style="font-size:.82rem">${esc(p.jabatan?.nama)||'—'}</td>
+      <td><div class="av-wrap"><div class="av">${ini(p.nama_lengkap)}</div><div><div class="emp-name">${p.nama_lengkap||'<span style="color:var(--danger);font-size:.75rem">Data kosong</span>'}</div></div></div></td>
+      <td><span class="emp-nip">${p.nip||'—'}</span></td>
+      <td style="font-size:.82rem">${p.jabatan?.nama||'—'}</td>
       <td style="font-size:.77rem;color:var(--muted);white-space:nowrap">${fmtD(p.created_at)}</td>
       <td><div style="display:flex;gap:.35rem;flex-wrap:nowrap">
-        <button class="btn-ok" data-id="${esc(p.id)}" data-nama="${encodeURIComponent(p.nama_lengkap||p.id.slice(0,8))}" onclick="konfirmSetujui(this)"><i class="fas fa-check"></i> Setujui</button>
-        <button class="btn-del" data-id="${esc(p.id)}" data-nama="${encodeURIComponent(p.nama_lengkap||p.id.slice(0,8))}" onclick="konfirmTolak(this)"><i class="fas fa-times"></i> Tolak</button>
+        <button class="btn-ok" data-id="${p.id}" data-nama="${encodeURIComponent(p.nama_lengkap||p.id.slice(0,8))}" onclick="konfirmSetujui(this)"><i class="fas fa-check"></i> Setujui</button>
+        <button class="btn-del" data-id="${p.id}" data-nama="${encodeURIComponent(p.nama_lengkap||p.id.slice(0,8))}" onclick="konfirmTolak(this)"><i class="fas fa-times"></i> Tolak</button>
       </div></td>
     </tr>`).join('')+'</tbody></table></div>';
 }
@@ -3037,7 +3010,7 @@ async function loadApproval(p=1){
   document.getElementById('approvalList').innerHTML='<div class="loading"><div class="spinner"></div>Memuat...</div>';
   document.getElementById('approvalPgn').style.display='none';
   const from=(p-1)*PS,to=from+PS-1;
-  let q=sb.from('profiles').select('id,nama_lengkap,nip,email,status_akun,jabatan_id,jabatan(nama),created_at',{count:'exact'}).neq('role','admin');
+  let q=sb.from('profiles').select('*,jabatan(nama)',{count:'exact'}).neq('role','admin');
   if(apvF.status) q=q.eq('status_akun',apvF.status);
   if(apvF.q) q=q.or(`nama_lengkap.ilike.%${apvF.q}%,nip.ilike.%${apvF.q}%`);
   const{data,count}=await q.order('created_at',{ascending:false}).range(from,to);
@@ -3075,7 +3048,6 @@ function konfirmTolak(btn){
   confirm_('del','Nonaktifkan?',`Akun <strong>${nama||id.slice(0,8)}</strong> akan dinonaktifkan.`,()=>rejectU(id));
 }
 
-const dFilterApproval=debounce(()=>filterApproval(),350);
 function filterApproval(){
   apvF.q=document.getElementById('approvalQ').value.trim();
   apvF.status=document.getElementById('approvalF').value;
@@ -3181,7 +3153,7 @@ let pegPage=1,pegTotal=0,pegF={q:'',jabId:''};
 async function loadPeg(p=1){
   pegPage=p;skel('pegSkel');document.getElementById('pegList').innerHTML='';document.getElementById('pegEmpty').style.display='none';document.getElementById('pegPgn').style.display='none';
   const from=(p-1)*PS,to=from+PS-1;
-  let q=sb.from('profiles').select('id,nama_lengkap,nip,email,status_akun,jabatan_id,jabatan(nama),created_at',{count:'exact'}).eq('role','user').eq('status_akun','approved');
+  let q=sb.from('profiles').select('*,jabatan(nama)',{count:'exact'}).eq('role','user').eq('status_akun','approved');
   if(pegF.jabId)q=q.eq('jabatan_id',pegF.jabId);
   if(pegF.q)q=q.or(`nama_lengkap.ilike.%${pegF.q}%,nip.ilike.%${pegF.q}%`);
   const{data,count}=await q.order('nama_lengkap').range(from,to);
@@ -3200,13 +3172,12 @@ async function loadPeg(p=1){
   pgn('pegPgn',p,pegTotal,'loadPeg');
 }
 function filterPeg(){pegF.q=document.getElementById('pegQ').value.trim();pegF.jabId=document.getElementById('pegJabF').value;loadPeg(1);}
-const dFilterPeg=debounce(filterPeg,350);
 
 async function openMPeg(id){
   openM('mPegawai');
   document.getElementById('mPegBody').innerHTML='<div class="loading"><div class="spinner"></div>Memuat...</div>';
   const[{data:p},{data:docs}]=await Promise.all([
-    sb.from('profiles').select('id,nama_lengkap,nip,email,role,status_akun,jabatan_id,created_at,updated_at,jabatan(nama)').eq('id',id).single(),
+    sb.from('profiles').select('*,jabatan(nama)').eq('id',id).single(),
     sb.from('dokumen').select('id,kategori_id,kategori_dokumen:kategori_id(nama)').eq('user_id',id)
   ]);
   // Kelompokkan hanya berdasarkan nama kategori dan hitung jumlahnya
@@ -3261,10 +3232,9 @@ async function loadDakPegawaiList(){
     .order('nama_lengkap');
 
   // Hitung dokumen per pegawai
-  // Hitung dokumen per pegawai — hanya fetch user_id (kolom minimal)
   const{data:cnts}=await sb.from('dokumen').select('user_id');
   const cntMap={};
-  (cnts||[]).forEach(d=>{ if(d.user_id) cntMap[d.user_id]=(cntMap[d.user_id]||0)+1; });
+  (cnts||[]).forEach(d=>{ cntMap[d.user_id]=(cntMap[d.user_id]||0)+1; });
 
   dakPegData=(pegs||[]).map(p=>({...p,dok:cntMap[p.id]||0}));
 
@@ -3292,7 +3262,6 @@ function renderDakPegList(list){
     </div>`).join('');
 }
 
-const dFilterDakPeg=debounce(()=>filterDakPeg(),350);
 function filterDakPeg(){
   const q=(document.getElementById('dakPegSearch')?.value||'').toLowerCase().trim();
   renderDakPegList(!q ? dakPegData : dakPegData.filter(p=>
@@ -3361,7 +3330,7 @@ async function loadDokAdmin(p=1){
 
   const from=(p-1)*PS, to=from+PS-1;
   let q=sb.from('dokumen')
-    .select('id,nama_file,kategori_id,keterangan,ukuran_file,uploaded_at,r2_key,drive_file_id,storage_type,uploaded_by,user_id,kategori_dokumen:kategori_id(nama)',{count:'exact'})
+    .select('*,kategori_dokumen:kategori_id(nama)',{count:'exact'})
     .eq('user_id',dakF.userId);
   if(dakF.katId) q=q.eq('kategori_id',dakF.katId);
   if(dakF.q) q=q.ilike('nama_file','%'+dakF.q+'%');
@@ -3413,7 +3382,6 @@ async function loadDokAdmin(p=1){
   if(peg){ peg.dok=dakTotal; el('dakPegDokCount').textContent=dakTotal+' dokumen'; }
 }
 
-const dFilterDokAdmin=debounce(()=>filterDokAdmin(),350);
 function filterDokAdmin(){
   clearTimeout(dakFilterTimer);
   dakF.q=el('dokAdminQ')?.value.trim()||'';
@@ -3644,7 +3612,7 @@ async function savePro(){
     setTimeout(()=>showPage('profil'),1500);
   }
 
-  const{data:np}=await sb.from('profiles').select('id,nama_lengkap,nip,email,role,status_akun,jabatan_id,created_at,updated_at,jabatan(nama)').eq('id',CU.id).single();
+  const{data:np}=await sb.from('profiles').select('*,jabatan(nama)').eq('id',CU.id).single();
   CP=np;
   sessionStorage.setItem('currentProfile', JSON.stringify(np));
   setSidebar(np);
@@ -3687,7 +3655,7 @@ async function loadDokUser(katId=null,p=1){
   const btnBack=document.getElementById('btnBackKat');
   if(btnBack) btnBack.style.display=katId?'inline-flex':'none';
   const from=(p-1)*PS,to=from+PS-1;
-  let q=sb.from('dokumen').select('id,nama_file,kategori_id,keterangan,ukuran_file,uploaded_at,r2_key,drive_file_id,storage_type,kategori_dokumen:kategori_id(id,nama)',{count:'exact'}).eq('user_id',CU.id);
+  let q=sb.from('dokumen').select('*,kategori_dokumen:kategori_id(id,nama)',{count:'exact'}).eq('user_id',CU.id);
   if(katId) q=q.eq('kategori_id',katId);
   if(dukQ) q=q.or(`nama_file.ilike.%${dukQ}%,keterangan.ilike.%${dukQ}%`);
   const{data,count:total,error:qErr}=await q.order('uploaded_at',{ascending:false}).range(from,to);
@@ -3720,7 +3688,6 @@ async function loadDokUser(katId=null,p=1){
 
 function loadDokUserPage(p){ loadDokUser(selKatId,p); }
 
-const dFilterDokUser=debounce(()=>filterDokUser(),350);
 function filterDokUser(){
   dukQ=document.getElementById('dokUserQ')?.value.trim()||'';
   loadDokUser(selKatId,1);
@@ -4593,23 +4560,17 @@ async function loadBackupPage(){
     sb.from('profiles').select('*',{count:'exact',head:true}).neq('role','admin')
   ]);
 
-  // Hitung dari storStats yang sudah di-fetch (hemat 1 round-trip DB)
-  // renderStorageBar akan diupdate setelah storStats tersedia
+  // Gunakan getStorageUsed() untuk perhitungan presisi (hanya R2)
+  const totalBytes=await getStorageUsed();
+  currentStorageBytes=totalBytes;
+  renderStorageBar(totalBytes); // Sinkronkan storage bar di dashboard
 
   // Ambil semua data storage sekaligus — dipakai untuk backupDokStat DAN r2BackupStat
-  // Gabungkan query storStats & dokPerPegRaw dalam satu fetch (hemat 1 round-trip)
-  const{data:storStats}=await sb.from('dokumen').select('storage_type,ukuran_file,user_id');
+  const{data:storStats}=await sb.from('dokumen').select('storage_type,ukuran_file');
   const r2Docs=(storStats||[]).filter(d=>!d.storage_type||d.storage_type==='r2');
   const driveDocs=(storStats||[]).filter(d=>d.storage_type==='drive');
   const r2Bytes=r2Docs.reduce((s,d)=>s+(d.ukuran_file||0),0);
   const driveBytes=driveDocs.reduce((s,d)=>s+(d.ukuran_file||0),0);
-  // Hitung dokumen per pegawai dari storStats (tanpa query terpisah)
-  const _dokPerPegFromStats={};
-  (storStats||[]).forEach(d=>{ _dokPerPegFromStats[d.user_id]=(_dokPerPegFromStats[d.user_id]||0)+1; });
-
-  // Update storage bar dari data yang sudah ada (tidak perlu query ulang)
-  currentStorageBytes=r2Bytes;
-  renderStorageBar(r2Bytes);
 
   document.getElementById('backupDokStat').innerHTML=
     `<i class="fas fa-file-alt" style="color:var(--accent2)"></i> <strong>${dokCount||0}</strong> dokumen &nbsp;·&nbsp; R2: <strong>${fmtSz(r2Bytes)}</strong>${driveDocs.length?' &nbsp;·&nbsp; <i class="fab fa-google-drive" style="color:#0F9D58"></i> Drive: <strong>'+fmtSz(driveBytes)+'</strong>':''}`;
@@ -4625,8 +4586,10 @@ async function loadBackupPage(){
   // Isi dropdown pegawai untuk backup per pegawai
   // Load pegawai + jumlah dokumen masing-masing
   const{data:pegList}=await sb.from('profiles').select('id,nama_lengkap,nip').eq('role','user').eq('status_akun','approved').order('nama_lengkap');
-  // Gunakan data yang sudah dihitung dari storStats (tanpa query ulang)
-  const dokPerPeg=_dokPerPegFromStats;
+  const{data:dokPerPegRaw}=await sb.from('dokumen').select('user_id');
+  // Hitung dokumen per pegawai
+  const dokPerPeg={};
+  (dokPerPegRaw||[]).forEach(d=>{ dokPerPeg[d.user_id]=(dokPerPeg[d.user_id]||0)+1; });
   const sel=document.getElementById('r2BackupPegSel');
   if(sel){
     sel.innerHTML='<option value="">-- Pilih pegawai --</option>'+
@@ -4813,10 +4776,10 @@ async function exportFullJSON(){
   setBtn(btn,true);
   try{
     const[{data:pegawai},{data:dokumen},{data:jabatan},{data:kategori}]=await Promise.all([
-      sb.from('profiles').select('id,nama_lengkap,nip,jabatan(nama)').neq('role','admin').order('nama_lengkap'),
-      sb.from('dokumen').select('id,nama_file,kategori_id,keterangan,ukuran_file,uploaded_at,r2_key,drive_file_id,storage_type,user_id,profiles:user_id(nama_lengkap,nip)').order('uploaded_at',{ascending:false}),
-      sb.from('jabatan').select('id,nama').order('nama'),
-      sb.from('kategori_dokumen').select('id,nama,deskripsi').order('nama')
+      sb.from('profiles').select('*,jabatan(nama)').neq('role','admin').order('nama_lengkap'),
+      sb.from('dokumen').select('*,profiles(nama_lengkap,nip)').order('uploaded_at',{ascending:false}),
+      sb.from('jabatan').select('*').order('nama'),
+      sb.from('kategori_dokumen').select('*').order('nama')
     ]);
 
     const payload={
@@ -5280,7 +5243,6 @@ function clearUpAdminFile(){
   const b=document.getElementById('upAdminSizeAlert');if(b)b.style.display='none';
 }
 
-const dSearchUpAdminPeg=debounce(()=>searchUpAdminPeg(),350);
 async function searchUpAdminPeg(){
   clearTimeout(upAdminPegTimer);
   const q=document.getElementById('upAdminPegQ').value.trim();
@@ -5570,7 +5532,7 @@ let   currentStorageBytes = 0;
 async function _hitung_r2_dari_db(){
   let total=0;
   try{
-    // Hitung total ukuran file R2 — hanya ambil 2 kolom minimal
+    // Hitung semua dokumen yang bukan di Drive (storage_type IS NULL atau 'r2')
     const{data,error}=await sb.from('dokumen')
       .select('ukuran_file,storage_type');
     if(error) throw error;
@@ -5929,8 +5891,7 @@ async function cekStorageCukup(fileSize, isAdmin=false){
 // ═══════════════════════════════
 const PAGES=['Dash','Approval','DaftarPegawai','Pegawai','DokAdmin','UploadAdmin','Jabatan','Kategori','Setting','Backup','Profil','EditProfil','EditProfilAdmin','DokUser','Upload','BackupUser'];
 // Cache waktu terakhir halaman dimuat (lazy: skip reload jika data masih segar < 30 detik)
-const PAGE_CACHE_TTL = 30000;     // 30 detik untuk data dinamis
-const STATIC_CACHE_TTL = 300000;  // 5 menit untuk data statis (jabatan, kategori)
+const PAGE_CACHE_TTL = 30000; // 30 detik
 const _pageLastLoaded = {};
 function _shouldReload(name){ return !_pageLastLoaded[name] || (Date.now()-_pageLastLoaded[name]) > PAGE_CACHE_TTL; }
 function _markLoaded(name){ _pageLastLoaded[name]=Date.now(); }
@@ -5942,9 +5903,9 @@ const PAGE_LOADERS={
   pegawai:()=>{ if(_shouldReload('pegawai')){ loadPeg(1); _markLoaded('pegawai'); } },
   daftarPegawai:()=>{ loadDaftarPegawaiForm(); },
   dokAdmin:()=>{ if(_shouldReload('dokAdmin')){ clearDakPeg(); loadDakPegawaiList(); _markLoaded('dokAdmin'); } },
-  jabatan:()=>{ if(!_pageLastLoaded['jabatan']||(Date.now()-_pageLastLoaded['jabatan'])>STATIC_CACHE_TTL){ loadJabPage(1); _markLoaded('jabatan'); } },
+  jabatan:()=>{ if(_shouldReload('jabatan')){ loadJabPage(1); _markLoaded('jabatan'); } },
   uploadAdmin:()=>loadUploadAdminPage(),
-  kategori:()=>{ if(!_pageLastLoaded['kategori']||(Date.now()-_pageLastLoaded['kategori'])>STATIC_CACHE_TTL){ loadKatPage(1); _markLoaded('kategori'); } },
+  kategori:()=>{ if(_shouldReload('kategori')){ loadKatPage(1); _markLoaded('kategori'); } },
   profil:loadProfil, editProfil:loadProfil,
   editProfilAdmin:loadProfilAdmin,
   backupUser:()=>loadUserBackupPage(),
