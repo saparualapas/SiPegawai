@@ -3,9 +3,6 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<meta http-equiv="X-Content-Type-Options" content="nosniff"/>
-<meta http-equiv="X-Frame-Options" content="DENY"/>
-<meta name="referrer" content="strict-origin-when-cross-origin"/>
 <title>SiPegawai - Lapas Kelas III Saparua</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%230a2342'/><text x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' font-size='36' font-family='Arial,sans-serif' font-weight='900' fill='%232a9d8f'>S</text><circle cx='47' cy='17' r='8' fill='%23f4a261'/></svg>"/>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet"/>
@@ -1446,48 +1443,6 @@ function stopIdleDetection(){
 //  STATE
 // ═══════════════════════════════
 const PS=10; // page size
-
-// ── Keamanan: HTML escape untuk cegah XSS ───────────────────────────────────
-// Wajib dipakai saat memasukkan data user/DB ke innerHTML
-function esc(str){
-  if(str==null||str===undefined) return '';
-  return String(str)
-    .replace(/&/g,'&amp;')
-    .replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;')
-    .replace(/"/g,'&quot;')
-    .replace(/'/g,'&#x27;')
-    .replace(/\//g,'&#x2F;');
-}
-
-// ── Keamanan: Rate limiter login (sessionStorage — lebih sulit bypass) ────────
-// Menggunakan kombinasi sessionStorage + timestamp untuk limit 5 percobaan/5 menit
-const LOGIN_RL_KEY='__lrl', LOGIN_MAX=5, LOGIN_WIN=5*60*1000;
-function loginRateCheck(){
-  try{
-    const raw=sessionStorage.getItem(LOGIN_RL_KEY);
-    const rl=raw?JSON.parse(raw):{c:0,t:Date.now()};
-    const now=Date.now();
-    if(now-rl.t>LOGIN_WIN){ rl.c=0; rl.t=now; }
-    if(rl.c>=LOGIN_MAX){
-      const sisa=Math.ceil((LOGIN_WIN-(now-rl.t))/60000);
-      return {blocked:true, sisa};
-    }
-    rl.c++; sessionStorage.setItem(LOGIN_RL_KEY,JSON.stringify(rl));
-    return {blocked:false};
-  }catch(e){ return {blocked:false}; }
-}
-function loginRateReset(){
-  try{ sessionStorage.removeItem(LOGIN_RL_KEY); }catch(e){}
-}
-
-// ── Keamanan: Global error handler — cegah info bocor ke console ─────────────
-window.addEventListener('unhandledrejection', e=>{
-  // Log ke console (dev only) tapi jangan expose ke user
-  console.warn('[unhandled]', e.reason);
-  // Jangan biarkan error mentah tampil, sudah ada toast handler di masing-masing fungsi
-  e.preventDefault();
-});
 let CU=null,CP=null;
 let allProfiles=[],allJabatan=[],allKategori=[];
 let polling=null,selKatId=null;
@@ -1604,16 +1559,6 @@ async function doLogin(){
   const input=document.getElementById('lEmail').value.trim();
   const pass=document.getElementById('lPass').value;
   if(!input||!pass){showErr('lErr','lErrTxt','Email/NIP dan password wajib diisi!');return;}
-
-  // Rate limit login — cegah brute force
-  const rl=loginRateCheck();
-  if(rl.blocked){
-    showErr('lErr','lErrTxt',
-      `Terlalu banyak percobaan login. Tunggu ${rl.sisa} menit sebelum mencoba lagi.`
-    );
-    return;
-  }
-
   const btn=document.getElementById('btnLogin');setBtn(btn,true);
 
   let email=input;
@@ -1648,7 +1593,6 @@ async function doLogin(){
     );
     return;
   }
-  loginRateReset(); // reset counter setelah login berhasil
   await loadSession(data.user);
 }
 
@@ -1712,8 +1656,6 @@ async function doReg(){
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){showErr('rErr','rErrTxt','Format email tidak valid. Contoh: nama@instansi.go.id');return;}
   if(!pass){showErr('rErr','rErrTxt','Password wajib diisi.');return;}
   if(pass.length<6){showErr('rErr','rErrTxt','Password minimal 6 karakter.');return;}
-  if(pass.length<8){showErr('rErr','rErrTxt','Password minimal 8 karakter untuk keamanan akun.');return;}
-  if(!/[A-Z]/.test(pass)&&!/[0-9]/.test(pass)){showErr('rErr','rErrTxt','Password harus mengandung huruf besar atau angka.');return;}
   if(pass!==pass2){showErr('rErr','rErrTxt','Konfirmasi password tidak cocok.');return;}
 
   const btn=document.getElementById('btnReg');setBtn(btn,true);
@@ -1827,9 +1769,9 @@ function showRegSuccess(nama, email){
           <i class="fas fa-user-check"></i>
         </div>
         <h5 style="font-weight:800;color:var(--navy);margin-bottom:.45rem">Pendaftaran Berhasil!</h5>
-        <p style="font-size:.875rem;color:var(--muted);margin-bottom:.35rem">Halo <strong>${esc(nama)}</strong>, akun kamu sudah didaftarkan.</p>
+        <p style="font-size:.875rem;color:var(--muted);margin-bottom:.35rem">Halo <strong>${nama}</strong>, akun kamu sudah didaftarkan.</p>
         <p style="font-size:.79rem;color:var(--accent);margin-bottom:1.375rem">Menunggu persetujuan admin. Halaman otomatis update saat disetujui.</p>
-        <button class="btn-main" data-regemail="${esc(email)}" onclick="loginAfterReg(this.dataset.regemail)"><i class="fas fa-sign-in-alt"></i> Masuk Sekarang</button>
+        <button class="btn-main" onclick="loginAfterReg('${email}')"><i class="fas fa-sign-in-alt"></i> Masuk Sekarang</button>
       </div>`;
     vp.style.display='block';
   }
@@ -2175,11 +2117,11 @@ async function loadJabPage(p=1){
   if(!data||!data.length){document.getElementById('jabEmpty').style.display='block';return;}
   pgn('jabPgn',p,count||0,'loadJabPage');
   document.getElementById('jabList').innerHTML=data.map(j=>`<tr>
-    <td><strong style="color:var(--navy)">${esc(j.nama)}</strong></td>
+    <td><strong style="color:var(--navy)">${j.nama}</strong></td>
     <td style="font-size:.77rem;color:var(--muted)">${fmtD(j.created_at)}</td>
     <td><div style="display:flex;gap:.35rem">
-      <button class="btn-icon" onclick="editJab('${esc(j.id)}')"><i class="fas fa-edit"></i></button>
-      <button class="btn-icon" onclick="confirm_('del','Hapus Jabatan?','Hapus &lt;strong&gt;${esc(j.nama)}&lt;/strong&gt;?',()=>delJab('${esc(j.id)}'))"><i class="fas fa-trash" style="color:var(--danger)"></i></button>
+      <button class="btn-icon" onclick="editJab('${j.id}')"><i class="fas fa-edit"></i></button>
+      <button class="btn-icon" onclick="confirm_('del','Hapus Jabatan?','Hapus <strong>${j.nama}</strong>?',()=>delJab('${j.id}'))"><i class="fas fa-trash" style="color:var(--danger)"></i></button>
     </div></td></tr>`).join('');
 }
 function filterJab(){jabF.q=document.getElementById('jabQ')?.value.trim()||'';loadJabPage(1);}
@@ -2253,11 +2195,11 @@ async function loadKatPage(p=1){
   if(!data||!data.length){document.getElementById('katEmpty').style.display='block';return;}
   pgn('katPgn',p,count||0,'loadKatPage');
   document.getElementById('katList').innerHTML=data.map(k=>`<tr>
-    <td><div style="display:flex;align-items:center;gap:.7rem"><div style="width:32px;height:32px;border-radius:8px;background:var(--navy-l);display:grid;place-items:center;color:var(--navy)"><i class="fas fa-file-alt"></i></div><strong style="color:var(--navy)">${esc(k.nama)}</strong></div></td>
-    <td style="font-size:.82rem;color:var(--muted)">${esc(k.deskripsi)||'—'}</td>
+    <td><div style="display:flex;align-items:center;gap:.7rem"><div style="width:32px;height:32px;border-radius:8px;background:var(--navy-l);display:grid;place-items:center;color:var(--navy)"><i class="fas fa-file-alt"></i></div><strong style="color:var(--navy)">${k.nama}</strong></div></td>
+    <td style="font-size:.82rem;color:var(--muted)">${k.deskripsi||'—'}</td>
     <td><div style="display:flex;gap:.35rem">
-      <button class="btn-icon" onclick="editKat('${esc(k.id)}')"><i class="fas fa-edit"></i></button>
-      <button class="btn-icon" onclick="confirm_('del','Hapus Kategori?','Hapus &lt;strong&gt;${esc(k.nama)}&lt;/strong&gt;?',()=>delKat('${esc(k.id)}'))"><i class="fas fa-trash" style="color:var(--danger)"></i></button>
+      <button class="btn-icon" onclick="editKat('${k.id}')"><i class="fas fa-edit"></i></button>
+      <button class="btn-icon" onclick="confirm_('del','Hapus Kategori?','Hapus <strong>${k.nama}</strong>?',()=>delKat('${k.id}'))"><i class="fas fa-trash" style="color:var(--danger)"></i></button>
     </div></td></tr>`).join('');
 }
 function filterKat(){katF.q=document.getElementById('katQ')?.value.trim()||'';loadKatPage(1);}
@@ -3025,14 +2967,14 @@ function renderApproval(data){
     data.map(p=>{
       // Gunakan data-id agar tidak ada masalah karakter khusus di onclick
       const safeName=encodeURIComponent(p.nama_lengkap||'');
-      return `<tr><td><div class="av-wrap"><div class="av">${ini(esc(p.nama_lengkap))}</div><div class="emp-name">${esc(p.nama_lengkap)||'—'}</div></div></td>
-    <td><span class="emp-nip">${esc(p.nip)||'—'}</span></td><td>${esc(p.jabatan?.nama)||'—'}</td><td style="font-size:.79rem">${esc(p.email)||'—'}</td>
-    <td><span class="chip chip-${esc(p.status_akun)}">${esc(p.status_akun)}</span></td>
+      return `<tr><td><div class="av-wrap"><div class="av">${ini(p.nama_lengkap)}</div><div class="emp-name">${p.nama_lengkap||'—'}</div></div></td>
+    <td><span class="emp-nip">${p.nip||'—'}</span></td><td>${p.jabatan?.nama||'—'}</td><td style="font-size:.79rem">${p.email||'—'}</td>
+    <td><span class="chip chip-${p.status_akun}">${p.status_akun}</span></td>
     <td style="font-size:.77rem;color:var(--muted)">${fmtD(p.created_at)}</td>
     <td><div style="display:flex;gap:.35rem">
-      ${p.status_akun!=='approved'?`<button class="btn-ok" data-id="${esc(p.id)}" data-nama="${safeName}" onclick="konfirmSetujui(this)"><i class="fas fa-check"></i></button>`:''}
-      ${p.status_akun!=='rejected'?`<button class="btn-del" data-id="${esc(p.id)}" data-nama="${safeName}" onclick="konfirmTolak(this)"><i class="fas fa-ban"></i></button>`:''}
-      <button class="btn-icon" onclick="openMPeg('${esc(p.id)}')"><i class="fas fa-eye"></i></button>
+      ${p.status_akun!=='approved'?`<button class="btn-ok" data-id="${p.id}" data-nama="${safeName}" onclick="konfirmSetujui(this)"><i class="fas fa-check"></i></button>`:''}
+      ${p.status_akun!=='rejected'?`<button class="btn-del" data-id="${p.id}" data-nama="${safeName}" onclick="konfirmTolak(this)"><i class="fas fa-ban"></i></button>`:''}
+      <button class="btn-icon" onclick="openMPeg('${p.id}')"><i class="fas fa-eye"></i></button>
       </div></td></tr>`;
     }).join('')+'</tbody></table>';
 }
@@ -3160,14 +3102,14 @@ async function loadPeg(p=1){
   pegTotal=count||0;document.getElementById('pegSkel').innerHTML='';
   if(!data||!data.length){document.getElementById('pegEmpty').style.display='block';return;}
   document.getElementById('pegList').innerHTML=data.map(p=>`<tr>
-    <td><div class="av-wrap"><div class="av">${ini(esc(p.nama_lengkap))}</div><div><div class="emp-name">${esc(p.nama_lengkap)||'—'}</div></div></div></td>
-    <td><span class="emp-nip">${esc(p.nip)||'—'}</span></td>
-    <td>${esc(p.jabatan?.nama)||'—'}</td>
-    <td style="font-size:.79rem">${esc(p.email)||'—'}</td>
+    <td><div class="av-wrap"><div class="av">${ini(p.nama_lengkap)}</div><div><div class="emp-name">${p.nama_lengkap||'—'}</div></div></div></td>
+    <td><span class="emp-nip">${p.nip||'—'}</span></td>
+    <td>${p.jabatan?.nama||'—'}</td>
+    <td style="font-size:.79rem">${p.email||'—'}</td>
     <td><span class="updated-lbl"><i class="fas fa-clock"></i>${fmtD(p.updated_at||p.created_at)}</span></td>
     <td><div style="display:flex;gap:.35rem">
-      <button class="btn-icon" onclick="openMPeg('${esc(p.id)}')"><i class="fas fa-eye"></i></button>
-      <button class="btn-icon" onclick="konfirmHapusUser('${esc(p.id)}')" style="color:var(--danger);border-color:var(--danger-l)" title="Hapus Permanen"><i class="fas fa-trash"></i></button>
+      <button class="btn-icon" onclick="openMPeg('${p.id}')"><i class="fas fa-eye"></i></button>
+      <button class="btn-icon" onclick="konfirmHapusUser('${p.id}')" style="color:var(--danger);border-color:var(--danger-l)" title="Hapus Permanen"><i class="fas fa-trash"></i></button>
     </div></td></tr>`).join('');
   pgn('pegPgn',p,pegTotal,'loadPeg');
 }
@@ -3189,14 +3131,14 @@ async function openMPeg(id){
   const totalDok=(docs||[]).length;
   document.getElementById('mPegBody').innerHTML=`
     <div style="display:flex;align-items:center;gap:.875rem;margin-bottom:1.25rem">
-      <div class="av" style="width:52px;height:52px;border-radius:13px;font-size:1.05rem">${ini(esc(p.nama_lengkap))}</div>
-      <div><div style="font-size:1.05rem;font-weight:800;color:var(--navy)">${esc(p.nama_lengkap)||'—'}</div>
-      <div class="emp-nip">${esc(p.nip)||'—'}</div>
-      <div style="display:flex;gap:.4rem;margin-top:.3rem"><span class="chip chip-${esc(p.status_akun)}">${esc(p.status_akun)}</span><span class="updated-lbl"><i class="fas fa-clock"></i>${fmtD(p.updated_at||p.created_at)}</span></div></div>
+      <div class="av" style="width:52px;height:52px;border-radius:13px;font-size:1.05rem">${ini(p.nama_lengkap)}</div>
+      <div><div style="font-size:1.05rem;font-weight:800;color:var(--navy)">${p.nama_lengkap||'—'}</div>
+      <div class="emp-nip">${p.nip||'—'}</div>
+      <div style="display:flex;gap:.4rem;margin-top:.3rem"><span class="chip chip-${p.status_akun}">${p.status_akun}</span><span class="updated-lbl"><i class="fas fa-clock"></i>${fmtD(p.updated_at||p.created_at)}</span></div></div>
     </div>
     <div class="info-grid" style="margin-bottom:1.25rem">
-      <div class="info-row"><span class="lbl">Jabatan</span><span class="val">${esc(p.jabatan?.nama)||'—'}</span></div>
-      <div class="info-row"><span class="lbl">Email</span><span class="val" style="font-size:.79rem">${esc(p.email)||'—'}</span></div>
+      <div class="info-row"><span class="lbl">Jabatan</span><span class="val">${p.jabatan?.nama||'—'}</span></div>
+      <div class="info-row"><span class="lbl">Email</span><span class="val" style="font-size:.79rem">${p.email||'—'}</span></div>
     </div>
     <div class="sec-title"><i class="fas fa-folder-open" style="margin-right:.35rem"></i>Ringkasan Dokumen (${totalDok} total)</div>
     ${Object.keys(grp).length?`
@@ -3205,8 +3147,8 @@ async function openMPeg(id){
           <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:.75rem 1rem;display:flex;align-items:center;gap:.65rem">
             <div style="width:34px;height:34px;border-radius:8px;background:var(--navy-l);display:grid;place-items:center;color:var(--navy);font-size:.85rem;flex-shrink:0"><i class="fas fa-folder"></i></div>
             <div>
-              <div style="font-size:.8rem;font-weight:700;color:var(--navy)">${esc(kn)}</div>
-              <div style="font-size:.72rem;color:var(--muted)">${parseInt(cnt)||0} dokumen</div>
+              <div style="font-size:.8rem;font-weight:700;color:var(--navy)">${kn}</div>
+              <div style="font-size:.72rem;color:var(--muted)">${cnt} dokumen</div>
             </div>
           </div>`).join('')}
       </div>`
@@ -3252,13 +3194,13 @@ function renderDakPegList(list){
     return;
   }
   listEl.innerHTML=list.map(p=>`
-    <div class="dak-peg-item${dakF.userId===p.id?' active':''}" data-id="${esc(p.id)}" onclick="selectDakPeg(this.dataset.id)">
-      <div class="av" style="width:34px;height:34px;border-radius:8px;font-size:.74rem;flex-shrink:0">${ini(esc(p.nama_lengkap))}</div>
+    <div class="dak-peg-item${dakF.userId===p.id?' active':''}" data-id="${p.id}" onclick="selectDakPeg('${p.id}')">
+      <div class="av" style="width:34px;height:34px;border-radius:8px;font-size:.74rem;flex-shrink:0">${ini(p.nama_lengkap)}</div>
       <div style="min-width:0;flex:1">
-        <div class="dak-pi-name">${esc(p.nama_lengkap)||'—'}</div>
-        <div class="dak-pi-nip">${esc(p.nip)||'—'}</div>
+        <div class="dak-pi-name">${p.nama_lengkap||'—'}</div>
+        <div class="dak-pi-nip">${p.nip||'—'}</div>
       </div>
-      <span class="dak-pi-badge">${parseInt(p.dok)||0}</span>
+      <span class="dak-pi-badge">${p.dok}</span>
     </div>`).join('');
 }
 
@@ -3359,13 +3301,13 @@ async function loadDokAdmin(p=1){
       <td style="max-width:220px">
         <div class="dok-nama-wrap">
           <div class="doc-ico" style="background:${dBg(d.nama_file)};color:${dClr(d.nama_file)};width:30px;height:30px;border-radius:7px;flex-shrink:0;display:grid;place-items:center"><i class="fas ${dIco(d.nama_file)}"></i></div>
-          <span class="dok-nama-txt" title="${esc(d.nama_file)||''}">${esc(d.nama_file)||'—'}</span>
+          <span class="dok-nama-txt" title="${d.nama_file||''}">${d.nama_file||'—'}</span>
         </div>
       </td>
-      <td><span class="chip chip-navy" style="white-space:nowrap">${esc(d.kategori_dokumen?.nama)||'—'}</span></td>
-      <td style="font-size:.82rem;color:var(--muted);max-width:160px"><span style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${esc(d.keterangan)||'—'}</span></td>
+      <td><span class="chip chip-navy" style="white-space:nowrap">${d.kategori_dokumen?.nama||'—'}</span></td>
+      <td style="font-size:.82rem;color:var(--muted);max-width:160px"><span style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${d.keterangan||'—'}</span></td>
       <td style="font-size:.79rem;white-space:nowrap">${uploader
-        ?`<span style="color:var(--accent);font-weight:600"><i class="fas fa-user-shield" style="font-size:.7rem"></i> ${esc(uploader.nama_lengkap)||'Admin'}</span>`
+        ?`<span style="color:var(--accent);font-weight:600"><i class="fas fa-user-shield" style="font-size:.7rem"></i> ${uploader.nama_lengkap||'Admin'}</span>`
         :'<span style="color:var(--muted)">Pegawai</span>'}</td>
       <td style="font-size:.77rem;color:var(--muted);white-space:nowrap">${fmtSz(d.ukuran_file)}</td>
       <td style="font-size:.77rem;color:var(--muted);white-space:nowrap">${fmtD(d.uploaded_at)}</td>
@@ -3673,8 +3615,8 @@ async function loadDokUser(katId=null,p=1){
       <div style="display:flex;align-items:center;gap:.7rem;flex:1;min-width:0">
         <div class="doc-ico" style="background:${dBg(d.nama_file)};color:${dClr(d.nama_file)}"><i class="fas ${dIco(d.nama_file)}"></i></div>
         <div style="min-width:0">
-          <div class="doc-name">${esc(d.nama_file)}</div>
-          <div class="doc-meta">${esc(d.kategori_dokumen?.nama)||'—'} · ${fmtSz(d.ukuran_file)} · ${fmtD(d.uploaded_at)}${d.keterangan?` · <em>${esc(d.keterangan)}</em>`:''}</div>
+          <div class="doc-name">${d.nama_file}</div>
+          <div class="doc-meta">${d.kategori_dokumen?.nama||'—'} · ${fmtSz(d.ukuran_file)} · ${fmtD(d.uploaded_at)}${d.keterangan?` · <em>${d.keterangan}</em>`:''}</div>
         </div>
       </div>
       <div style="display:flex;gap:.35rem;flex-shrink:0">
@@ -5256,13 +5198,12 @@ async function searchUpAdminPeg(){
       .limit(8);
     if(!data||!data.length){list.innerHTML='<div style="padding:.7rem 1rem;font-size:.82rem;color:var(--muted)">Tidak ditemukan</div>';list.style.display='block';return;}
     list.innerHTML=data.map(p=>`
-      <div data-pid="${esc(p.id)}" data-pnama="${esc(p.nama_lengkap||'')}" data-pnip="${esc(p.nip||'')}"
-        onclick="selectUpAdminPeg(this.dataset.pid,this.dataset.pnama,this.dataset.pnip)"
+      <div onclick="selectUpAdminPeg('${p.id}','${(p.nama_lengkap||'').replace(/'/g,"\\'")}','${p.nip||''}')"
         style="padding:.6rem 1rem;cursor:pointer;display:flex;align-items:center;gap:.6rem;border-bottom:1px solid var(--border);transition:background .12s"
         onmouseover="this.style.background='var(--navy-ll)'" onmouseout="this.style.background=''">
-        <div class="av" style="width:30px;height:30px;border-radius:7px;font-size:.72rem;flex-shrink:0">${ini(esc(p.nama_lengkap))}</div>
-        <div><div style="font-size:.83rem;font-weight:600;color:var(--navy)">${esc(p.nama_lengkap)||'—'}</div>
-        <div style="font-size:.7rem;color:var(--muted);font-family:'JetBrains Mono',monospace">${esc(p.nip)||'—'} · ${esc(p.jabatan?.nama)||'—'}</div></div>
+        <div class="av" style="width:30px;height:30px;border-radius:7px;font-size:.72rem;flex-shrink:0">${ini(p.nama_lengkap)}</div>
+        <div><div style="font-size:.83rem;font-weight:600;color:var(--navy)">${p.nama_lengkap||'—'}</div>
+        <div style="font-size:.7rem;color:var(--muted);font-family:'JetBrains Mono',monospace">${p.nip||'—'} · ${p.jabatan?.nama||'—'}</div></div>
       </div>`).join('');
     list.style.display='block';
   },300);
