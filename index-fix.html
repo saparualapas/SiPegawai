@@ -3367,7 +3367,6 @@ async function saveEditDokAdmin(){
   }
   closeM('mEditDokAdmin');
   toast('Dokumen berhasil diperbarui ✓','ok');
-  _invalidateCache('dokAdmin');
   loadDokAdmin(dakPage);
 }
 
@@ -3742,8 +3741,7 @@ async function delDok(id, isAdmin=false){
     refreshDriveStorageUI();
     loadDokAdmin(dakPage);
   } else {
-    _invalidateCache('dokUser');
-  loadDokUser(selKatId,dukPage);
+    loadDokUser(selKatId,dukPage);
   }
 }
 
@@ -5831,26 +5829,16 @@ async function cekStorageCukup(fileSize, isAdmin=false){
 //  NAVIGATION
 // ═══════════════════════════════
 const PAGES=['Dash','Approval','DaftarPegawai','Pegawai','DokAdmin','UploadAdmin','Jabatan','Kategori','Setting','Backup','Profil','EditProfil','EditProfilAdmin','DokUser','Upload','BackupUser'];
-// Cache waktu terakhir halaman dimuat (lazy: skip reload jika data masih segar < 30 detik)
-const PAGE_CACHE_TTL = 30000; // 30 detik
-const _pageLastLoaded = {};
-function _shouldReload(name){ return !_pageLastLoaded[name] || (Date.now()-_pageLastLoaded[name]) > PAGE_CACHE_TTL; }
-function _markLoaded(name){ _pageLastLoaded[name]=Date.now(); }
-function _invalidateCache(name){ delete _pageLastLoaded[name]; } // panggil ini setelah insert/delete
-
 const PAGE_LOADERS={
-  dash:()=>{ loadDash(); _markLoaded('dash'); },
-  approval:()=>{ if(_shouldReload('approval')){ loadApproval(1); _markLoaded('approval'); } },
-  pegawai:()=>{ if(_shouldReload('pegawai')){ loadPeg(1); _markLoaded('pegawai'); } },
+  dash:loadDash, approval:()=>loadApproval(1), pegawai:()=>loadPeg(1),
   daftarPegawai:()=>{ loadDaftarPegawaiForm(); },
-  dokAdmin:()=>{ if(_shouldReload('dokAdmin')){ clearDakPeg(); loadDakPegawaiList(); _markLoaded('dokAdmin'); } },
-  jabatan:()=>{ if(_shouldReload('jabatan')){ loadJabPage(1); _markLoaded('jabatan'); } },
+  dokAdmin:()=>{ clearDakPeg(); loadDakPegawaiList(); }, jabatan:()=>loadJabPage(1),
   uploadAdmin:()=>loadUploadAdminPage(),
-  kategori:()=>{ if(_shouldReload('kategori')){ loadKatPage(1); _markLoaded('kategori'); } },
+  kategori:()=>loadKatPage(1),
   profil:loadProfil, editProfil:loadProfil,
   editProfilAdmin:loadProfilAdmin,
   backupUser:()=>loadUserBackupPage(),
-  dokUser:()=>{ if(_shouldReload('dokUser')){ loadDokUser(selKatId,1); _markLoaded('dokUser'); } },
+  dokUser:()=>loadDokUser(selKatId,1),
   upload:()=>checkStorageOnUploadPage(),
   setting:()=>{ loadR2(); loadDriveConfig().then(()=>refreshDriveStorageUI()).catch(()=>{}); },
   backup:()=>{ loadBackupPage(); },
