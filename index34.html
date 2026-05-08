@@ -4,7 +4,6 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>SiPegawai - Lapas Kelas III Saparua</title>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%230a2342'/><text x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' font-size='36' font-family='Arial,sans-serif' font-weight='900' fill='%232a9d8f'>S</text><circle cx='47' cy='17' r='8' fill='%23f4a261'/></svg>"/>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet"/>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -143,27 +142,7 @@ body.idle-warn-active .sidebar { top: 44px; }
 
 /* AUTH */
 .auth-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--navy);padding:1rem;}
-.auth-card{background:var(--surface);border-radius:24px;width:100%;max-width:900px;box-shadow:var(--shadow-lg);display:grid;grid-template-columns:1fr 1fr;overflow:hidden;min-height:560px;}
-.auth-brand{background:linear-gradient(145deg,var(--navy) 0%,#0f3460 60%,#1a5276 100%);padding:2.5rem;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden;}
-.auth-brand::before{content:'';position:absolute;top:-40px;right:-40px;width:200px;height:200px;border-radius:50%;background:rgba(42,157,143,.12);pointer-events:none;}
-.auth-brand::after{content:'';position:absolute;bottom:-60px;left:-30px;width:240px;height:240px;border-radius:50%;background:rgba(244,162,97,.08);pointer-events:none;}
-.auth-brand-logo{display:flex;align-items:center;gap:.875rem;z-index:1;}
-.auth-brand-icon{width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:grid;place-items:center;box-shadow:0 4px 15px rgba(42,157,143,.4);}
-.auth-brand-name{font-size:1.3rem;font-weight:800;color:#fff;letter-spacing:-.03em;line-height:1.1;}
-.auth-brand-sub{font-size:.72rem;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.12em;margin-top:.15rem;}
-.auth-brand-mid{z-index:1;}
-.auth-brand-title{font-size:1.75rem;font-weight:800;color:#fff;line-height:1.25;margin-bottom:.75rem;}
-.auth-brand-title span{color:var(--accent2);}
-.auth-brand-desc{font-size:.875rem;color:rgba(255,255,255,.65);line-height:1.65;margin-bottom:1.5rem;}
-.auth-brand-chips{display:flex;flex-wrap:wrap;gap:.45rem;}
-.auth-brand-chip{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);border-radius:20px;padding:.28rem .75rem;font-size:.72rem;color:rgba(255,255,255,.8);font-family:'JetBrains Mono',monospace;}
-.auth-brand-foot{font-size:.72rem;color:rgba(255,255,255,.35);z-index:1;}
-.auth-form-panel{padding:2.25rem;display:flex;flex-direction:column;justify-content:center;overflow-y:auto;}
-@media(max-width:640px){
-  .auth-card{grid-template-columns:1fr;max-width:440px;}
-  .auth-brand{display:none;}
-  .auth-form-panel{padding:2rem 1.5rem;}
-}
+.auth-card{background:var(--surface);border-radius:20px;padding:2.25rem;width:100%;max-width:440px;box-shadow:var(--shadow-lg);}
 .auth-tabs{display:flex;background:var(--surface2);border-radius:10px;padding:.25rem;margin-bottom:1.5rem;gap:.25rem;border:1px solid var(--border);}
 .auth-tab{flex:1;text-align:center;padding:.5rem;border-radius:8px;cursor:pointer;font-size:.875rem;font-weight:600;color:var(--muted);transition:all .2s;}
 .auth-tab.active{background:var(--navy);color:#fff;}
@@ -466,39 +445,11 @@ tbody td.wrap{white-space:normal;min-width:140px;}
 <!-- AUTH -->
 <div id="pageAuth" class="auth-wrap" style="display:none">
   <div class="auth-card">
-
-    <!-- PANEL KIRI: Branding -->
-    <div class="auth-brand">
-      <div class="auth-brand-logo">
-        <div class="auth-brand-icon">
-          <svg width="28" height="28" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect width="40" height="40" rx="10" fill="rgba(255,255,255,0.12)"/>
-            <path d="M20 8C15.58 8 12 11.58 12 16c0 2.76 1.38 5.2 3.5 6.68L14 28h12l-1.5-5.32C26.62 21.2 28 18.76 28 16c0-4.42-3.58-8-8-8z" fill="white" fill-opacity="0.95"/>
-            <circle cx="20" cy="34" r="3" fill="white" fill-opacity="0.6"/>
-          </svg>
-        </div>
-        <div>
-          <div class="auth-brand-name">SiPegawai</div>
-          <div class="auth-brand-sub">Lapas Kelas III Saparua</div>
-        </div>
-      </div>
-
-      <div class="auth-brand-mid">
-        <div class="auth-brand-title">Sistem Arsip<br><span>Pegawai Digital</span></div>
-        <div class="auth-brand-desc">Kelola dokumen dan arsip kepegawaian secara digital, aman, dan mudah diakses kapan saja.</div>
-        <div class="auth-brand-chips">
-          <span class="auth-brand-chip">📁 Arsip Dokumen</span>
-          <span class="auth-brand-chip">👤 Manajemen User</span>
-          <span class="auth-brand-chip">☁️ Cloud Storage</span>
-          <span class="auth-brand-chip">🔒 Aman & Terenkripsi</span>
-        </div>
-      </div>
-
-      <div class="auth-brand-foot">© <span id="authBrandYear"></span> SiPegawai · Lapas Kelas III Saparua</div>
+    <div class="auth-logo">
+      <i class="fas fa-users" style="font-size:2.2rem;color:var(--accent);display:block;margin-bottom:.5rem"></i>
+      <div style="font-size:1.2rem;font-weight:800;color:var(--navy);letter-spacing:-.03em">SiPegawai</div>
+      <div style="font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em">Sistem Arsip Pegawai</div>
     </div>
-
-    <!-- PANEL KANAN: Form -->
-    <div class="auth-form-panel">
 
     <!-- LOGIN -->
     <div id="vLogin">
@@ -588,10 +539,8 @@ tbody td.wrap{white-space:normal;min-width:140px;}
       <button class="btn-main" id="btnResetPass" onclick="doResetPass()"><i class="fas fa-save"></i> Simpan Password Baru</button>
       <div id="resetMsg" style="display:none;margin-top:.875rem"></div>
     </div>
-
-    </div><!-- end auth-form-panel -->
-  </div><!-- auth-card -->
-</div><!-- pageAuth -->
+  </div>
+</div>
 
 <!-- APP -->
 <div id="pageApp" style="display:none">
@@ -660,7 +609,20 @@ tbody td.wrap{white-space:normal;min-width:140px;}
         <div class="stat-card"><div class="stat-ico" style="background:var(--warn-l);color:#92400e"><i class="fas fa-user-clock"></i></div><div><div class="stat-lbl">Menunggu Approval</div><div class="stat-val" id="stPending">—</div></div></div>
         <div class="stat-card"><div class="stat-ico" style="background:var(--accent2-l);color:var(--accent2)"><i class="fas fa-file-alt"></i></div><div><div class="stat-lbl">Total Dokumen</div><div class="stat-val" id="stDok">—</div></div></div>
       </div>
-      <!-- storage bar dipindah ke pageSetting -->
+      <!-- STORAGE BAR -->
+      <div class="storage-wrap" id="storageWrap" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.2rem">
+          <span style="font-size:.82rem;font-weight:700;color:var(--navy)"><i class="fas fa-database" style="margin-right:.4rem;color:var(--accent)"></i>Penggunaan Penyimpanan R2</span>
+          <span style="font-size:.82rem;font-weight:700;color:var(--navy)" id="storageText">—</span>
+        </div>
+        <div class="storage-bar-bg"><div class="storage-bar-fill safe" id="storageBar" style="width:0%"></div></div>
+        <div class="storage-meta">
+          <span id="storageUsed">—</span>
+          <span id="storagePct">—</span>
+          <span id="storageLimit">Batas: 8 GB</span>
+        </div>
+        <div id="storageAlert"></div>
+      </div>
       <div class="card"><div class="card-hd"><span class="card-title"><i class="fas fa-user-clock" style="color:#92400e;margin-right:.45rem"></i>Pendaftaran Menunggu</span><button class="btn-s" style="font-size:.77rem;padding:.32rem .7rem" onclick="showPage('approval')">Lihat Semua →</button></div><div id="dashPendingList"><div class="loading"><div class="spinner"></div>Memuat...</div></div></div>
     </div>
 
@@ -847,10 +809,10 @@ tbody td.wrap{white-space:normal;min-width:140px;}
     <!-- PENGATURAN -->
     <div id="pageSetting" style="display:none">
       <div class="topbar"><div><div class="page-title">Pengaturan</div></div></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.375rem;max-width:1100px;align-items:start;min-width:0">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.375rem;max-width:1100px;align-items:start">
         <!-- KOLOM KIRI: Cloudflare R2 -->
-        <div style="min-width:0">
-        <div class="card" style="min-width:0;overflow:hidden"><div class="card-hd"><span class="card-title"><i class="fas fa-cloud" style="color:var(--accent);margin-right:.4rem"></i>Cloudflare R2</span></div><div class="card-body">
+        <div>
+        <div class="card"><div class="card-hd"><span class="card-title"><i class="fas fa-cloud" style="color:var(--accent);margin-right:.4rem"></i>Cloudflare R2</span></div><div class="card-body">
           <div class="alert-info alert-box"><i class="fas fa-lock"></i><div>Hanya admin yang dapat mengubah konfigurasi R2.</div></div>
           <div class="form-group"><label class="form-label">Account ID</label><input class="form-control" id="r2AID" style="font-family:'JetBrains Mono',monospace;font-size:.79rem"/></div>
           <div class="form-group"><label class="form-label">Bucket</label><input class="form-control" id="r2Bkt"/></div>
@@ -870,26 +832,12 @@ tbody td.wrap{white-space:normal;min-width:140px;}
           <button class="btn-p" onclick="saveR2()" style="width:100%;justify-content:center"><i class="fas fa-save"></i> Simpan R2</button>
           <div id="r2Alert" class="alert-box" style="display:none;margin-top:.5rem"></div>
           <div id="r2Stat" style="margin-top:.65rem;font-size:.79rem;color:var(--muted)"></div>
-          <!-- Storage bar R2 dipindah dari dashboard -->
-          <div class="storage-wrap" id="storageWrap" style="margin-top:1rem">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.35rem">
-              <span style="font-size:.82rem;font-weight:700;color:var(--navy)"><i class="fas fa-database" style="margin-right:.4rem;color:var(--accent)"></i>Penggunaan R2</span>
-              <span style="font-size:.82rem;font-weight:700;color:var(--navy)" id="storageText">—</span>
-            </div>
-            <div class="storage-bar-bg"><div class="storage-bar-fill safe" id="storageBar" style="width:0%"></div></div>
-            <div class="storage-meta">
-              <span id="storageUsed">—</span>
-              <span id="storagePct">—</span>
-              <span id="storageLimit">Batas: —</span>
-            </div>
-            <div id="storageAlert"></div>
-          </div>
         </div></div>
 
         </div><!-- end kolom kiri -->
         <!-- KOLOM KANAN: Google Drive -->
-        <div style="min-width:0">
-        <div class="card" style="min-width:0;overflow:hidden"><div class="card-hd"><span class="card-title"><i class="fab fa-google-drive" style="color:#0F9D58;margin-right:.4rem"></i>Google Drive (Overflow Storage)</span></div><div class="card-body">
+        <div>
+        <div class="card"><div class="card-hd"><span class="card-title"><i class="fab fa-google-drive" style="color:#0F9D58;margin-right:.4rem"></i>Google Drive (Overflow Storage)</span></div><div class="card-body">
           <div class="alert-info alert-box" style="margin-bottom:.875rem"><i class="fas fa-info-circle"></i><div>Gunakan <strong>Service Account</strong> dari Google Cloud Console. File akan otomatis disimpan ke Drive saat R2 penuh, dan tetap bisa dibuka dari website.</div></div>
           <div class="form-group"><label class="form-label">Konfigurasi Drive JSON <span style="font-size:.72rem;color:var(--muted)">(format OAuth2 — lihat panduan di bawah)</span></label><textarea class="form-control" id="driveJson" rows="5" style="font-family:'JetBrains Mono',monospace;font-size:.72rem;resize:vertical" placeholder='{"type":"oauth2","client_id":"xxxxx.apps.googleusercontent.com","client_secret":"GOCSPX-xxxxx","refresh_token":"1//xxxxx"}'></textarea>
           <div style="margin-top:.4rem;font-size:.72rem;color:var(--muted);line-height:1.6">
@@ -925,7 +873,7 @@ tbody td.wrap{white-space:normal;min-width:140px;}
           <div id="driveStat" style="margin-top:.65rem;font-size:.79rem;color:var(--muted)"></div>
           <div id="driveAlert" class="alert-box" style="display:none;margin-top:.5rem"></div>
           <!-- Kotak hasil migrasi R2→Drive — muncul setelah proses selesai -->
-          <div id="migrateResultBox" style="display:none;margin-top:.875rem;border-radius:10px;border:1.5px solid var(--border);overflow:hidden;max-width:100%;box-sizing:border-box">
+          <div id="migrateResultBox" style="display:none;margin-top:.875rem;border-radius:10px;border:1.5px solid var(--border);overflow:hidden">
             <div id="migrateResultHeader" style="padding:.6rem 1rem;font-weight:700;font-size:.82rem;display:flex;align-items:center;gap:.5rem"></div>
             <div id="migrateResultBody" style="padding:.75rem 1rem;font-size:.8rem;line-height:1.7;border-top:1px solid var(--border)"></div>
           </div>
@@ -940,6 +888,28 @@ tbody td.wrap{white-space:normal;min-width:140px;}
           </div>
         </div></div>
         </div><!-- end kolom kanan -->
+        <!-- Panduan Recovery — span 2 kolom -->
+        <div class="card" style="grid-column:1/-1">
+          <div class="card-hd"><span class="card-title"><i class="fas fa-life-ring" style="color:var(--danger);margin-right:.4rem"></i>Panduan Recovery</span></div>
+          <div class="card-body">
+            <div style="font-size:.82rem;line-height:1.7;color:var(--text2)">
+              <div style="font-weight:700;color:var(--danger);margin-bottom:.5rem"><i class="fas fa-exclamation-triangle"></i> Jika file R2 terhapus:</div>
+              <ol style="padding-left:1.1rem;margin:0 0 .875rem">
+                <li>Download <strong>Manifest Dokumen</strong> sekarang (sebelum terjadi masalah)</li>
+                <li>Buka Cloudflare R2 Dashboard → bucket kamu</li>
+                <li>Cocokkan kolom <code style="background:var(--surface2);padding:.1rem .3rem;border-radius:4px">r2_key</code> di CSV dengan file yang masih ada</li>
+                <li>File yang hilang tandai di kolom <code style="background:var(--surface2);padding:.1rem .3rem;border-radius:4px">status_recovery</code></li>
+                <li>Minta ulang file dari pegawai yang bersangkutan</li>
+              </ol>
+              <div style="font-weight:700;color:var(--warn);margin-bottom:.5rem"><i class="fas fa-exclamation-triangle"></i> Jika konfigurasi R2 salah:</div>
+              <ol style="padding-left:1.1rem;margin:0">
+                <li>Jangan hapus data di tabel <code style="background:var(--surface2);padding:.1rem .3rem;border-radius:4px">dokumen</code> — r2_key masih valid</li>
+                <li>Perbaiki config di halaman <strong>Pengaturan → Cloudflare R2</strong></li>
+                <li>Test dengan upload 1 file kecil setelah perbaikan</li>
+              </ol>
+            </div>
+          </div>
+        </div>
       </div><!-- end grid -->
     </div>
 
@@ -1403,8 +1373,6 @@ async function doIdleLogout(){
   // Sembunyikan footer
   const fEl=document.getElementById('appFooter');
   if(fEl) fEl.style.display='none';
-  const ayEl=document.getElementById('authBrandYear');
-  if(ayEl) ayEl.textContent=new Date().getFullYear();
   document.getElementById('pageApp').style.display='none';
   document.getElementById('pageAuth').style.display='flex';
   document.getElementById('navAdmin').style.display='none';
@@ -5666,14 +5634,9 @@ function renderStorageBar(usedBytes){
   else if(pct>=87.5) bar.classList.add('warn');
   else               bar.classList.add('safe');
 
-  const usedEl=document.getElementById('storageUsed');
-  const pctEl=document.getElementById('storagePct');
-  const textEl=document.getElementById('storageText');
-  const limitEl=document.getElementById('storageLimit');
-  if(usedEl) usedEl.textContent='R2 terpakai: '+fmtSz(usedBytes);
-  if(pctEl)  pctEl.textContent=pct.toFixed(1)+'%';
-  if(textEl) textEl.textContent='R2: '+fmtSz(usedBytes)+' / '+fmtSz(limitBytes);
-  if(limitEl) limitEl.textContent='Batas: '+fmtSz(limitBytes);
+  document.getElementById('storageUsed').textContent='R2 terpakai: '+fmtSz(usedBytes);
+  document.getElementById('storagePct').textContent=pct.toFixed(1)+'%';
+  document.getElementById('storageText').textContent='R2: '+fmtSz(usedBytes)+' / '+fmtSz(limitBytes);
 
   const warnBytes=limitBytes*0.875;
   if(usedBytes>=limitBytes){
@@ -6083,19 +6046,10 @@ init();
     </div>
     <span><strong style="color:var(--navy)">SiPegawai</strong> &mdash; Sistem Informasi Pegawai Lapas Kelas III Saparua</span>
   </div>
-  <div class="footer-right" style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap">
-    <span style="color:var(--muted);font-size:.8rem">Dibuat dengan <span style="color:#e11d48">❤️</span> oleh <strong style="color:var(--navy)">Ulis Leuwol</strong></span>
+  <div class="footer-right">
+     <span><strong style="color:var(--navy)">Design By <a href="#" style="text-decoration: none; color: blue;">Ulis Leuwol</a></strong></span>
     <span class="footer-sep">|</span>
-    <a href="https://www.instagram.com/ulis_leuwol" target="_blank" rel="noopener" title="Instagram Ulis Leuwol"
-       style="display:inline-flex;align-items:center;gap:.3rem;text-decoration:none;color:#e1306c;font-size:.82rem;font-weight:600;transition:opacity .2s"
-       onmouseover="this.style.opacity='.7'" onmouseout="this.style.opacity='1'">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0">
-        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
-      </svg>
-      @ulis_leuwol
-    </a>
-    <span class="footer-sep">|</span>
-    <span id="footerYear" style="color:var(--muted);font-size:.8rem"></span>
+    <span id="footerYear"></span>
   </div>
 </footer>
 
