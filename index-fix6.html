@@ -1582,7 +1582,6 @@ let polling=null,selKatId=null;
 let R2={accountId:'',bucket:'',accessKey:'',secretKey:''};
 let DRIVE={serviceAccountJson:'',folderId:'',limitGb:10,autoOverflow:false,configured:false};
 let upFile=null;
-let _uploadInProgress=false; // Global lock — mencegah upload ganda (double-click / rapid click)
 
 // ═══════════════════════════════
 //  MODAL - Simple open/close
@@ -3178,93 +3177,24 @@ function konfirmHapusUser(id){
 }
 
 async function deleteUserPermanent(id){
-  showActionSplash('Menghapus user...','Mengambil daftar file dokumen');
-
-  // Ambil SEMUA dokumen user — r2_key, drive_file_id, storage_type
-  const{data:userDocs, error:fetchErr}=await sb.from('dokumen')
-    .select('id,r2_key,drive_file_id,storage_type')
-    .eq('user_id',id);
-
-  if(fetchErr) console.warn('[deleteUser] Gagal ambil dokumen:', fetchErr.message);
-
-  // Hapus user dari auth.users + profiles + dokumen (via RPC)
+  showActionSplash('Menghapus user...','Menghapus data dan file dokumen');
+  const{data:userDocs}=await sb.from('dokumen').select('r2_key').eq('user_id',id);
   const{error}=await sb.rpc('hapus_user_auth',{uid:id});
   if(error){
     hideActionSplash();
-    toast('Gagal hapus user: '+error.message,'err');
+    toast('Gagal hapus: '+error.message,'err');
     console.error('deleteUserPermanent error:',error);
     return;
   }
-
-  // Hapus file dari storage (R2 dan/atau Drive)
   if(userDocs && userDocs.length>0){
-    // Load Drive config dulu (untuk hapus file Drive)
-    let driveReady=false;
-    try{
-      await ensureDriveConfig();
-      driveReady=!!(DRIVE.serviceAccountJson && DRIVE.configured);
-    }catch(e){ console.warn('[deleteUser] Drive config error:',e.message); }
-
-    let r2Count=0, driveCount=0, failCount=0;
-    showActionSplash('Menghapus file...', `0 / ${userDocs.length} file dihapus`);
-
-    for(let i=0; i<userDocs.length; i++){
-      const dok=userDocs[i];
-      showActionSplash('Menghapus file...', `${i+1} / ${userDocs.length} file dihapus`);
-
-      const isDrive = dok.storage_type==='drive';
-
-      if(isDrive && dok.drive_file_id && driveReady){
-        // Hapus dari Google Drive
-        try{
-          const token=await getDriveToken();
-          const res=await fetch(
-            `https://www.googleapis.com/drive/v3/files/${dok.drive_file_id}`,
-            {method:'DELETE', headers:{Authorization:`Bearer ${token}`}}
-          );
-          if(res.ok || res.status===404){
-            driveCount++;
-            console.info('[deleteUser] Drive deleted:',dok.drive_file_id);
-          } else {
-            failCount++;
-            console.warn('[deleteUser] Drive delete HTTP',res.status,'file:',dok.drive_file_id);
-          }
-        }catch(e){
-          failCount++;
-          console.warn('[deleteUser] Drive delete error:',e.message);
-        }
-      } else if(!isDrive && dok.r2_key){
-        // Hapus dari Cloudflare R2
-        try{
-          await r2Delete(dok.r2_key);
-          r2Count++;
-        }catch(e){
-          failCount++;
-          console.warn('[deleteUser] R2 delete warning:',e.message);
-        }
-      }
+    for(const dok of userDocs){
+      if(dok.r2_key){ try{ await r2Delete(dok.r2_key); }catch(e){ console.warn('R2 delete warning:',e.message); } }
     }
-
-    console.info(`[deleteUser] Selesai: R2=${r2Count}, Drive=${driveCount}, Gagal=${failCount}`);
   }
-
-  // Update cache storage setelah hapus massal
-  try{
-    const[r2New,driveNew]=await Promise.all([_hitung_r2_dari_db(),_hitung_drive_dari_db()]);
-    await _simpanCacheStorage(r2New,driveNew).catch(()=>{});
-    currentStorageBytes=r2New;
-    renderStorageBar(r2New);
-    _renderDriveBar(driveNew);
-  }catch(e){ console.warn('[deleteUser] Cache update error:',e.message); }
-
-  const profileIdx=allProfiles.findIndex(p=>p.id===id);
-  if(profileIdx>-1) allProfiles.splice(profileIdx,1);
-
-  _invalidateCache('pegawai');
-  _invalidateCache('dokAdmin');
-
+  const idx=allProfiles.findIndex(p=>p.id===id);
+  if(idx>-1) allProfiles.splice(idx,1);
   hideActionSplash();
-  showAlertBanner('User berhasil dihapus — semua file R2 & Drive ikut dihapus.','ok');
+  showAlertBanner('User berhasil dihapus permanen!','ok');
   await Promise.all([loadPeg(1), loadDash()]);
 }
 
@@ -4137,11 +4067,6 @@ function clearUpFile(){
 }
 
 async function doUpload(){
-  // ── Lock: cegah upload ganda saat proses sedang berjalan ──
-  if(_uploadInProgress){
-    toast('Upload sedang berjalan, harap tunggu...','warn');
-    return;
-  }
   if(!upFile){toast('Pilih file dulu!','warn');return;}
   const katId=document.getElementById('upKat').value.trim();
   if(!katId||katId===''){toast('Pilih kategori terlebih dahulu!','warn');return;}
@@ -4175,10 +4100,7 @@ async function doUpload(){
   }
 
   const btn=document.getElementById('btnUpload');
-  _uploadInProgress=true; // Set lock — tidak bisa upload lagi sampai selesai
   setBtn(btn,true);
-  // Disable juga tombol di file selector agar tidak ada celah
-  document.querySelectorAll('#btnUpload,#upZone input[type=file]').forEach(el=>el.disabled=true);
 
   // Cek storage sebelum upload — WAJIB lulus, tidak boleh di-skip
   setPrg(5,'Memeriksa kapasitas penyimpanan...');
@@ -4192,7 +4114,7 @@ async function doUpload(){
     const errMsg='Gagal memeriksa kapasitas penyimpanan: '+e.message+'. Upload ditolak untuk keamanan.';
     toast(errMsg,'err');
     showStorageBlockAlert(errMsg);
-    setPrg(0,''); _uploadInProgress=false;
+    setPrg(0,'');
     document.getElementById('upPrgWrap').style.display='none';
     setBtn(btn,false,'<i class="fas fa-upload"></i> Upload Dokumen');
     return;
@@ -4200,7 +4122,7 @@ async function doUpload(){
   if(!storCheck.ok){
     toast(storCheck.msg,'err');
     showStorageBlockAlert(storCheck.msg);
-    setPrg(0,''); _uploadInProgress=false;
+    setPrg(0,'');
     document.getElementById('upPrgWrap').style.display='none';
     setBtn(btn,false,'<i class="fas fa-upload"></i> Upload Dokumen');
     return;
@@ -4323,15 +4245,10 @@ async function doUpload(){
   }catch(e){
     console.error('Upload error:',e);
     toast('Upload gagal: '+e.message,'err');
-    showInlineAlert('upSuccessAlert','🚫 Upload gagal: '+e.message,'err');
     setPrg(0,'');
     document.getElementById('upPrgWrap').style.display='none';
-  }finally{
-    // Release lock — SELALU dilepas agar tidak stuck
-    _uploadInProgress=false;
-    setBtn(btn,false,'<i class="fas fa-upload"></i> Upload Dokumen');
-    document.querySelectorAll('#upZone input[type=file]').forEach(el=>el.disabled=false);
   }
+  setBtn(btn,false,'<i class="fas fa-upload"></i> Upload Dokumen');
 }
 function setPrg(p,l){document.getElementById('upPrgBar').style.width=p+'%';document.getElementById('upPrgPct').textContent=p+'%';document.getElementById('upPrgLabel').textContent=l;}
 
@@ -5491,11 +5408,6 @@ function setPrgAdmin(p,l){
 }
 
 async function doUploadAdmin(){
-  // ── Lock: cegah upload ganda ──────────────────────────────────
-  if(_uploadInProgress){
-    toast('Upload sedang berjalan, harap tunggu hingga selesai...','warn');
-    return;
-  }
   const pegId=document.getElementById('upAdminPegId').value;
   const katId=document.getElementById('upAdminKat').value;
   const ket=document.getElementById('upAdminKet').value.trim();
@@ -5505,11 +5417,7 @@ async function doUploadAdmin(){
   await loadR2();
   if(!R2.accountId||!R2.accessKey||!R2.secretKey||!R2.bucket){toast('R2 belum dikonfigurasi!','err');return;}
   const btn=document.getElementById('btnUploadAdmin');
-  _uploadInProgress=true; // Set lock global
   setBtn(btn,true);
-  // Disable semua area upload agar tidak ada celah klik ganda
-  const upAdminZoneEl=document.getElementById('upAdminZone');
-  if(upAdminZoneEl) upAdminZoneEl.style.pointerEvents='none';
 
   // Cek storage sebelum upload admin — WAJIB lulus, tidak boleh di-skip
   let adminStorTarget='r2';
@@ -5519,13 +5427,13 @@ async function doUploadAdmin(){
   }catch(e){
     const errMsg='Gagal memeriksa kapasitas penyimpanan: '+e.message+'. Upload ditolak untuk keamanan.';
     toast(errMsg,'err');
-    _uploadInProgress=false; setBtn(btn,false,'<i class="fas fa-upload"></i> Upload Dokumen');
+    setBtn(btn,false,'<i class="fas fa-upload"></i> Upload Dokumen');
     return;
   }
   if(!adminStorCheck.ok){
     toast(adminStorCheck.msg,'err');
     showInlineAlert('upAdminSuccessAlert',adminStorCheck.msg,'err');
-    _uploadInProgress=false; setBtn(btn,false,'<i class="fas fa-upload"></i> Upload Dokumen');
+    setBtn(btn,false,'<i class="fas fa-upload"></i> Upload Dokumen');
     return;
   }
   adminStorTarget=adminStorCheck.target||'r2';
@@ -5642,13 +5550,8 @@ async function doUploadAdmin(){
     showInlineAlert('upAdminSuccessAlert','🚫 '+errMsg,'err');
     setPrgAdmin(0,'');
     document.getElementById('upAdminPrgWrap').style.display='none';
-  }finally{
-    // Release lock — SELALU dilepas agar tidak stuck
-    _uploadInProgress=false;
-    setBtn(btn,false,'<i class="fas fa-upload"></i> Upload Dokumen');
-    const upAdminZoneEl=document.getElementById('upAdminZone');
-    if(upAdminZoneEl) upAdminZoneEl.style.pointerEvents='';
   }
+  setBtn(btn,false,'<i class="fas fa-upload"></i> Upload Dokumen');
 }
 
 function loadUploadAdminPage(){
