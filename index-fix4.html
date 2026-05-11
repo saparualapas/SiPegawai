@@ -13,7 +13,32 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link rel="preconnect" href="https://guxxelwwalcwhpeujnqj.supabase.co" crossorigin/>
 <link rel="dns-prefetch" href="https://cdn.jsdelivr.net"/>
-<link rel="manifest" href="/manifest.json"/>
+<script>
+// PWA Manifest — dibuat via JS Blob agar tidak ada masalah encoding di href
+(function(){
+  const iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192"><rect width="192" height="192" rx="42" fill="#0a2342"/><text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" font-size="110" font-family="Arial,sans-serif" font-weight="900" fill="#2a9d8f">S</text><circle cx="141" cy="51" r="24" fill="#f4a261"/></svg>`;
+  const iconUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(iconSvg);
+  const manifest = {
+    name: 'SiPegawai - Lapas Kelas III Saparua',
+    short_name: 'SiPegawai',
+    description: 'Sistem Informasi Pegawai Lapas Kelas III Saparua',
+    start_url: '/',
+    display: 'standalone',
+    background_color: '#0a2342',
+    theme_color: '#0a2342',
+    orientation: 'portrait-primary',
+    icons: [
+      { src: iconUrl, sizes: '192x192', type: 'image/svg+xml' },
+      { src: iconUrl, sizes: '512x512', type: 'image/svg+xml' }
+    ]
+  };
+  const blob = new Blob([JSON.stringify(manifest)], {type:'application/manifest+json'});
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('link');
+  link.rel = 'manifest'; link.href = url;
+  document.head.appendChild(link);
+})();
+</script>
 <meta name="theme-color" content="#0a2342"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
@@ -6292,7 +6317,7 @@ init();
   <div class="footer-right" style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap">
     <span style="color:var(--muted);font-size:.8rem">Dibuat dengan <span style="color:#e11d48">❤️</span> oleh <strong style="color:var(--navy)">Ulis Leuwol</strong></span>
     <span class="footer-sep">|</span>
-    <a href="https://www.instagram.com/ulis_leuwol" target="_blank" rel="noopener" title="Instagram @ulis_leuwol"
+    <a href="https://www.instagram.com/ulax_1020?igsh=MTRjcWk0NzltMnloMw==" target="_blank" rel="noopener" title="Instagram"
        style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:7px;background:linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);color:#fff;text-decoration:none;transition:opacity .2s;flex-shrink:0"
        onmouseover="this.style.opacity='.75'" onmouseout="this.style.opacity='1'">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
