@@ -554,7 +554,7 @@ tbody td.wrap{white-space:normal;min-width:140px;}
       <div class="form-group"><label class="form-label">Jabatan *</label><select class="form-control" id="rJabatan" required><option value="">Pilih jabatan...</option></select></div>
       <div class="form-group"><label class="form-label">Email *</label><input class="form-control" type="email" id="rEmail" placeholder="email@instansi.go.id" inputmode="email" autocomplete="email" required/></div>
       <div class="form-row auth-form-row">
-        <div class="form-group"><label class="form-label">Password *</label><div class="pw-wrap"><input class="form-control" type="password" id="rPass" placeholder="Min. 8 karakter + huruf besar + angka"/><button type="button" class="pw-toggle" onclick="togglePw('rPass')" tabindex="-1"><i class="fas fa-eye" id="eye_rPass"></i></button></div></div>
+        <div class="form-group"><label class="form-label">Password *</label><div class="pw-wrap"><input class="form-control" type="password" id="rPass" placeholder="Min. 6 karakter"/><button type="button" class="pw-toggle" onclick="togglePw('rPass')" tabindex="-1"><i class="fas fa-eye" id="eye_rPass"></i></button></div></div>
         <div class="form-group"><label class="form-label">Konfirmasi *</label><div class="pw-wrap"><input class="form-control" type="password" id="rPass2" placeholder="Ulangi"/><button type="button" class="pw-toggle" onclick="togglePw('rPass2')" tabindex="-1"><i class="fas fa-eye" id="eye_rPass2"></i></button></div></div>
       </div>
       <!-- Honeypot: jangan diisi, hanya untuk deteksi bot -->
@@ -600,7 +600,7 @@ tbody td.wrap{white-space:normal;min-width:140px;}
         <div class="auth-title">Buat Password Baru</div>
         <div style="font-size:.82rem;color:var(--muted)">Masukkan password baru kamu</div>
       </div>
-      <div class="form-group"><label class="form-label">Password Baru</label><div class="pw-wrap"><input class="form-control" type="password" id="resetNewPass" placeholder="Min. 8 karakter + huruf besar + angka"/><button type="button" class="pw-toggle" onclick="togglePw('resetNewPass')" tabindex="-1"><i class="fas fa-eye" id="eye_resetNewPass"></i></button></div></div>
+      <div class="form-group"><label class="form-label">Password Baru</label><div class="pw-wrap"><input class="form-control" type="password" id="resetNewPass" placeholder="Min. 6 karakter"/><button type="button" class="pw-toggle" onclick="togglePw('resetNewPass')" tabindex="-1"><i class="fas fa-eye" id="eye_resetNewPass"></i></button></div></div>
       <div class="form-group"><label class="form-label">Konfirmasi Password</label><div class="pw-wrap"><input class="form-control" type="password" id="resetConfPass" placeholder="Ulangi password baru"/><button type="button" class="pw-toggle" onclick="togglePw('resetConfPass')" tabindex="-1"><i class="fas fa-eye" id="eye_resetConfPass"></i></button></div></div>
       <button class="btn-main" id="btnResetPass" onclick="doResetPass()"><i class="fas fa-save"></i> Simpan Password Baru</button>
       <div id="resetMsg" style="display:none;margin-top:.875rem"></div>
@@ -796,7 +796,7 @@ tbody td.wrap{white-space:normal;min-width:140px;}
           <div class="form-group"><label class="form-label">Jabatan *</label><select class="form-control" id="dpJabatan"><option value="">Pilih jabatan...</option></select></div>
           <div class="form-group"><label class="form-label">Email *</label><input class="form-control" type="email" id="dpEmail" placeholder="email@instansi.go.id" inputmode="email"/></div>
           <div class="form-group"><label class="form-label">Password *</label>
-            <div class="pw-wrap"><input class="form-control" type="password" id="dpPass" placeholder="Min. 8 karakter + huruf besar + angka"/><button type="button" class="pw-toggle" onclick="togglePw('dpPass')" tabindex="-1"><i class="fas fa-eye" id="eye_dpPass"></i></button></div>
+            <div class="pw-wrap"><input class="form-control" type="password" id="dpPass" placeholder="Min. 6 karakter"/><button type="button" class="pw-toggle" onclick="togglePw('dpPass')" tabindex="-1"><i class="fas fa-eye" id="eye_dpPass"></i></button></div>
           </div>
           <div class="form-group"><label class="form-label">Konfirmasi Password *</label>
             <div class="pw-wrap"><input class="form-control" type="password" id="dpPass2" placeholder="Ulangi password"/><button type="button" class="pw-toggle" onclick="togglePw('dpPass2')" tabindex="-1"><i class="fas fa-eye" id="eye_dpPass2"></i></button></div>
@@ -853,7 +853,7 @@ tbody td.wrap{white-space:normal;min-width:140px;}
         </div></div>
         <div class="card"><div class="card-hd"><span class="card-title"><i class="fas fa-key" style="color:var(--warn);margin-right:.4rem"></i>Ubah Password</span></div><div class="card-body">
           <div class="form-group"><label class="form-label">Password Lama</label><div class="pw-wrap"><input class="form-control" type="password" id="eAdminOP" placeholder="Password saat ini"/><button type="button" class="pw-toggle" onclick="togglePw('eAdminOP')" tabindex="-1"><i class="fas fa-eye" id="eye_eAdminOP"></i></button></div></div>
-          <div class="form-group"><label class="form-label">Password Baru</label><div class="pw-wrap"><input class="form-control" type="password" id="eAdminNP" placeholder="Min. 8 karakter + huruf besar + angka"/><button type="button" class="pw-toggle" onclick="togglePw('eAdminNP')" tabindex="-1"><i class="fas fa-eye" id="eye_eAdminNP"></i></button></div></div>
+          <div class="form-group"><label class="form-label">Password Baru</label><div class="pw-wrap"><input class="form-control" type="password" id="eAdminNP" placeholder="Min. 6 karakter"/><button type="button" class="pw-toggle" onclick="togglePw('eAdminNP')" tabindex="-1"><i class="fas fa-eye" id="eye_eAdminNP"></i></button></div></div>
           <div class="form-group"><label class="form-label">Konfirmasi Password Baru</label><div class="pw-wrap"><input class="form-control" type="password" id="eAdminCP" placeholder="Ulangi password baru"/><button type="button" class="pw-toggle" onclick="togglePw('eAdminCP')" tabindex="-1"><i class="fas fa-eye" id="eye_eAdminCP"></i></button></div></div>
           <div id="passAlertAdmin" class="alert-box" style="display:none;margin-bottom:.65rem"></div>
           <button class="btn-p" id="btnChangePassAdmin" onclick="changePass('eAdminNP','eAdminCP','eAdminOP','btnChangePassAdmin')" style="width:100%;justify-content:center"><i class="fas fa-save"></i> Ubah Password</button>
@@ -1094,7 +1094,7 @@ tbody td.wrap{white-space:normal;min-width:140px;}
         </div></div>
         <div class="card"><div class="card-hd"><span class="card-title"><i class="fas fa-key" style="color:var(--warn);margin-right:.4rem"></i>Ubah Password</span></div><div class="card-body">
           <div class="form-group"><label class="form-label">Password Lama</label><div class="pw-wrap"><input class="form-control" type="password" id="uOP" placeholder="Masukkan password saat ini"/><button type="button" class="pw-toggle" onclick="togglePw('uOP')" tabindex="-1"><i class="fas fa-eye" id="eye_uOP"></i></button></div></div>
-          <div class="form-group"><label class="form-label">Password Baru</label><div class="pw-wrap"><input class="form-control" type="password" id="uNP" placeholder="Min. 8 karakter + huruf besar + angka"/><button type="button" class="pw-toggle" onclick="togglePw('uNP')" tabindex="-1"><i class="fas fa-eye" id="eye_uNP"></i></button></div></div>
+          <div class="form-group"><label class="form-label">Password Baru</label><div class="pw-wrap"><input class="form-control" type="password" id="uNP" placeholder="Min. 6 karakter"/><button type="button" class="pw-toggle" onclick="togglePw('uNP')" tabindex="-1"><i class="fas fa-eye" id="eye_uNP"></i></button></div></div>
           <div class="form-group"><label class="form-label">Konfirmasi</label><div class="pw-wrap"><input class="form-control" type="password" id="uCP" placeholder="Ulangi password baru"/><button type="button" class="pw-toggle" onclick="togglePw('uCP')" tabindex="-1"><i class="fas fa-eye" id="eye_uCP"></i></button></div></div>
           <button class="btn-p" id="btnChangePassUser" onclick="changePass('uNP','uCP','uOP','btnChangePassUser')" style="width:100%;justify-content:center"><i class="fas fa-save"></i> Ubah Password</button>
           <div id="passAlertUser" style="display:none;margin-top:.65rem"></div>
@@ -1474,24 +1474,6 @@ function esc(str){
     .replace(/\//g,'&#x2F;');
 }
 
-// ── Validasi Password — satu fungsi untuk semua tempat ──────────────────────
-// Mengembalikan { ok: true } atau { ok: false, msg: 'pesan error' }
-function validatePassword(pass, confirmPass=null){
-  if(!pass || pass.length === 0)
-    return {ok:false, msg:'Password wajib diisi.'};
-  if(pass.length < 8)
-    return {ok:false, msg:'Password minimal 8 karakter.'};
-  if(!/[A-Z]/.test(pass))
-    return {ok:false, msg:'Password harus mengandung minimal 1 huruf besar (A-Z).'};
-  if(!/[0-9]/.test(pass))
-    return {ok:false, msg:'Password harus mengandung minimal 1 angka (0-9).'};
-  if(!/[^A-Za-z0-9]/.test(pass) && pass.length < 10)
-    return {ok:false, msg:'Password terlalu sederhana. Tambah karakter khusus (!@#$) atau panjangkan.'};
-  if(confirmPass !== null && pass !== confirmPass)
-    return {ok:false, msg:'Konfirmasi password tidak cocok.'};
-  return {ok:true};
-}
-
 // ── Performa: Debounce untuk filter/search ──────────────────────────────────
 // Mencegah query DB terpicu setiap keystroke saat mengetik di kolom pencarian
 function debounce(fn, ms=300){
@@ -1817,9 +1799,11 @@ async function doReg(){
   if(!jabId){showErr('rErr','rErrTxt','Pilih jabatan terlebih dahulu.');return;}
   if(!email){showErr('rErr','rErrTxt','Email wajib diisi.');return;}
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){showErr('rErr','rErrTxt','Format email tidak valid. Contoh: nama@instansi.go.id');return;}
-  // Validasi password dengan aturan keamanan seragam
-  const passVal=validatePassword(pass, pass2);
-  if(!passVal.ok){showErr('rErr','rErrTxt',passVal.msg);return;}
+  if(!pass){showErr('rErr','rErrTxt','Password wajib diisi.');return;}
+  if(pass.length<6){showErr('rErr','rErrTxt','Password minimal 6 karakter.');return;}
+  if(pass.length<8){showErr('rErr','rErrTxt','Password minimal 8 karakter untuk keamanan akun.');return;}
+  if(!/[A-Z]/.test(pass)&&!/[0-9]/.test(pass)){showErr('rErr','rErrTxt','Password harus mengandung huruf besar atau angka.');return;}
+  if(pass!==pass2){showErr('rErr','rErrTxt','Konfirmasi password tidak cocok.');return;}
 
   const btn=document.getElementById('btnReg');setBtn(btn,true);
 
@@ -1949,9 +1933,9 @@ function loginAfterReg(email){
 async function doResetPass(){
   const np=document.getElementById('resetNewPass').value;
   const cp=document.getElementById('resetConfPass').value;
-  // Validasi password dengan aturan keamanan seragam
-  const resetPassVal=validatePassword(np, cp);
-  if(!resetPassVal.ok){showResetMsg('error',resetPassVal.msg);return;}
+  if(!np||!cp){showResetMsg('error','Password wajib diisi!');return;}
+  if(np!==cp){showResetMsg('error','Password tidak cocok!');return;}
+  if(np.length<6){showResetMsg('error','Password minimal 6 karakter!');return;}
   const btn=document.getElementById('btnResetPass');
   setBtn(btn,true);
   const{error}=await sb.auth.updateUser({password:np});
@@ -2166,11 +2150,22 @@ async function changePass(nId,cId,opId,btnId){
     showInlineAlert('Masukkan <strong>password lama</strong> terlebih dahulu.','warn');
     document.getElementById(opId)?.focus(); return;
   }
-  // Validasi password baru dengan aturan keamanan seragam
-  const cpVal=validatePassword(np, cp);
-  if(!cpVal.ok){
-    showInlineAlert(cpVal.msg,'warn');
+  if(!np){
+    showInlineAlert('Masukkan <strong>password baru</strong>.','warn');
     document.getElementById(nId)?.focus(); return;
+  }
+  if(np.length<6){
+    showInlineAlert('Password baru minimal <strong>6 karakter</strong>.','warn');
+    document.getElementById(nId)?.focus(); return;
+  }
+  if(!cp){
+    showInlineAlert('Masukkan <strong>konfirmasi password</strong>.','warn');
+    document.getElementById(cId)?.focus(); return;
+  }
+  if(np!==cp){
+    showInlineAlert('Konfirmasi password <strong>tidak cocok</strong> dengan password baru.','err');
+    document.getElementById(cId).value='';
+    document.getElementById(cId)?.focus(); return;
   }
   if(opId&&op===np){
     showInlineAlert('Password baru <strong>tidak boleh sama</strong> dengan password lama.','warn');
@@ -2789,19 +2784,9 @@ async function getDriveUsedBytes(){
 }
 
 // ── Google Drive OAuth2 Token (pakai refresh_token dari akun Google biasa) ──
-// Cache Drive token agar tidak request ulang setiap file (token valid 1 jam)
-let _driveTokenCache={token:null, expiresAt:0, configHash:''};
-
 async function getDriveToken(){
   let sa;
   try{ sa=JSON.parse(DRIVE.serviceAccountJson); }catch(e){ throw new Error('Konfigurasi Drive tidak valid'); }
-
-  // Cache hit: token masih valid (sisa > 3 menit) dan config sama
-  const configHash = DRIVE.serviceAccountJson.slice(0,64);
-  const now = Date.now();
-  if(_driveTokenCache.token && _driveTokenCache.expiresAt - now > 3*60*1000 && _driveTokenCache.configHash===configHash){
-    return _driveTokenCache.token;
-  }
 
   // Support dua mode: OAuth2 refresh_token (direkomendasikan) atau Service Account
   if(sa.type==='oauth2'){
@@ -2818,8 +2803,6 @@ async function getDriveToken(){
     });
     const data=await res.json();
     if(!data.access_token) throw new Error(data.error_description||'Gagal dapat Drive token');
-    // Cache token (expire 55 menit — token Google berlaku 60 menit)
-    _driveTokenCache={token:data.access_token, expiresAt:Date.now()+(55*60*1000), configHash};
     return data.access_token;
   }
 
@@ -2848,8 +2831,6 @@ async function getDriveToken(){
     });
     const data=await res.json();
     if(!data.access_token) throw new Error(data.error_description||'Gagal dapat Drive token');
-    // Cache token (expire 55 menit)
-    _driveTokenCache={token:data.access_token, expiresAt:Date.now()+(55*60*1000), configHash};
     return data.access_token;
   }
 
@@ -2957,67 +2938,51 @@ async function migrateR2ToDrive(){
   let ok=0, fail=0, skip=0;
   const skippedFiles=[];
 
-  // ── Pre-fetch kedua token SEKALI di awal — hemat N round-trip ke Google & Worker ──
-  let sharedWorkerToken;
-  try{ sharedWorkerToken=await getWorkerToken(); }
-  catch(e){ toast('Gagal dapat Worker token: '+e.message,'err'); if(btn) setBtn(btn,false,'<i class="fas fa-exchange-alt"></i> Pindahkan R2 ke Drive'); return; }
-
-  // getDriveToken pakai cache internal — tidak perlu pre-fetch manual
-  // Tapi panggil sekali sekarang agar token ter-cache sebelum loop
-  try{ await getDriveToken(); }
-  catch(e){ toast('Gagal dapat Drive token: '+e.message,'err'); if(btn) setBtn(btn,false,'<i class="fas fa-exchange-alt"></i> Pindahkan R2 ke Drive'); return; }
-
-  // Pisahkan file yang muat vs tidak muat di Drive
-  const toMigrate=[], toSkip=[];
-  let tempUsed=driveRunningUsed;
   for(const doc of docs){
-    const fileSz=doc.ukuran_file||0;
-    if(tempUsed+fileSz>driveLimitBytes){
-      toSkip.push(doc);
-      skippedFiles.push(doc.nama_file||'unknown');
-    } else {
-      toMigrate.push(doc);
-      tempUsed+=fileSz;
-    }
-  }
-  skip=toSkip.length;
+    const fileSz = doc.ukuran_file || 0;
 
-  // ── Fungsi migrasi satu file (shared token, tanpa re-auth per file) ────────
-  async function _migrateOne(doc){
-    const fileSz=doc.ukuran_file||0;
+    // ── Cek apakah file ini masih muat di Drive ─────────────────────────
+    if(driveRunningUsed + fileSz > driveLimitBytes){
+      // Tidak muat → biarkan tetap di R2, catat sebagai skip
+      skip++;
+      skippedFiles.push(doc.nama_file||'unknown');
+      console.warn(`[migrate] Skip ${doc.nama_file} (${fmtSz(fileSz)}) — Drive penuh: ${fmtSz(driveRunningUsed)}/${fmtSz(driveLimitBytes)}`);
+      continue; // lanjut ke file berikutnya (jangan break — file kecil berikutnya mungkin muat)
+    }
+
     try{
+      // Download dari R2 via Worker
+      const token=await getWorkerToken();
       const encodedKey=doc.r2_key.split('/').map(encodeURIComponent).join('/');
-      const r2Res=await fetch(`${WORKER_URL}/file/${encodedKey}`,{headers:{Authorization:`Bearer ${sharedWorkerToken}`}});
-      if(!r2Res.ok) throw new Error('R2 download gagal: '+r2Res.status);
+      const r2Res=await fetch(`${WORKER_URL}/file/${encodedKey}`,{headers:{Authorization:`Bearer ${token}`}});
+      if(!r2Res.ok) throw new Error('R2 fetch gagal: '+r2Res.status);
       const buf=await r2Res.arrayBuffer();
 
+      // Upload ke Drive: NamaPegawai/KategoriDok__NamaFile
       const pegNama=(doc.profiles?.nama_lengkap||'Unknown').replace(/[^a-zA-Z0-9_ ]/g,'_');
       const katNama=(doc.kategori_dokumen?.nama||'Lainnya').replace(/[^a-zA-Z0-9_ ]/g,'_');
-      // driveUpload pakai cached token — tidak ada request token baru
       const driveFileId=await driveUpload(buf,doc.nama_file||doc.r2_key.split('/').pop(),'application/octet-stream',`${pegNama}/${katNama}`);
 
-      const{error:dbErr}=await sb.from('dokumen').update({
-        storage_type:'drive', drive_file_id:driveFileId
-      }).eq('id',doc.id);
-      if(dbErr) throw new Error('DB update gagal: '+dbErr.message);
+      // Update DB: ubah storage_type ke drive
+      // PENTING: simpan r2_key asli sebagai backup, jangan di-null agar tidak langgar constraint
+      const{error:dbUpdateErr,data:dbUpdateData}=await sb.from('dokumen').update({
+        storage_type:'drive',
+        drive_file_id:driveFileId
+      }).eq('id',doc.id).select('id,storage_type');
 
-      try{ await r2Delete(doc.r2_key); }catch(eR2){ console.warn('[migrate] R2 delete warn:',eR2.message); }
+      if(dbUpdateErr) throw new Error('DB update gagal ('+dbUpdateErr.code+'): '+dbUpdateErr.message);
+      console.info(`[migrate] DB updated: ${doc.nama_file} → storage_type=drive, driveFileId=${driveFileId}`);
 
-      driveRunningUsed+=fileSz;
-      return {ok:true};
+      // Hapus dari R2 hanya setelah DB berhasil diupdate
+      try{ await r2Delete(doc.r2_key); }catch(eR2){ console.warn('[migrate] R2 delete warning:',eR2.message); }
+
+      driveRunningUsed += fileSz; // update tracker lokal
+      ok++;
     }catch(e){
       console.warn('[migrate] Gagal:',doc.nama_file,e.message);
-      return {ok:false};
+      fail++;
+      // Jika upload ke Drive gagal, file R2 tetap aman (tidak dihapus)
     }
-  }
-
-  // ── Proses dalam batch 3 file paralel (3x lebih cepat dari sequential) ─────
-  const BATCH=3;
-  for(let i=0; i<toMigrate.length; i+=BATCH){
-    const batch=toMigrate.slice(i, i+BATCH);
-    if(btn) btn.innerHTML=`<i class="fas fa-spinner fa-spin"></i> Migrasi ${Math.min(i+BATCH,toMigrate.length)}/${toMigrate.length}...`;
-    const results=await Promise.all(batch.map(d=>_migrateOne(d)));
-    results.forEach(r=>{ if(r.ok) ok++; else fail++; });
   }
   if(btn) setBtn(btn,false,'<i class="fas fa-exchange-alt"></i> Pindahkan R2 ke Drive');
   // Update cache + render KEDUA bar (R2 berkurang, Drive bertambah) setelah migrasi
@@ -5316,9 +5281,9 @@ async function doDaftarPegawaiAdmin(){
   const{data:nipCk}=await sb.from('profiles').select('id,nama_lengkap').eq('nip',nip).maybeSingle();
   if(nipCk){showDpAlert(`NIP <strong>${nip}</strong> sudah digunakan oleh <strong>${nipCk.nama_lengkap||'pegawai lain'}</strong>. Periksa kembali NIP yang dimasukkan.`,'err');return;}
   if(!email||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){showDpAlert('Format email tidak valid.','warn');return;}
-  // Validasi password dengan aturan keamanan seragam
-  const dpPassVal=validatePassword(pass, pass2);
-  if(!dpPassVal.ok){showDpAlert(dpPassVal.msg,'warn');return;}
+  if(!pass)          {showDpAlert('Password wajib diisi.','warn');return;}
+  if(pass.length<6)  {showDpAlert('Password minimal 6 karakter.','warn');return;}
+  if(pass!==pass2)   {showDpAlert('Konfirmasi password tidak cocok.','warn');return;}
 
   const btn=document.getElementById('btnDaftarPeg');
   setBtn(btn,true);
