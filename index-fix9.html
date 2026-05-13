@@ -4,7 +4,6 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <meta http-equiv="X-Content-Type-Options" content="nosniff"/>
-<meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=()"/>
 <meta http-equiv="X-Frame-Options" content="DENY"/>
 <meta name="referrer" content="strict-origin-when-cross-origin"/>
 <title>SiPegawai - Lapas Kelas III Saparua</title>
@@ -20,10 +19,9 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <meta name="apple-mobile-web-app-title" content="SiPegawai"/>
 <meta name="mobile-web-app-capable" content="yes"/>
-<link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous"/>
-<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" crossorigin="anonymous"/>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=JetBrains+Mono:wght@400&display=swap&subset=latin" rel="stylesheet" media="print" onload="this.media='all'"/>
-<noscript><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet"/></noscript>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
@@ -113,7 +111,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
 /* STORAGE BAR */
 .storage-wrap{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1rem 1.25rem;margin-bottom:1.25rem;box-shadow:var(--shadow);}
 .storage-bar-bg{background:var(--surface2);border-radius:99px;height:10px;overflow:hidden;margin:.5rem 0 .3rem;}
-.storage-bar-fill{height:100%;border-radius:99px;transition:width .6s cubic-bezier(.4,0,.2,1);will-change:width;}}
+.storage-bar-fill{height:100%;border-radius:99px;transition:width .6s cubic-bezier(.4,0,.2,1);}
 .storage-bar-fill.safe{background:linear-gradient(90deg,var(--accent2),#34d399);}
 .storage-bar-fill.warn{background:linear-gradient(90deg,var(--warn),#f59e0b);}
 .storage-bar-fill.danger{background:linear-gradient(90deg,var(--danger),#f87171);}
@@ -191,7 +189,7 @@ body.idle-warn-active .sidebar { top: 44px; }
 .auth-title{font-size:1.1rem;font-weight:800;color:var(--navy);margin-bottom:.25rem;}
 
 /* SIDEBAR */
-.sidebar{position:fixed;left:0;top:0;bottom:0;width:250px;background:var(--navy);display:flex;flex-direction:column;z-index:100;overflow:hidden;will-change:transform;}
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:250px;background:var(--navy);display:flex;flex-direction:column;z-index:100;overflow:hidden;}
 .sb-brand{padding:1.25rem 1rem;display:flex;align-items:center;gap:.75rem;border-bottom:1px solid rgba(255,255,255,.1);}
 .sb-icon{width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:grid;place-items:center;color:#fff;font-size:.95rem;flex-shrink:0;}
 .sb-name{font-weight:800;font-size:.95rem;color:#fff;}
@@ -217,20 +215,19 @@ body.idle-warn-active .sidebar { top: 44px; }
 .page-sub{font-size:.78rem;color:var(--muted);margin-top:.15rem;}
 
 /* BUTTONS */
-button,input,select,textarea{font-family:inherit;}
-.btn-p{background:linear-gradient(135deg,var(--navy),var(--accent));color:#fff;border:none;border-radius:9px;padding:.55rem 1.1rem;font-size:.84rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:.45rem;transition:all .15s;}
+.btn-p{background:linear-gradient(135deg,var(--navy),var(--accent));color:#fff;border:none;border-radius:9px;padding:.55rem 1.1rem;font-size:.84rem;font-weight:600;font-family:'Plus Jakarta Sans',sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:.45rem;transition:all .15s;}
 .btn-p:hover{opacity:.9;transform:translateY(-1px);}
 .btn-p:disabled{opacity:.5;cursor:not-allowed;transform:none;}
-.btn-s{background:var(--surface);color:var(--text2);border:1.5px solid var(--border);border-radius:9px;padding:.55rem 1.1rem;font-size:.84rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:.45rem;transition:all .15s;}
+.btn-s{background:var(--surface);color:var(--text2);border:1.5px solid var(--border);border-radius:9px;padding:.55rem 1.1rem;font-size:.84rem;font-weight:600;font-family:'Plus Jakarta Sans',sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:.45rem;transition:all .15s;}
 .btn-s:hover{background:var(--navy-ll);border-color:var(--accent);}
-.btn-ok{background:var(--accent2);color:#fff;border:none;border-radius:8px;padding:.38rem .8rem;font-size:.77rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:.35rem;}
+.btn-ok{background:var(--accent2);color:#fff;border:none;border-radius:8px;padding:.38rem .8rem;font-size:.77rem;font-weight:600;font-family:'Plus Jakarta Sans',sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:.35rem;}
 .btn-ok:hover{background:#047857;}
-.btn-del{background:var(--danger);color:#fff;border:none;border-radius:8px;padding:.38rem .8rem;font-size:.77rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:.35rem;}
+.btn-del{background:var(--danger);color:#fff;border:none;border-radius:8px;padding:.38rem .8rem;font-size:.77rem;font-weight:600;font-family:'Plus Jakarta Sans',sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:.35rem;}
 .btn-del:hover{background:#c81e1e;}
-.btn-main{width:100%;background:linear-gradient(135deg,var(--navy),var(--accent));color:#fff;border:none;border-radius:10px;padding:.7rem;font-size:.9rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:.5rem;margin-top:.5rem;}
+.btn-main{width:100%;background:linear-gradient(135deg,var(--navy),var(--accent));color:#fff;border:none;border-radius:10px;padding:.7rem;font-size:.9rem;font-weight:700;font-family:'Plus Jakarta Sans',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:.5rem;margin-top:.5rem;}
 .btn-main:hover{opacity:.9;}
 .btn-main:disabled{opacity:.6;cursor:not-allowed;}
-.btn-link{background:none;border:none;color:var(--accent);font-size:.82rem;cursor:pointer;text-decoration:underline;padding:0;}
+.btn-link{background:none;border:none;color:var(--accent);font-size:.82rem;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;text-decoration:underline;padding:0;}
 .btn-icon{width:30px;height:30px;border-radius:7px;border:1.5px solid var(--border);background:var(--surface);color:var(--muted);display:grid;place-items:center;cursor:pointer;font-size:.77rem;transition:all .15s;}
 .btn-icon:hover{color:var(--accent);border-color:var(--accent);}
 
@@ -260,7 +257,7 @@ button,input,select,textarea{font-family:inherit;}
 .stat-val{font-size:1.5rem;font-weight:800;letter-spacing:-.04em;line-height:1;color:var(--navy);}
 
 /* TABLE */
-.tbl-wrap{overflow-x:auto;overflow-y:visible;border-radius:0 0 15px 15px;-webkit-overflow-scrolling:touch;contain:layout;}
+.tbl-wrap{overflow-x:auto;overflow-y:visible;border-radius:0 0 15px 15px;-webkit-overflow-scrolling:touch;}
 .tbl-wrap::-webkit-scrollbar{height:5px;}
 .tbl-wrap::-webkit-scrollbar-track{background:var(--surface2);}
 .tbl-wrap::-webkit-scrollbar-thumb{background:var(--border);border-radius:10px;}
@@ -378,12 +375,12 @@ tbody td.wrap{white-space:normal;min-width:140px;}
 .empty i{font-size:2.2rem;margin-bottom:.65rem;display:block;opacity:.25;color:var(--navy);}
 .sec-title{font-size:.69rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.65rem;}
 .progress-wrap{height:5px;background:var(--border);border-radius:10px;overflow:hidden;margin-top:.45rem;}
-.progress-fill{height:100%;background:linear-gradient(90deg,var(--navy),var(--accent));border-radius:10px;transition:width .3s;will-change:width;}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--navy),var(--accent));border-radius:10px;transition:width .3s;}
 .progress-fill.done{background:linear-gradient(90deg,var(--accent2),#34d399);}
 
 /* TOAST */
 .toast-wrap{position:fixed;bottom:1.375rem;right:1.375rem;z-index:9999;display:flex;flex-direction:column;gap:.45rem;align-items:flex-end;pointer-events:none;}
-.toast{border-radius:11px;padding:.8rem 1.1rem;font-size:.84rem;font-weight:500;display:flex;align-items:center;gap:.7rem;box-shadow:var(--shadow-lg);animation:slideUp .25s ease;max-width:340px;pointer-events:auto;will-change:transform,opacity;}
+.toast{border-radius:11px;padding:.8rem 1.1rem;font-size:.84rem;font-weight:500;display:flex;align-items:center;gap:.7rem;box-shadow:var(--shadow-lg);animation:slideUp .25s ease;max-width:340px;pointer-events:auto;}
 @keyframes slideUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
 .t-ok{background:var(--accent2);color:#fff;}
 .t-err{background:var(--danger);color:#fff;}
@@ -529,7 +526,7 @@ tbody td.wrap{white-space:normal;min-width:140px;}
         <div class="auth-tab" onclick="switchAuth('reg')">Daftar</div>
       </div>
       <div class="form-group"><label class="form-label">Email atau NIP</label><input class="form-control" id="lEmail" placeholder="email@instansi.go.id atau 18 digit NIP" onkeydown="if(event.key==='Enter')doLogin()" autocomplete="username"/></div>
-      <div class="form-group"><label class="form-label">Password</label><div class="pw-wrap"><input class="form-control" type="password" id="lPass" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"/><button type="button" class="pw-toggle" onclick="togglePw('lPass')" tabindex="-1"><i class="fas fa-eye" id="eye_lPass"></i></button></div></div>
+      <div class="form-group"><label class="form-label">Password</label><div class="pw-wrap"><input class="form-control" type="password" id="lPass" placeholder="Password" onkeydown="if(event.key==='Enter')doLogin()"/><button type="button" class="pw-toggle" onclick="togglePw('lPass')" tabindex="-1"><i class="fas fa-eye" id="eye_lPass"></i></button></div></div>
       <div style="text-align:right;margin-bottom:.4rem"><button class="btn-link" onclick="switchAuth('forgot')">Lupa password?</button></div>
       <button class="btn-main" id="btnLogin" onclick="doLogin()"><i class="fas fa-sign-in-alt"></i> Masuk</button>
       <div id="lErr" class="alert-danger alert-box" style="display:none;margin-top:.875rem"><i class="fas fa-times-circle"></i><div id="lErrTxt"></div></div>
@@ -557,8 +554,8 @@ tbody td.wrap{white-space:normal;min-width:140px;}
       <div class="form-group"><label class="form-label">Jabatan *</label><select class="form-control" id="rJabatan" required><option value="">Pilih jabatan...</option></select></div>
       <div class="form-group"><label class="form-label">Email *</label><input class="form-control" type="email" id="rEmail" placeholder="email@instansi.go.id" inputmode="email" autocomplete="email" required/></div>
       <div class="form-row auth-form-row">
-        <div class="form-group"><label class="form-label">Password *</label><div class="pw-wrap"><input class="form-control" type="password" id="rPass" placeholder="Min. 8 karakter + huruf besar + angka" autocomplete="new-password"/><button type="button" class="pw-toggle" onclick="togglePw('rPass')" tabindex="-1"><i class="fas fa-eye" id="eye_rPass"></i></button></div></div>
-        <div class="form-group"><label class="form-label">Konfirmasi *</label><div class="pw-wrap"><input class="form-control" type="password" id="rPass2" placeholder="Ulangi" autocomplete="new-password"/><button type="button" class="pw-toggle" onclick="togglePw('rPass2')" tabindex="-1"><i class="fas fa-eye" id="eye_rPass2"></i></button></div></div>
+        <div class="form-group"><label class="form-label">Password *</label><div class="pw-wrap"><input class="form-control" type="password" id="rPass" placeholder="Min. 8 karakter + huruf besar + angka"/><button type="button" class="pw-toggle" onclick="togglePw('rPass')" tabindex="-1"><i class="fas fa-eye" id="eye_rPass"></i></button></div></div>
+        <div class="form-group"><label class="form-label">Konfirmasi *</label><div class="pw-wrap"><input class="form-control" type="password" id="rPass2" placeholder="Ulangi"/><button type="button" class="pw-toggle" onclick="togglePw('rPass2')" tabindex="-1"><i class="fas fa-eye" id="eye_rPass2"></i></button></div></div>
       </div>
       <!-- Honeypot: jangan diisi, hanya untuk deteksi bot -->
       <div class="hp-field" aria-hidden="true">
@@ -603,8 +600,8 @@ tbody td.wrap{white-space:normal;min-width:140px;}
         <div class="auth-title">Buat Password Baru</div>
         <div style="font-size:.82rem;color:var(--muted)">Masukkan password baru kamu</div>
       </div>
-      <div class="form-group"><label class="form-label">Password Baru</label><div class="pw-wrap"><input class="form-control" type="password" id="resetNewPass" placeholder="Min. 8 karakter + huruf besar + angka" autocomplete="new-password"/><button type="button" class="pw-toggle" onclick="togglePw('resetNewPass')" tabindex="-1"><i class="fas fa-eye" id="eye_resetNewPass"></i></button></div></div>
-      <div class="form-group"><label class="form-label">Konfirmasi Password</label><div class="pw-wrap"><input class="form-control" type="password" id="resetConfPass" placeholder="Ulangi password baru" autocomplete="new-password"/><button type="button" class="pw-toggle" onclick="togglePw('resetConfPass')" tabindex="-1"><i class="fas fa-eye" id="eye_resetConfPass"></i></button></div></div>
+      <div class="form-group"><label class="form-label">Password Baru</label><div class="pw-wrap"><input class="form-control" type="password" id="resetNewPass" placeholder="Min. 8 karakter + huruf besar + angka"/><button type="button" class="pw-toggle" onclick="togglePw('resetNewPass')" tabindex="-1"><i class="fas fa-eye" id="eye_resetNewPass"></i></button></div></div>
+      <div class="form-group"><label class="form-label">Konfirmasi Password</label><div class="pw-wrap"><input class="form-control" type="password" id="resetConfPass" placeholder="Ulangi password baru"/><button type="button" class="pw-toggle" onclick="togglePw('resetConfPass')" tabindex="-1"><i class="fas fa-eye" id="eye_resetConfPass"></i></button></div></div>
       <button class="btn-main" id="btnResetPass" onclick="doResetPass()"><i class="fas fa-save"></i> Simpan Password Baru</button>
       <div id="resetMsg" style="display:none;margin-top:.875rem"></div>
     </div>
@@ -799,10 +796,10 @@ tbody td.wrap{white-space:normal;min-width:140px;}
           <div class="form-group"><label class="form-label">Jabatan *</label><select class="form-control" id="dpJabatan"><option value="">Pilih jabatan...</option></select></div>
           <div class="form-group"><label class="form-label">Email *</label><input class="form-control" type="email" id="dpEmail" placeholder="email@instansi.go.id" inputmode="email"/></div>
           <div class="form-group"><label class="form-label">Password *</label>
-            <div class="pw-wrap"><input class="form-control" type="password" id="dpPass" placeholder="Min. 8 karakter + huruf besar + angka" autocomplete="new-password"/><button type="button" class="pw-toggle" onclick="togglePw('dpPass')" tabindex="-1"><i class="fas fa-eye" id="eye_dpPass"></i></button></div>
+            <div class="pw-wrap"><input class="form-control" type="password" id="dpPass" placeholder="Min. 8 karakter + huruf besar + angka"/><button type="button" class="pw-toggle" onclick="togglePw('dpPass')" tabindex="-1"><i class="fas fa-eye" id="eye_dpPass"></i></button></div>
           </div>
           <div class="form-group"><label class="form-label">Konfirmasi Password *</label>
-            <div class="pw-wrap"><input class="form-control" type="password" id="dpPass2" placeholder="Ulangi password" autocomplete="new-password"/><button type="button" class="pw-toggle" onclick="togglePw('dpPass2')" tabindex="-1"><i class="fas fa-eye" id="eye_dpPass2"></i></button></div>
+            <div class="pw-wrap"><input class="form-control" type="password" id="dpPass2" placeholder="Ulangi password"/><button type="button" class="pw-toggle" onclick="togglePw('dpPass2')" tabindex="-1"><i class="fas fa-eye" id="eye_dpPass2"></i></button></div>
           </div>
           <div id="dpAlert" style="display:none;margin-bottom:.65rem"></div>
           <div style="display:flex;gap:.7rem">
@@ -855,9 +852,9 @@ tbody td.wrap{white-space:normal;min-width:140px;}
         <div id="saveAdminProAlert" class="alert-box" style="display:none;margin-top:.75rem"></div>
         </div></div>
         <div class="card"><div class="card-hd"><span class="card-title"><i class="fas fa-key" style="color:var(--warn);margin-right:.4rem"></i>Ubah Password</span></div><div class="card-body">
-          <div class="form-group"><label class="form-label">Password Lama</label><div class="pw-wrap"><input class="form-control" type="password" id="eAdminOP" placeholder="Password saat ini" autocomplete="current-password"/><button type="button" class="pw-toggle" onclick="togglePw('eAdminOP')" tabindex="-1"><i class="fas fa-eye" id="eye_eAdminOP"></i></button></div></div>
-          <div class="form-group"><label class="form-label">Password Baru</label><div class="pw-wrap"><input class="form-control" type="password" id="eAdminNP" placeholder="Min. 8 karakter + huruf besar + angka" autocomplete="new-password"/><button type="button" class="pw-toggle" onclick="togglePw('eAdminNP')" tabindex="-1"><i class="fas fa-eye" id="eye_eAdminNP"></i></button></div></div>
-          <div class="form-group"><label class="form-label">Konfirmasi Password Baru</label><div class="pw-wrap"><input class="form-control" type="password" id="eAdminCP" placeholder="Ulangi password baru" autocomplete="new-password"/><button type="button" class="pw-toggle" onclick="togglePw('eAdminCP')" tabindex="-1"><i class="fas fa-eye" id="eye_eAdminCP"></i></button></div></div>
+          <div class="form-group"><label class="form-label">Password Lama</label><div class="pw-wrap"><input class="form-control" type="password" id="eAdminOP" placeholder="Password saat ini"/><button type="button" class="pw-toggle" onclick="togglePw('eAdminOP')" tabindex="-1"><i class="fas fa-eye" id="eye_eAdminOP"></i></button></div></div>
+          <div class="form-group"><label class="form-label">Password Baru</label><div class="pw-wrap"><input class="form-control" type="password" id="eAdminNP" placeholder="Min. 8 karakter + huruf besar + angka"/><button type="button" class="pw-toggle" onclick="togglePw('eAdminNP')" tabindex="-1"><i class="fas fa-eye" id="eye_eAdminNP"></i></button></div></div>
+          <div class="form-group"><label class="form-label">Konfirmasi Password Baru</label><div class="pw-wrap"><input class="form-control" type="password" id="eAdminCP" placeholder="Ulangi password baru"/><button type="button" class="pw-toggle" onclick="togglePw('eAdminCP')" tabindex="-1"><i class="fas fa-eye" id="eye_eAdminCP"></i></button></div></div>
           <div id="passAlertAdmin" class="alert-box" style="display:none;margin-bottom:.65rem"></div>
           <button class="btn-p" id="btnChangePassAdmin" onclick="changePass('eAdminNP','eAdminCP','eAdminOP','btnChangePassAdmin')" style="width:100%;justify-content:center"><i class="fas fa-save"></i> Ubah Password</button>
         </div></div>
@@ -1096,9 +1093,9 @@ tbody td.wrap{white-space:normal;min-width:140px;}
         <div id="saveProAlert" class="alert-box" style="display:none;margin-top:.75rem"></div>
         </div></div>
         <div class="card"><div class="card-hd"><span class="card-title"><i class="fas fa-key" style="color:var(--warn);margin-right:.4rem"></i>Ubah Password</span></div><div class="card-body">
-          <div class="form-group"><label class="form-label">Password Lama</label><div class="pw-wrap"><input class="form-control" type="password" id="uOP" autocomplete="current-password" placeholder="Masukkan password saat ini"/><button type="button" class="pw-toggle" onclick="togglePw('uOP')" tabindex="-1"><i class="fas fa-eye" id="eye_uOP"></i></button></div></div>
-          <div class="form-group"><label class="form-label">Password Baru</label><div class="pw-wrap"><input class="form-control" type="password" id="uNP" autocomplete="new-password" placeholder="Min. 8 karakter + huruf besar + angka"/><button type="button" class="pw-toggle" onclick="togglePw('uNP')" tabindex="-1"><i class="fas fa-eye" id="eye_uNP"></i></button></div></div>
-          <div class="form-group"><label class="form-label">Konfirmasi</label><div class="pw-wrap"><input class="form-control" type="password" id="uCP" autocomplete="new-password" placeholder="Ulangi password baru"/><button type="button" class="pw-toggle" onclick="togglePw('uCP')" tabindex="-1"><i class="fas fa-eye" id="eye_uCP"></i></button></div></div>
+          <div class="form-group"><label class="form-label">Password Lama</label><div class="pw-wrap"><input class="form-control" type="password" id="uOP" placeholder="Masukkan password saat ini"/><button type="button" class="pw-toggle" onclick="togglePw('uOP')" tabindex="-1"><i class="fas fa-eye" id="eye_uOP"></i></button></div></div>
+          <div class="form-group"><label class="form-label">Password Baru</label><div class="pw-wrap"><input class="form-control" type="password" id="uNP" placeholder="Min. 8 karakter + huruf besar + angka"/><button type="button" class="pw-toggle" onclick="togglePw('uNP')" tabindex="-1"><i class="fas fa-eye" id="eye_uNP"></i></button></div></div>
+          <div class="form-group"><label class="form-label">Konfirmasi</label><div class="pw-wrap"><input class="form-control" type="password" id="uCP" placeholder="Ulangi password baru"/><button type="button" class="pw-toggle" onclick="togglePw('uCP')" tabindex="-1"><i class="fas fa-eye" id="eye_uCP"></i></button></div></div>
           <button class="btn-p" id="btnChangePassUser" onclick="changePass('uNP','uCP','uOP','btnChangePassUser')" style="width:100%;justify-content:center"><i class="fas fa-save"></i> Ubah Password</button>
           <div id="passAlertUser" style="display:none;margin-top:.65rem"></div>
         </div></div>
@@ -1653,13 +1650,7 @@ function toast(msg,type='info'){
 //  HELPERS
 // ═══════════════════════════════
 function ini(n){if(!n)return'?';return n.split(' ').map(x=>x[0]).slice(0,2).join('').toUpperCase();}
-// Cache Intl.DateTimeFormat — hemat memory & CPU saat render banyak baris tabel
-const _dtFmt=new Intl.DateTimeFormat('id-ID',{day:'2-digit',month:'short',year:'numeric'});
-function fmtD(d){
-  if(!d)return'—';
-  const dt=new Date(d);
-  return isNaN(dt)?'—':_dtFmt.format(dt);
-}
+function fmtD(d){if(!d)return'—';return new Date(d).toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'});}
 function fmtDT(d){if(!d)return'—';return new Date(d).toLocaleString('id-ID',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});}
 function fmtSz(b){if(b==null||b===undefined||b==='')return'—';if(b===0)return'0 B';if(b<1024)return b+' B';if(b<1048576)return(b/1024).toFixed(1)+' KB';return(b/1048576).toFixed(2)+' MB';}
 function dIco(n){const e=(n||'').split('.').pop().toLowerCase();return e==='pdf'?'fa-file-pdf':['jpg','jpeg','png'].includes(e)?'fa-file-image':'fa-file-alt';}
@@ -2116,16 +2107,8 @@ async function enterApp(prof){
 function startPoll(user){
   if(polling)clearInterval(polling);
   polling=setInterval(async()=>{
-    // Polling minimal — hanya cek status_akun, hemat bandwidth
-    const{data}=await sb.from('profiles').select('id,status_akun,role').eq('id',user.id).maybeSingle();
-    if(data&&data.status_akun==='approved'){
-      clearInterval(polling);polling=null;
-      // Reload profil lengkap sekali setelah disetujui
-      const{data:fullProf}=await sb.from('profiles').select('id,nama_lengkap,nip,email,role,status_akun,jabatan_id,created_at,updated_at,jabatan(nama)').eq('id',user.id).single();
-      CP={...CP,...(fullProf||data)};
-      toast('Akun disetujui! 🎉','ok');
-      enterApp(CP);
-    }
+    const{data}=await sb.from('profiles').select('*,jabatan(nama)').eq('id',user.id).maybeSingle();
+    if(data&&data.status_akun==='approved'){clearInterval(polling);polling=null;CP={...CP,...data};toast('Akun disetujui! 🎉','ok');enterApp(CP);}
   },5000);
 }
 
@@ -3428,12 +3411,12 @@ function renderApproval(data){
 function konfirmSetujui(btn){
   const id=btn.dataset.id;
   const nama=decodeURIComponent(btn.dataset.nama||'');
-  confirm_('ok','Setujui?',`Setujui akun <strong>${esc(nama)||id.slice(0,8)}</strong>?`,()=>approveU(id));
+  confirm_('ok','Setujui?',`Setujui akun <strong>${nama||id.slice(0,8)}</strong>?`,()=>approveU(id));
 }
 function konfirmTolak(btn){
   const id=btn.dataset.id;
   const nama=decodeURIComponent(btn.dataset.nama||'');
-  confirm_('del','Nonaktifkan?',`Akun <strong>${esc(nama)||id.slice(0,8)}</strong> akan dinonaktifkan.`,()=>rejectU(id));
+  confirm_('del','Nonaktifkan?',`Akun <strong>${nama||id.slice(0,8)}</strong> akan dinonaktifkan.`,()=>rejectU(id));
 }
 
 const dFilterApproval=debounce(()=>filterApproval(),350);
@@ -4200,7 +4183,7 @@ async function saveEditDok(){
 function konfirmHapusDok(btn){
   const id=btn.dataset.id;
   const nama=decodeURIComponent(btn.dataset.nama||'');
-  confirm_('del','Hapus Dokumen?',`Hapus <strong>${esc(nama)}</strong>?`,()=>delDok(id));
+  confirm_('del','Hapus Dokumen?',`Hapus <strong>${nama}</strong>?`,()=>delDok(id));
 }
 
 function konfirmHapusDokAdmin(btn){
@@ -4208,7 +4191,7 @@ function konfirmHapusDokAdmin(btn){
   const r2=btn.dataset.r2||'';
   const drive=btn.dataset.drive||'';
   const nama=decodeURIComponent(btn.dataset.nama||'');
-  confirm_('del','Hapus Dokumen?',`Hapus <strong>${esc(nama)}</strong>? Data akan dihapus dari catatan.`,()=>delDokAdmin(id,r2,drive));
+  confirm_('del','Hapus Dokumen?',`Hapus <strong>${nama}</strong>? Data akan dihapus dari catatan.`,()=>delDokAdmin(id,r2,drive));
 }
 
 async function delDok(id, isAdmin=false){
@@ -4365,9 +4348,9 @@ function setupUpload(){
   const z=document.getElementById('upZone'),inp=document.getElementById('upFile');
   if(!z||!inp)return;
   z.addEventListener('click',()=>inp.click());
-  z.addEventListener('dragover',e=>{e.preventDefault();z.classList.add('drag');},{passive:false});
-  z.addEventListener('dragleave',()=>z.classList.remove('drag'),{passive:true});
-  z.addEventListener('drop',e=>{e.preventDefault();z.classList.remove('drag');setUpFile(e.dataTransfer.files[0]);},{passive:false});
+  z.addEventListener('dragover',e=>{e.preventDefault();z.classList.add('drag');});
+  z.addEventListener('dragleave',()=>z.classList.remove('drag'));
+  z.addEventListener('drop',e=>{e.preventDefault();z.classList.remove('drag');setUpFile(e.dataTransfer.files[0]);});
   inp.addEventListener('change',()=>setUpFile(inp.files[0]));
 }
 function showUpSizeAlert(msg){
@@ -5689,9 +5672,9 @@ function setupUploadAdmin(){
   if(upAdminSetupDone) return;
   upAdminSetupDone=true;
   z.addEventListener('click',()=>inp.click());
-  z.addEventListener('dragover',e=>{e.preventDefault();z.classList.add('drag');},{passive:false});
-  z.addEventListener('dragleave',()=>z.classList.remove('drag'),{passive:true});
-  z.addEventListener('drop',e=>{e.preventDefault();z.classList.remove('drag');setUpAdminFile(e.dataTransfer.files[0]);},{passive:false});
+  z.addEventListener('dragover',e=>{e.preventDefault();z.classList.add('drag');});
+  z.addEventListener('dragleave',()=>z.classList.remove('drag'));
+  z.addEventListener('drop',e=>{e.preventDefault();z.classList.remove('drag');setUpAdminFile(e.dataTransfer.files[0]);});
   inp.addEventListener('change',()=>{if(inp.files[0])setUpAdminFile(inp.files[0]);});
 }
 
@@ -6249,32 +6232,26 @@ async function loadStorageUsage(){
   }catch(e){ console.warn('Storage usage error:', e.message); return{r2:0,drive:0}; }
 }
 
-// Cache elemen DOM storage bar agar tidak query DOM berulang
-const _sBar={};
-function _getSBarEl(id){ return _sBar[id]||(_sBar[id]=document.getElementById(id)); }
-
 function renderStorageBar(usedBytes){
-  const wrap=_getSBarEl('storageWrap');
+  const wrap=document.getElementById('storageWrap');
   if(!wrap) return;
   wrap.style.display='block';
 
   const limitBytes=R2_LIMIT_BYTES;
   const pct=Math.min((usedBytes/limitBytes)*100, 100);
-  const bar=_getSBarEl('storageBar');
-  const alert=_getSBarEl('storageAlert');
+  const bar=document.getElementById('storageBar');
+  const alert=document.getElementById('storageAlert');
 
-  if(bar){
-    bar.style.width=pct.toFixed(2)+'%';
-    bar.className='storage-bar-fill';
-    if(pct>=100)       bar.classList.add('danger');
-    else if(pct>=87.5) bar.classList.add('warn');
-    else               bar.classList.add('safe');
-  }
+  bar.style.width=pct.toFixed(2)+'%';
+  bar.className='storage-bar-fill';
+  if(pct>=100)      bar.classList.add('danger');
+  else if(pct>=87.5) bar.classList.add('warn');
+  else               bar.classList.add('safe');
 
-  const usedEl=_getSBarEl('storageUsed');
-  const pctEl =_getSBarEl('storagePct');
-  const textEl=_getSBarEl('storageText');
-  const limitEl=_getSBarEl('storageLimit');
+  const usedEl=document.getElementById('storageUsed');
+  const pctEl=document.getElementById('storagePct');
+  const textEl=document.getElementById('storageText');
+  const limitEl=document.getElementById('storageLimit');
   if(usedEl) usedEl.textContent='R2 terpakai: '+fmtSz(usedBytes);
   if(pctEl)  pctEl.textContent=pct.toFixed(1)+'%';
   if(textEl) textEl.textContent='R2: '+fmtSz(usedBytes)+' / '+fmtSz(limitBytes);
@@ -6609,7 +6586,7 @@ async function init(){
               // Update profiles.email dengan email baru yang sudah dikonfirmasi
               const{error:profErr}=await sb.from('profiles').update({email:user.email}).eq('id',user.id);
               if(profErr) console.warn('[email_change] Gagal update profiles.email:',profErr.message);
-              else console.debug('[email_change] profiles.email diperbarui ke',user.email);
+              else console.info('[email_change] profiles.email diperbarui ke',user.email);
               CU=user;
               await loadSession(CU);
               return;
@@ -6709,7 +6686,7 @@ init();
   if(!('serviceWorker' in navigator)) return;
   navigator.serviceWorker.register('/sw.js', {scope:'/'})
     .then(r=>{
-      console.debug('[SW] Aktif, scope:', r.scope);
+      console.info('[SW] Aktif, scope:', r.scope);
       setInterval(()=>r.update(), 3600000); // cek update setiap jam
     })
     .catch(e=>console.warn('[SW] Gagal register:', e.message));
@@ -6727,10 +6704,10 @@ init();
     <span><strong style="color:var(--navy)">SiPegawai</strong> &mdash; Sistem Informasi Pegawai Lapas Kelas III Saparua</span>
   </div>
   <div class="footer-right" style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap">
-    <span style="color:var(--muted);font-size:.8rem">Dibuat dengan <span style="color:#e11d48">❤️</span> oleh <a href="https://portofolio-ulax.pages.dev/" target="_blank" rel="noopener noreferrer" style="text-decoration:none;"><strong style="color:var(--navy)">Ulis Leuwol</strong></a></span>
+    <span style="color:var(--muted);font-size:.8rem">Dibuat dengan <span style="color:#e11d48">❤️</span> oleh <strong style="color:var(--navy)">Ulis Leuwol</strong></span>
     <span class="footer-sep">|</span>
-    <a href="https://www.instagram.com/ulax_1020?igsh=MTRjcWk0NzltMnloMw==" target="_blank" rel="noopener noreferrer" title="Instagram Ulax"
-       style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:7px;background:linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);color:#fff;text-decoration:none;transition:opacity .2s;flex-shrink:0"
+    <a href="https://www.instagram.com/ulis_leuwol" target="_blank" rel="noopener" title="Instagram @ulis_leuwol"
+       style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:7px;background:linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);color:#fff;text-decoration:none;transition:opacity .2s;flex-shrink:0"
        onmouseover="this.style.opacity='.75'" onmouseout="this.style.opacity='1'">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
         <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
