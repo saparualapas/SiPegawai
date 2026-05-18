@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <meta http-equiv="X-Content-Type-Options" content="nosniff"/>
 <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=()"/>
+<meta http-equiv="X-Frame-Options" content="DENY"/>
 <meta name="referrer" content="strict-origin-when-cross-origin"/>
 <title>SiPegawai - Lapas Kelas III Saparua</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%230a2342'/><text x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' font-size='36' font-family='Arial,sans-serif' font-weight='900' fill='%232a9d8f'>S</text><circle cx='47' cy='17' r='8' fill='%23f4a261'/></svg>"/>
@@ -6250,15 +6251,7 @@ async function loadStorageUsage(){
 
 // Cache elemen DOM storage bar agar tidak query DOM berulang
 const _sBar={};
-// Cache DOM element — tapi jangan simpan null (cari ulang jika belum ditemukan)
-function _getSBarEl(id){
-  if(_sBar[id]) return _sBar[id];
-  const el=document.getElementById(id);
-  if(el) _sBar[id]=el; // hanya cache jika elemen ada
-  return el||null;
-}
-// Reset cache storage bar (dipanggil saat navigasi ke halaman setting)
-function _resetSBarCache(){ Object.keys(_sBar).forEach(k=>delete _sBar[k]); }
+function _getSBarEl(id){ return _sBar[id]||(_sBar[id]=document.getElementById(id)); }
 
 function renderStorageBar(usedBytes){
   const wrap=_getSBarEl('storageWrap');
@@ -6477,7 +6470,7 @@ const PAGE_LOADERS={
   backupUser:()=>loadUserBackupPage(),
   dokUser:()=>{ if(_shouldReload('dokUser')){ loadDokUser(selKatId,1); _markLoaded('dokUser'); } },
   upload:()=>checkStorageOnUploadPage(),
-  setting:()=>{ _resetSBarCache(); loadR2(); loadStorageUsage(); loadDriveConfig().then(()=>refreshDriveStorageUI()).catch(()=>{}); },
+  setting:()=>{ loadR2(); loadDriveConfig().then(()=>refreshDriveStorageUI()).catch(()=>{}); },
   backup:()=>{ loadBackupPage(); },
 };
 
