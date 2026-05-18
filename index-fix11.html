@@ -909,17 +909,14 @@ tbody td.wrap{white-space:normal;min-width:140px;}
         <!-- KOLOM KANAN: Google Drive -->
         <div style="min-width:0">
         <div class="card" style="min-width:0;overflow:hidden"><div class="card-hd"><span class="card-title"><i class="fab fa-google-drive" style="color:#0F9D58;margin-right:.4rem"></i>Google Drive (Overflow Storage)</span></div><div class="card-body">
-          <div class="alert-info alert-box" style="margin-bottom:.875rem"><i class="fas fa-info-circle"></i><div>Gunakan <strong>Service Account</strong> — tidak ada token yang expired, cukup upload file JSON sekali dan tidak perlu diubah lagi.</div></div>
-          <div class="form-group"><label class="form-label">File JSON Service Account <span style="font-size:.72rem;color:var(--muted)">(download dari Google Cloud Console)</span></label><textarea class="form-control" id="driveJson" rows="5" style="font-family:'JetBrains Mono',monospace;font-size:.72rem;resize:vertical" placeholder='{"type":"service_account","project_id":"nama-project","private_key_id":"abc123","private_key":"-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n","client_email":"nama@project.iam.gserviceaccount.com",...}'></textarea>
-          <div style="margin-top:.5rem;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:.75rem 1rem;font-size:.75rem;color:var(--text2);line-height:1.8">
-            <strong style="color:var(--navy);font-size:.78rem"><i class="fas fa-book-open" style="color:var(--accent);margin-right:.3rem"></i>Cara Setup Service Account (sekali saja, tidak perlu diulang):</strong><br>
-            <span style="color:var(--muted)">1.</span> Buka <a href="https://console.cloud.google.com" target="_blank" style="color:var(--accent);font-weight:600">Google Cloud Console</a> → pilih atau buat project baru<br>
-            <span style="color:var(--muted)">2.</span> Buka <strong>APIs &amp; Services → Library</strong> → cari <strong>Google Drive API</strong> → klik <strong>Enable</strong><br>
-            <span style="color:var(--muted)">3.</span> Buka <strong>IAM &amp; Admin → Service Accounts</strong> → klik <strong>Create Service Account</strong><br>
-            <span style="color:var(--muted)">4.</span> Isi nama (contoh: <em>sipegawai-drive</em>) → klik <strong>Create and Continue → Done</strong><br>
-            <span style="color:var(--muted)">5.</span> Klik service account yang baru dibuat → tab <strong>Keys</strong> → <strong>Add Key → Create new key → JSON → Create</strong><br>
-            <span style="color:var(--muted)">6.</span> File <code style="background:var(--border);padding:.1rem .35rem;border-radius:4px">.json</code> otomatis terunduh — buka dengan Notepad, copy semua isinya, paste ke kotak di atas<br>
-            <span style="color:var(--muted)">7.</span> Buka <strong>Google Drive</strong> → klik kanan folder tujuan → <strong>Share</strong> → masukkan email service account (dari field <code>client_email</code> di JSON) → beri akses <strong>Editor</strong>
+          <div class="alert-info alert-box" style="margin-bottom:.875rem"><i class="fas fa-info-circle"></i><div>Gunakan <strong>Service Account</strong> dari Google Cloud Console. File akan otomatis disimpan ke Drive saat R2 penuh, dan tetap bisa dibuka dari website.</div></div>
+          <div class="form-group"><label class="form-label">Konfigurasi Drive JSON <span style="font-size:.72rem;color:var(--muted)">(format OAuth2 — lihat panduan di bawah)</span></label><textarea class="form-control" id="driveJson" rows="5" style="font-family:'JetBrains Mono',monospace;font-size:.72rem;resize:vertical" placeholder='{"type":"oauth2","client_id":"xxxxx.apps.googleusercontent.com","client_secret":"GOCSPX-xxxxx","refresh_token":"1//xxxxx"}'></textarea>
+          <div style="margin-top:.4rem;font-size:.72rem;color:var(--muted);line-height:1.6">
+            <strong>Cara dapat refresh_token:</strong><br>
+            1. Buka <a href="https://console.cloud.google.com" target="_blank" style="color:var(--accent)">Google Cloud Console</a> → OAuth 2.0 Client IDs → buat credentials type <strong>Web application</strong><br>
+            2. Tambah <code style="background:var(--surface2);padding:.1rem .3rem;border-radius:3px">https://developers.google.com/oauthplayground</code> ke Authorized redirect URIs<br>
+            3. Buka <a href="https://developers.google.com/oauthplayground" target="_blank" style="color:var(--accent)">OAuth Playground</a> → klik ⚙️ → centang "Use your own OAuth credentials" → masukkan client_id & client_secret<br>
+            4. Pilih scope <strong>https://www.googleapis.com/auth/drive</strong> → Authorize → Exchange → copy refresh_token
           </div></div>
           <div class="form-group"><label class="form-label">Folder ID Google Drive <span style="font-size:.72rem;color:var(--muted)">(dari URL: drive.google.com/drive/folders/<strong>ID_INI</strong>)</span></label><input class="form-control" id="driveFolderId" style="font-family:'JetBrains Mono',monospace;font-size:.79rem" placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms"/></div>
           <div class="form-group"><label class="form-label">Batas Penyimpanan Drive <span style="font-size:.72rem;color:var(--danger);font-weight:600">* Wajib diisi</span></label>
@@ -2684,25 +2681,6 @@ async function saveDriveConfig(){
     toast('Format JSON tidak valid!','err');
     return;
   }
-  // Validasi: wajib pakai Service Account, bukan OAuth2
-  let parsedJson;
-  try{ parsedJson=JSON.parse(json); }catch(e){ parsedJson={}; }
-  if(parsedJson.type==='oauth2'){
-    showInlineAlert('driveAlert',
-      '⚠️ Format OAuth2 tidak didukung lagi karena token mudah expired. Gunakan <strong>Service Account</strong> — download file JSON dari Google Cloud Console → IAM & Admin → Service Accounts → Keys.','warn');
-    toast('Gunakan Service Account, bukan OAuth2!','warn');
-    return;
-  }
-  if(parsedJson.type && parsedJson.type!=='service_account'){
-    showInlineAlert('driveAlert','Format JSON tidak dikenal. Pastikan menggunakan file JSON Service Account dari Google Cloud Console.','err');
-    toast('Format JSON tidak dikenal!','err');
-    return;
-  }
-  if(!parsedJson.client_email||!parsedJson.private_key){
-    showInlineAlert('driveAlert','File JSON tidak lengkap. Pastikan berisi <strong>client_email</strong> dan <strong>private_key</strong>.','err');
-    toast('JSON Service Account tidak lengkap!','err');
-    return;
-  }
   const btn=document.querySelector('button[onclick="saveDriveConfig()"]');
   if(btn) setBtn(btn,true);
   showActionSplash('Menyimpan konfigurasi Drive...');
@@ -2759,17 +2737,8 @@ async function testDriveConfig(){
     document.getElementById('driveStat').textContent='✓ Koneksi OK — Drive dapat diakses';
     refreshDriveStorageUI();
   }catch(e){
-    let errMsg=e.message||'Gagal';
-    let errHint='';
-    if(errMsg.toLowerCase().includes('expired')||errMsg.toLowerCase().includes('revoked')){
-      errHint=' — Jika menggunakan OAuth2, token sudah tidak valid. Ganti ke <strong>Service Account</strong> (tidak pernah expired).';
-    } else if(errMsg.includes('403')){
-      errHint=' — Service account tidak punya akses ke folder. Pastikan email <strong>client_email</strong> sudah di-share ke folder Drive dengan akses <strong>Editor</strong>.';
-    } else if(errMsg.includes('404')){
-      errHint=' — Folder ID tidak ditemukan. Periksa kembali Folder ID Drive.';
-    }
-    toast('Koneksi Drive gagal: '+errMsg,'err');
-    document.getElementById('driveStat').innerHTML='<span style="color:var(--danger)">✗ Koneksi gagal: '+errMsg+'</span>'+(errHint?'<br><span style="font-size:.75rem">'+errHint+'</span>':'');
+    toast('Koneksi Drive gagal: '+e.message,'err');
+    document.getElementById('driveStat').textContent='✗ Koneksi gagal: '+e.message;
   }
   if(btn) setBtn(btn,false,'<i class="fas fa-plug"></i> Test Koneksi');
 }
@@ -5014,18 +4983,6 @@ async function doUserBackupR2(){
       failedFiles.push(doc.nama_file||'?');
       continue;
     }
-    // Jika file R2 tapi R2 tidak dikonfigurasi, lewati file ini
-    if(doc.r2_key && !doc.drive_file_id && (!R2.accountId||!R2.accessKey||!R2.secretKey||!R2.bucket)){
-      failed++;done++;
-      failedFiles.push((doc.nama_file||doc.r2_key)+' (R2 tidak dikonfigurasi)');
-      continue;
-    }
-    // Jika file Drive tapi Drive tidak dikonfigurasi, lewati
-    if(doc.drive_file_id && !doc.r2_key && !DRIVE.configured){
-      failed++;done++;
-      failedFiles.push((doc.nama_file||doc.drive_file_id)+' (Drive tidak dikonfigurasi)');
-      continue;
-    }
     try{
       const pct=Math.round((done/total)*88);
       setUserBackupPrg(pct,
@@ -5042,8 +4999,7 @@ async function doUserBackupR2(){
 
       // Folder berdasarkan kategori
       const katFolder=(doc.kategori_dokumen?.nama||'Lainnya').replace(/[\/\?%*:|"<>]/g,'_');
-      const fallbackName=(doc.r2_key?doc.r2_key.split('/').pop():null)||(doc.drive_file_id?'drive_'+doc.drive_file_id:'file');
-      const namaFile=(doc.nama_file||fallbackName).replace(/[\/\?%*:|"<>]/g,'_');
+      const namaFile=(doc.nama_file||doc.r2_key.split('/').pop()||'file').replace(/[\/\?%*:|"<>]/g,'_');
       zip.folder(katFolder).file(namaFile, blob, {binary:true});
       ok++;
 
@@ -5393,8 +5349,9 @@ function backupR2ByPegawai(){
 }
 
 async function doBackupR2PerPegawai(){
-  // Cek R2 hanya akan divalidasi per-file di _doR2Zip; di sini kita tidak blokir dulu
-  // karena pegawai mungkin hanya punya file Drive
+  if(!R2.accountId||!R2.accessKey||!R2.secretKey||!R2.bucket){
+    toast('R2 belum dikonfigurasi!','err');return;
+  }
   const sel=document.getElementById('r2BackupPegSel');
   const pegId=sel.value;
   const pegNama=sel.selectedOptions[0]?.text||'pegawai';
@@ -5424,10 +5381,11 @@ async function doBackupR2PerPegawai(){
 }
 
 async function backupR2Files(){
+  if(!R2.accountId||!R2.accessKey||!R2.secretKey||!R2.bucket){
+    toast('R2 belum dikonfigurasi! Buka Pengaturan terlebih dahulu.','err');return;
+  }
   const btn=document.getElementById('btnBackupR2');
   setBtn(btn,true);
-  // Pastikan Drive config termuat sebelum mengambil data
-  if(!DRIVE.serviceAccountJson) await ensureDriveConfig();
   const{data:docs,error}=await sb.from('dokumen')
     .select('nama_file,r2_key,drive_file_id,storage_type,kategori_dokumen:kategori_id(nama),profiles:user_id(nama_lengkap)')
     .order('profiles(nama_lengkap)',{ascending:true});
@@ -5436,36 +5394,18 @@ async function backupR2Files(){
   if(!docs||!docs.length){toast('Belum ada dokumen yang tersimpan di database.','warn');return;}
   const valid=docs.filter(d=>d.r2_key||d.drive_file_id);
   if(!valid.length){toast('Semua dokumen tidak memiliki file yang valid (r2_key/drive_file_id).','err');return;}
-  // Blokir hanya jika seluruh file adalah R2 dan R2 tidak dikonfigurasi
-  const allR2=valid.every(d=>!d.drive_file_id);
-  if(allR2 && (!R2.accountId||!R2.accessKey||!R2.secretKey||!R2.bucket)){
-    toast('R2 belum dikonfigurasi! Buka Pengaturan terlebih dahulu.','err');return;
-  }
   const ts=new Date().toISOString().slice(0,10);
   toast(`Memulai download ${valid.length} file...`,'info');
   await _doR2Zip(valid,`backup_semua_${ts}.zip`,'r2','Semua');
 }
 
 async function _doR2Zip(docs, zipFilename, logType, label){
-  // Periksa apakah ada file Drive dan/atau R2 di dalam docs
-  const hasR2Files  = docs.some(d => d.r2_key);
-  const hasDriveFiles = docs.some(d => d.drive_file_id);
-
-  // Hanya blokir jika R2 tidak dikonfigurasi DAN tidak ada file Drive sama sekali
   if(!R2.accountId||!R2.accessKey||!R2.secretKey||!R2.bucket){
-    if(!hasDriveFiles){
-      toast('R2 belum dikonfigurasi!','err');return;
-    }
-    // Ada file Drive — lanjutkan tanpa R2
-    if(hasR2Files){
-      toast('R2 belum dikonfigurasi — file R2 akan dilewati, file Drive tetap diunduh.','warn');
-    }
+    toast('R2 belum dikonfigurasi!','err');return;
   }
   if(typeof JSZip==='undefined'){
     toast('JSZip belum termuat. Coba refresh halaman.','err');return;
   }
-  // Pastikan konfigurasi Drive sudah termuat sebelum iterasi
-  if(!DRIVE.serviceAccountJson) await ensureDriveConfig();
   const btnAll=document.getElementById('btnBackupR2');
   const btnPeg=document.getElementById('btnBackupR2Peg');
   const btnDoPeg=document.getElementById('btnDoBackupR2Peg');
@@ -5510,18 +5450,6 @@ async function _doR2Zip(docs, zipFilename, logType, label){
       failedFiles.push(doc.nama_file||'?');
       continue;
     }
-    // Jika file R2 tapi R2 tidak dikonfigurasi, lewati file ini
-    if(doc.r2_key && !doc.drive_file_id && (!R2.accountId||!R2.accessKey||!R2.secretKey||!R2.bucket)){
-      failed++;done++;
-      failedFiles.push((doc.nama_file||doc.r2_key)+' (R2 tidak dikonfigurasi)');
-      continue;
-    }
-    // Jika file Drive tapi Drive tidak dikonfigurasi, lewati
-    if(doc.drive_file_id && !doc.r2_key && !DRIVE.configured){
-      failed++;done++;
-      failedFiles.push((doc.nama_file||doc.drive_file_id)+' (Drive tidak dikonfigurasi)');
-      continue;
-    }
     try{
       const pct=Math.round((done/total)*88);
       setR2BackupPrg(
@@ -5543,8 +5471,7 @@ async function _doR2Zip(docs, zipFilename, logType, label){
       // Struktur folder: NamaPegawai/KategoriDokumen/NamaFile
       const pegFolder=(doc.profiles?.nama_lengkap||'Tidak_Diketahui').replace(/[\/\?%*:|"<>]/g,'_');
       const katFolder=(doc.kategori_dokumen?.nama||'Lainnya').replace(/[\/\?%*:|"<>]/g,'_');
-      const fallbackName=(doc.r2_key?doc.r2_key.split('/').pop():null)||(doc.drive_file_id?'drive_'+doc.drive_file_id:'file');
-      const namaFile=(doc.nama_file||fallbackName).replace(/[\/\?%*:|"<>]/g,'_');
+      const namaFile=(doc.nama_file||doc.r2_key.split('/').pop()||'file').replace(/[\/\?%*:|"<>]/g,'_');
 
       // Tambah ke zip dalam folder terstruktur
       zip.folder(pegFolder).folder(katFolder).file(namaFile, blob, {binary:true});
