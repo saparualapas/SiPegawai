@@ -909,21 +909,17 @@ tbody td.wrap{white-space:normal;min-width:140px;}
         <!-- KOLOM KANAN: Google Drive -->
         <div style="min-width:0">
         <div class="card" style="min-width:0;overflow:hidden"><div class="card-hd"><span class="card-title"><i class="fab fa-google-drive" style="color:#0F9D58;margin-right:.4rem"></i>Google Drive (Overflow Storage)</span></div><div class="card-body">
-          <div class="alert-info alert-box" style="margin-bottom:.875rem"><i class="fas fa-info-circle"></i><div>Gunakan <strong>Service Account</strong> dengan <strong>Shared Drive</strong> — wajib pakai Shared Drive, bukan folder My Drive biasa.</div></div>
+          <div class="alert-info alert-box" style="margin-bottom:.875rem"><i class="fas fa-info-circle"></i><div>Gunakan <strong>Service Account</strong> — tidak ada token yang expired, cukup upload file JSON sekali dan tidak perlu diubah lagi.</div></div>
           <div class="form-group"><label class="form-label">File JSON Service Account <span style="font-size:.72rem;color:var(--muted)">(download dari Google Cloud Console)</span></label><textarea class="form-control" id="driveJson" rows="5" style="font-family:'JetBrains Mono',monospace;font-size:.72rem;resize:vertical" placeholder='{"type":"service_account","project_id":"nama-project","private_key_id":"abc123","private_key":"-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n","client_email":"nama@project.iam.gserviceaccount.com",...}'></textarea>
-          <div style="margin-top:.5rem;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:.75rem 1rem;font-size:.75rem;color:var(--text2);line-height:1.9">
-            <strong style="color:var(--navy);font-size:.78rem"><i class="fas fa-book-open" style="color:var(--accent);margin-right:.3rem"></i>Cara Setup (sekali saja):</strong><br>
-            <strong style="color:var(--danger)">⚠ Wajib pakai Shared Drive</strong> — Service Account tidak bisa upload ke folder My Drive biasa.<br><br>
-            <strong style="color:var(--navy)">A. Buat Service Account:</strong><br>
-            <span style="color:var(--muted)">1.</span> Buka <a href="https://console.cloud.google.com" target="_blank" style="color:var(--accent);font-weight:600">Google Cloud Console</a> → pilih/buat project<br>
-            <span style="color:var(--muted)">2.</span> <strong>APIs &amp; Services → Library</strong> → cari <strong>Google Drive API</strong> → <strong>Enable</strong><br>
-            <span style="color:var(--muted)">3.</span> <strong>IAM &amp; Admin → Service Accounts → Create Service Account</strong> → isi nama → Done<br>
-            <span style="color:var(--muted)">4.</span> Klik service account → tab <strong>Keys → Add Key → Create new key → JSON</strong> → file terunduh<br>
-            <span style="color:var(--muted)">5.</span> Buka file JSON dengan Notepad → copy semua isi → paste ke kotak di atas<br><br>
-            <strong style="color:var(--navy)">B. Buat Shared Drive dan tambahkan Service Account:</strong><br>
-            <span style="color:var(--muted)">6.</span> Buka <a href="https://drive.google.com/drive/shared-drives" target="_blank" style="color:var(--accent);font-weight:600">drive.google.com/drive/shared-drives</a> → klik <strong>+ Baru / New</strong> → beri nama<br>
-            <span style="color:var(--muted)">7.</span> Klik kanan Shared Drive → <strong>Manage members</strong> → masukkan email <code style="background:var(--border);padding:.1rem .35rem;border-radius:4px">client_email</code> dari JSON → pilih role <strong>Content manager</strong> → kirim<br>
-            <span style="color:var(--muted)">8.</span> Salin ID Shared Drive dari URL: <code style="background:var(--border);padding:.1rem .35rem;border-radius:4px">drive.google.com/drive/folders/<strong>ID_INI</strong></code> → paste ke kolom Folder ID di bawah
+          <div style="margin-top:.5rem;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:.75rem 1rem;font-size:.75rem;color:var(--text2);line-height:1.8">
+            <strong style="color:var(--navy);font-size:.78rem"><i class="fas fa-book-open" style="color:var(--accent);margin-right:.3rem"></i>Cara Setup Service Account (sekali saja, tidak perlu diulang):</strong><br>
+            <span style="color:var(--muted)">1.</span> Buka <a href="https://console.cloud.google.com" target="_blank" style="color:var(--accent);font-weight:600">Google Cloud Console</a> → pilih atau buat project baru<br>
+            <span style="color:var(--muted)">2.</span> Buka <strong>APIs &amp; Services → Library</strong> → cari <strong>Google Drive API</strong> → klik <strong>Enable</strong><br>
+            <span style="color:var(--muted)">3.</span> Buka <strong>IAM &amp; Admin → Service Accounts</strong> → klik <strong>Create Service Account</strong><br>
+            <span style="color:var(--muted)">4.</span> Isi nama (contoh: <em>sipegawai-drive</em>) → klik <strong>Create and Continue → Done</strong><br>
+            <span style="color:var(--muted)">5.</span> Klik service account yang baru dibuat → tab <strong>Keys</strong> → <strong>Add Key → Create new key → JSON → Create</strong><br>
+            <span style="color:var(--muted)">6.</span> File <code style="background:var(--border);padding:.1rem .35rem;border-radius:4px">.json</code> otomatis terunduh — buka dengan Notepad, copy semua isinya, paste ke kotak di atas<br>
+            <span style="color:var(--muted)">7.</span> Buka <strong>Google Drive</strong> → klik kanan folder tujuan → <strong>Share</strong> → masukkan email service account (dari field <code>client_email</code> di JSON) → beri akses <strong>Editor</strong>
           </div></div>
           <div class="form-group"><label class="form-label">Folder ID Google Drive <span style="font-size:.72rem;color:var(--muted)">(dari URL: drive.google.com/drive/folders/<strong>ID_INI</strong>)</span></label><input class="form-control" id="driveFolderId" style="font-family:'JetBrains Mono',monospace;font-size:.79rem" placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms"/></div>
           <div class="form-group"><label class="form-label">Batas Penyimpanan Drive <span style="font-size:.72rem;color:var(--danger);font-weight:600">* Wajib diisi</span></label>
@@ -2459,9 +2455,6 @@ async function loadR2(){
     sessionStorage.setItem('r2cfg_session', JSON.stringify(R2));
     sessionStorage.setItem('r2limit_session', String(R2_LIMIT_BYTES));
     fillR2Fields();
-    // Render bar segera dengan currentStorageBytes yang sudah ada
-    // (loadStorageUsage() dipanggil setelah ini via .then() di PAGE_LOADERS)
-    if(R2_LIMIT_BYTES>0) renderStorageBar(currentStorageBytes);
     return;
   }
 
@@ -2479,7 +2472,6 @@ async function loadR2(){
       sessionStorage.setItem('r2cfg_session', JSON.stringify(R2));
       sessionStorage.setItem('r2limit_session', String(R2_LIMIT_BYTES));
       fillR2Fields();
-      if(R2_LIMIT_BYTES>0) renderStorageBar(currentStorageBytes);
       return;
     }
   }catch(e){ console.warn('RPC get_r2_config error:',e.message); }
@@ -2490,7 +2482,6 @@ async function loadR2(){
   const cachedLimit=sessionStorage.getItem('r2limit_session');
   if(cachedLimit) R2_LIMIT_BYTES=parseInt(cachedLimit)||R2_LIMIT_BYTES;
   fillR2Fields();
-  if(R2_LIMIT_BYTES>0) renderStorageBar(currentStorageBytes);
 }
 
 function fillR2Fields(){
@@ -2952,16 +2943,27 @@ async function driveUpload(fileBuffer, fileName, mimeType, drivePath){
   const token=await getDriveToken();
   const driveFileName=drivePath ? drivePath.replace(/[\/\?%*:|"<>]/g,'_')+'__'+fileName : fileName;
   const fileSize=fileBuffer.byteLength;
-  const folderId=DRIVE.folderId||null;
 
-  // Untuk Shared Drive: metadata WAJIB sertakan parents agar file masuk ke Shared Drive
-  // driveId diambil dari folderId (Shared Drive ID = folder root Shared Drive)
-  const metaObj={name:driveFileName};
-  if(folderId) metaObj.parents=[folderId];
+  // Helper: pindahkan file ke folder tujuan setelah upload
+  // Service Account tidak bisa langsung upload ke "My Drive" orang lain via parents[],
+  // tapi bisa upload ke Drive-nya sendiri lalu move ke folder yang di-share
+  async function _moveToFolder(fileId, freshToken){
+    if(!DRIVE.folderId) return; // tidak ada folder target, biarkan di root
+    const moveRes=await fetch(
+      `https://www.googleapis.com/drive/v3/files/${fileId}?addParents=${encodeURIComponent(DRIVE.folderId)}&removeParents=root&fields=id,parents&supportsAllDrives=true`,
+      {method:'PATCH', headers:{Authorization:`Bearer ${freshToken}`,'Content-Type':'application/json'}, body:'{}'}
+    );
+    if(!moveRes.ok){
+      const t=await moveRes.text();
+      // Jika move gagal (403 folder shared drive), file tetap ada di Drive SA — tidak critical
+      console.warn('[driveUpload] Move ke folder gagal (file tetap tersimpan di root Drive SA):',t.slice(0,150));
+    }
+  }
 
-  // ── Multipart upload (file <= 5MB) ──────────────────────────────────────
-  async function _multipart(tkn, metaObjArg){
-    const meta=JSON.stringify(metaObjArg);
+  // ── File kecil (<= 5MB): gunakan multipart upload (1 request, lebih cepat) ──
+  if(fileSize <= DRIVE_MULTIPART_LIMIT){
+    // Upload tanpa parents — masuk ke root Drive service account
+    const meta=JSON.stringify({name:driveFileName});
     const boundary='sp_b_'+Date.now();
     const enc=new TextEncoder();
     const part1=enc.encode(`--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${meta}\r\n`);
@@ -2972,77 +2974,90 @@ async function driveUpload(fileBuffer, fileName, mimeType, drivePath){
     body.set(part2,part1.byteLength);
     body.set(new Uint8Array(fileBuffer),part1.byteLength+part2.byteLength);
     body.set(end,part1.byteLength+part2.byteLength+fileSize);
-    const res=await fetch(
-      'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id&supportsAllDrives=true',
-      {method:'POST', headers:{Authorization:`Bearer ${tkn}`,'Content-Type':`multipart/related; boundary=${boundary}`}, body}
-    );
-    return res;
-  }
-
-  // ── Resumable upload (file > 5MB) ────────────────────────────────────────
-  async function _resumable(tkn, metaObjArg){
-    const meta=JSON.stringify(metaObjArg);
-    const initRes=await fetch(
-      'https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&fields=id&supportsAllDrives=true',
-      {method:'POST', headers:{Authorization:`Bearer ${tkn}`,'Content-Type':'application/json; charset=UTF-8','X-Upload-Content-Type':mimeType,'X-Upload-Content-Length':String(fileSize)}, body:meta}
-    );
-    if(!initRes.ok){const t=await initRes.text();throw new Error('Drive init resumable gagal: '+t.slice(0,200));}
-    const uploadUrl=initRes.headers.get('Location');
-    if(!uploadUrl) throw new Error('Drive tidak memberikan upload URL');
-    const fileBytes=new Uint8Array(fileBuffer);
-    let uploadedBytes=0, driveFileId=null, chunkNum=0;
-    const totalChunks=Math.ceil(fileSize/DRIVE_CHUNK_SIZE);
-    while(uploadedBytes<fileSize){
-      chunkNum++;
-      const start=uploadedBytes;
-      const end=Math.min(uploadedBytes+DRIVE_CHUNK_SIZE,fileSize);
-      const chunk=fileBytes.slice(start,end);
-      const freshToken=await getDriveToken();
-      const chunkRes=await fetch(uploadUrl,{method:'PUT',headers:{Authorization:`Bearer ${freshToken}`,'Content-Range':`bytes ${start}-${end-1}/${fileSize}`,'Content-Type':mimeType},body:chunk});
-      if(chunkRes.status===308){
-        uploadedBytes=end;
-        const rangeH=chunkRes.headers.get('Range');
-        if(rangeH){const m=rangeH.match(/bytes=0-(\d+)/);if(m)uploadedBytes=parseInt(m[1])+1;}
-      } else if(chunkRes.status===200||chunkRes.status===201){
-        const data=await chunkRes.json();driveFileId=data.id;uploadedBytes=fileSize;
-      } else {
-        const errTxt=await chunkRes.text().catch(()=>'');
-        throw new Error(`Drive chunk ${chunkNum}/${totalChunks} gagal (HTTP ${chunkRes.status}): ${errTxt.slice(0,150)}`);
-      }
-    }
-    if(!driveFileId) throw new Error('Drive upload selesai tapi file ID tidak didapat');
-    return driveFileId;
-  }
-
-  if(fileSize<=DRIVE_MULTIPART_LIMIT){
-    // Coba dengan parents (Shared Drive)
-    let res=await _multipart(token, metaObj);
-    if(!res.ok){
-      const errText=await res.text();
-      // Jika 403 storage quota → berarti bukan Shared Drive, coba tanpa parents sebagai fallback
-      if(res.status===403 && errText.includes('storage quota')){
-        console.warn('[driveUpload] Shared Drive gagal, coba tanpa parents (pastikan pakai Shared Drive)');
-        res=await _multipart(token, {name:driveFileName});
-        if(!res.ok){const t2=await res.text();throw new Error('Drive upload gagal ('+res.status+'): '+t2.slice(0,200));}
-      } else {
-        throw new Error('Drive upload gagal ('+res.status+'): '+errText.slice(0,200));
-      }
-    }
+    const res=await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id&supportsAllDrives=true',{
+      method:'POST',
+      headers:{Authorization:`Bearer ${token}`,'Content-Type':`multipart/related; boundary=${boundary}`},
+      body
+    });
+    if(!res.ok){const t=await res.text();throw new Error('Drive upload gagal: '+t.slice(0,200));}
     const data=await res.json();
     if(!data.id) throw new Error('Drive tidak mengembalikan file ID');
+    // Pindahkan ke folder tujuan (best-effort)
+    await _moveToFolder(data.id, token);
     return data.id;
   }
 
-  // Resumable
-  try{
-    return await _resumable(token, metaObj);
-  }catch(e){
-    if(e.message.includes('storage quota')){
-      console.warn('[driveUpload] Resumable Shared Drive gagal, coba tanpa parents');
-      return await _resumable(token, {name:driveFileName});
+  // ── File besar (> 5MB): Resumable Upload — upload per chunk 5MB ─────────────
+  // Upload tanpa parents — masuk ke root Drive service account
+  const meta=JSON.stringify({name:driveFileName});
+  const initRes=await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&fields=id&supportsAllDrives=true',{
+    method:'POST',
+    headers:{
+      Authorization:`Bearer ${token}`,
+      'Content-Type':'application/json; charset=UTF-8',
+      'X-Upload-Content-Type': mimeType,
+      'X-Upload-Content-Length': String(fileSize)
+    },
+    body: meta
+  });
+  if(!initRes.ok){const t=await initRes.text();throw new Error('Drive init resumable gagal: '+t.slice(0,200));}
+  const uploadUrl=initRes.headers.get('Location');
+  if(!uploadUrl) throw new Error('Drive tidak memberikan upload URL');
+
+  // Langkah 2: Upload chunk per chunk
+  const fileBytes=new Uint8Array(fileBuffer);
+  let uploadedBytes=0;
+  let driveFileId=null;
+  const totalChunks=Math.ceil(fileSize/DRIVE_CHUNK_SIZE);
+  let chunkNum=0;
+
+  while(uploadedBytes < fileSize){
+    chunkNum++;
+    const start=uploadedBytes;
+    const end=Math.min(uploadedBytes+DRIVE_CHUNK_SIZE, fileSize);
+    const chunk=fileBytes.slice(start, end);
+
+    // Dapatkan token baru jika sesi sudah lama (token bisa expire saat upload besar)
+    const freshToken=await getDriveToken();
+
+    const chunkRes=await fetch(uploadUrl,{
+      method:'PUT',
+      headers:{
+        Authorization:`Bearer ${freshToken}`,
+        'Content-Range':`bytes ${start}-${end-1}/${fileSize}`,
+        'Content-Type': mimeType
+      },
+      body: chunk
+    });
+
+    // 308 Resume Incomplete = chunk diterima, lanjut upload
+    // 200/201 = upload selesai
+    if(chunkRes.status===308){
+      uploadedBytes=end;
+      // Ambil posisi yang sudah diterima dari header Range (lebih akurat)
+      const rangeHeader=chunkRes.headers.get('Range');
+      if(rangeHeader){
+        const match=rangeHeader.match(/bytes=0-(\d+)/);
+        if(match) uploadedBytes=parseInt(match[1])+1;
+      }
+    } else if(chunkRes.status===200||chunkRes.status===201){
+      const data=await chunkRes.json();
+      driveFileId=data.id;
+      uploadedBytes=fileSize; // selesai
+    } else {
+      // Error — coba ambil detail
+      const errTxt=await chunkRes.text().catch(()=>'');
+      throw new Error(`Drive chunk ${chunkNum}/${totalChunks} gagal (HTTP ${chunkRes.status}): ${errTxt.slice(0,150)}`);
     }
-    throw e;
   }
+
+  if(!driveFileId){
+    // Jika tidak dapat ID dari response terakhir, coba query
+    throw new Error('Drive upload selesai tapi file ID tidak didapat');
+  }
+  // Pindahkan ke folder tujuan (best-effort)
+  try{ await _moveToFolder(driveFileId, await getDriveToken()); }catch(e2){ console.warn('[driveUpload] Move folder gagal:',e2.message); }
+  return driveFileId;
 }
 
 // ── Download file dari Google Drive ───────────────────
