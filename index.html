@@ -4983,18 +4983,6 @@ async function doUserBackupR2(){
       failedFiles.push(doc.nama_file||'?');
       continue;
     }
-    // Jika file R2 tapi R2 tidak dikonfigurasi, lewati file ini
-    if(doc.r2_key && !doc.drive_file_id && (!R2.accountId||!R2.accessKey||!R2.secretKey||!R2.bucket)){
-      failed++;done++;
-      failedFiles.push((doc.nama_file||doc.r2_key)+' (R2 tidak dikonfigurasi)');
-      continue;
-    }
-    // Jika file Drive tapi Drive tidak dikonfigurasi, lewati
-    if(doc.drive_file_id && !doc.r2_key && !DRIVE.configured){
-      failed++;done++;
-      failedFiles.push((doc.nama_file||doc.drive_file_id)+' (Drive tidak dikonfigurasi)');
-      continue;
-    }
     try{
       const pct=Math.round((done/total)*88);
       setUserBackupPrg(pct,
@@ -5011,8 +4999,7 @@ async function doUserBackupR2(){
 
       // Folder berdasarkan kategori
       const katFolder=(doc.kategori_dokumen?.nama||'Lainnya').replace(/[\/\?%*:|"<>]/g,'_');
-      const fallbackName=(doc.r2_key?doc.r2_key.split('/').pop():null)||(doc.drive_file_id?'drive_'+doc.drive_file_id:'file');
-      const namaFile=(doc.nama_file||fallbackName).replace(/[\/\?%*:|"<>]/g,'_');
+      const namaFile=(doc.nama_file||doc.r2_key.split('/').pop()||'file').replace(/[\/\?%*:|"<>]/g,'_');
       zip.folder(katFolder).file(namaFile, blob, {binary:true});
       ok++;
 
@@ -5362,8 +5349,9 @@ function backupR2ByPegawai(){
 }
 
 async function doBackupR2PerPegawai(){
-  // Cek R2 hanya akan divalidasi per-file di _doR2Zip; di sini kita tidak blokir dulu
-  // karena pegawai mungkin hanya punya file Drive
+  if(!R2.accountId||!R2.accessKey||!R2.secretKey||!R2.bucket){
+    toast('R2 belum dikonfigurasi!','err');return;
+  }
   const sel=document.getElementById('r2BackupPegSel');
   const pegId=sel.value;
   const pegNama=sel.selectedOptions[0]?.text||'pegawai';
@@ -5393,10 +5381,11 @@ async function doBackupR2PerPegawai(){
 }
 
 async function backupR2Files(){
+  if(!R2.accountId||!R2.accessKey||!R2.secretKey||!R2.bucket){
+    toast('R2 belum dikonfigurasi! Buka Pengaturan terlebih dahulu.','err');return;
+  }
   const btn=document.getElementById('btnBackupR2');
   setBtn(btn,true);
-  // Pastikan Drive config termuat sebelum mengambil data
-  if(!DRIVE.serviceAccountJson) await ensureDriveConfig();
   const{data:docs,error}=await sb.from('dokumen')
     .select('nama_file,r2_key,drive_file_id,storage_type,kategori_dokumen:kategori_id(nama),profiles:user_id(nama_lengkap)')
     .order('profiles(nama_lengkap)',{ascending:true});
@@ -5405,36 +5394,18 @@ async function backupR2Files(){
   if(!docs||!docs.length){toast('Belum ada dokumen yang tersimpan di database.','warn');return;}
   const valid=docs.filter(d=>d.r2_key||d.drive_file_id);
   if(!valid.length){toast('Semua dokumen tidak memiliki file yang valid (r2_key/drive_file_id).','err');return;}
-  // Blokir hanya jika seluruh file adalah R2 dan R2 tidak dikonfigurasi
-  const allR2=valid.every(d=>!d.drive_file_id);
-  if(allR2 && (!R2.accountId||!R2.accessKey||!R2.secretKey||!R2.bucket)){
-    toast('R2 belum dikonfigurasi! Buka Pengaturan terlebih dahulu.','err');return;
-  }
   const ts=new Date().toISOString().slice(0,10);
   toast(`Memulai download ${valid.length} file...`,'info');
   await _doR2Zip(valid,`backup_semua_${ts}.zip`,'r2','Semua');
 }
 
 async function _doR2Zip(docs, zipFilename, logType, label){
-  // Periksa apakah ada file Drive dan/atau R2 di dalam docs
-  const hasR2Files  = docs.some(d => d.r2_key);
-  const hasDriveFiles = docs.some(d => d.drive_file_id);
-
-  // Hanya blokir jika R2 tidak dikonfigurasi DAN tidak ada file Drive sama sekali
   if(!R2.accountId||!R2.accessKey||!R2.secretKey||!R2.bucket){
-    if(!hasDriveFiles){
-      toast('R2 belum dikonfigurasi!','err');return;
-    }
-    // Ada file Drive — lanjutkan tanpa R2
-    if(hasR2Files){
-      toast('R2 belum dikonfigurasi — file R2 akan dilewati, file Drive tetap diunduh.','warn');
-    }
+    toast('R2 belum dikonfigurasi!','err');return;
   }
   if(typeof JSZip==='undefined'){
     toast('JSZip belum termuat. Coba refresh halaman.','err');return;
   }
-  // Pastikan konfigurasi Drive sudah termuat sebelum iterasi
-  if(!DRIVE.serviceAccountJson) await ensureDriveConfig();
   const btnAll=document.getElementById('btnBackupR2');
   const btnPeg=document.getElementById('btnBackupR2Peg');
   const btnDoPeg=document.getElementById('btnDoBackupR2Peg');
@@ -5479,18 +5450,6 @@ async function _doR2Zip(docs, zipFilename, logType, label){
       failedFiles.push(doc.nama_file||'?');
       continue;
     }
-    // Jika file R2 tapi R2 tidak dikonfigurasi, lewati file ini
-    if(doc.r2_key && !doc.drive_file_id && (!R2.accountId||!R2.accessKey||!R2.secretKey||!R2.bucket)){
-      failed++;done++;
-      failedFiles.push((doc.nama_file||doc.r2_key)+' (R2 tidak dikonfigurasi)');
-      continue;
-    }
-    // Jika file Drive tapi Drive tidak dikonfigurasi, lewati
-    if(doc.drive_file_id && !doc.r2_key && !DRIVE.configured){
-      failed++;done++;
-      failedFiles.push((doc.nama_file||doc.drive_file_id)+' (Drive tidak dikonfigurasi)');
-      continue;
-    }
     try{
       const pct=Math.round((done/total)*88);
       setR2BackupPrg(
@@ -5512,8 +5471,7 @@ async function _doR2Zip(docs, zipFilename, logType, label){
       // Struktur folder: NamaPegawai/KategoriDokumen/NamaFile
       const pegFolder=(doc.profiles?.nama_lengkap||'Tidak_Diketahui').replace(/[\/\?%*:|"<>]/g,'_');
       const katFolder=(doc.kategori_dokumen?.nama||'Lainnya').replace(/[\/\?%*:|"<>]/g,'_');
-      const fallbackName=(doc.r2_key?doc.r2_key.split('/').pop():null)||(doc.drive_file_id?'drive_'+doc.drive_file_id:'file');
-      const namaFile=(doc.nama_file||fallbackName).replace(/[\/\?%*:|"<>]/g,'_');
+      const namaFile=(doc.nama_file||doc.r2_key.split('/').pop()||'file').replace(/[\/\?%*:|"<>]/g,'_');
 
       // Tambah ke zip dalam folder terstruktur
       zip.folder(pegFolder).folder(katFolder).file(namaFile, blob, {binary:true});
