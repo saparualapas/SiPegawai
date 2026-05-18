@@ -2563,6 +2563,7 @@ async function saveR2(){
   sessionStorage.removeItem('r2cfg_session');
   sessionStorage.removeItem('r2limit_session');
   sessionStorage.setItem('r2cfg_session', JSON.stringify(R2));
+  renderStorageBar(currentStorageBytes);
   fillR2Fields();
   const st=document.getElementById('r2Stat');
   if(st) st.textContent='✓ R2 berhasil disimpan — Limit: '+fmtSz(limitBytes);
@@ -2570,8 +2571,6 @@ async function saveR2(){
   toast('Konfigurasi R2 berhasil disimpan ✓','ok');
   const w=document.getElementById('r2Warn');
   if(w) w.style.display='none';
-  // Render ulang bar R2 dengan data aktual dari DB
-  loadStorageUsage().catch(()=>renderStorageBar(currentStorageBytes));
 }
 
 // ═══════════════════════════════
@@ -2752,7 +2751,7 @@ async function testDriveConfig(){
   if(btn) setBtn(btn,true,'<i class="fas fa-spin fa-spinner"></i> Testing...');
   try{
     const token=await getDriveToken();
-    const res=await fetch(`https://www.googleapis.com/drive/v3/files?q='${DRIVE.folderId}'+in+parents&pageSize=1&fields=files(id)&supportsAllDrives=true&includeItemsFromAllDrives=true`,{
+    const res=await fetch(`https://www.googleapis.com/drive/v3/files?q='${DRIVE.folderId}'+in+parents&pageSize=1&fields=files(id)`,{
       headers:{Authorization:`Bearer ${token}`}
     });
     if(!res.ok) throw new Error('HTTP '+res.status);
@@ -2915,22 +2914,6 @@ async function getDriveToken(){
   throw new Error('Tipe konfigurasi tidak dikenal. Gunakan format oauth2 atau service_account.');
 }
 
-// ── Helper: hapus file dari Google Drive ────────────────────────────────────
-// supportsAllDrives=true wajib agar bisa hapus dari Shared Drive maupun My Drive yang di-share
-async function driveDelete(fileId){
-  if(!fileId) return;
-  const token=await getDriveToken();
-  const res=await fetch(
-    `https://www.googleapis.com/drive/v3/files/${fileId}?supportsAllDrives=true`,
-    {method:'DELETE', headers:{Authorization:`Bearer ${token}`}}
-  );
-  // 404 = file sudah terhapus sebelumnya → anggap sukses
-  if(!res.ok && res.status!==404){
-    const errText=await res.text().catch(()=>'');
-    throw new Error(`Drive delete HTTP ${res.status}: ${errText.slice(0,150)}`);
-  }
-}
-
 // ── Upload file ke Google Drive dengan struktur folder ────────────────────
 // drivePath: optional, e.g. 'NamaPegawai/KategoriDok' — akan dibuat sebagai nama deskriptif di Drive
 // ── Batas ukuran untuk multipart vs resumable upload ─────────────────────────
@@ -2957,7 +2940,7 @@ async function driveUpload(fileBuffer, fileName, mimeType, drivePath){
     body.set(part2,part1.byteLength);
     body.set(new Uint8Array(fileBuffer),part1.byteLength+part2.byteLength);
     body.set(end,part1.byteLength+part2.byteLength+fileSize);
-    const res=await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id&supportsAllDrives=true',{
+    const res=await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id',{
       method:'POST',
       headers:{Authorization:`Bearer ${token}`,'Content-Type':`multipart/related; boundary=${boundary}`},
       body
@@ -2971,7 +2954,7 @@ async function driveUpload(fileBuffer, fileName, mimeType, drivePath){
   // ── File besar (> 5MB): Resumable Upload — upload per chunk 5MB ─────────────
   // Langkah 1: Inisiasi sesi resumable — dapat upload URL
   const meta=JSON.stringify({name:driveFileName,parents:[DRIVE.folderId]});
-  const initRes=await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&fields=id&supportsAllDrives=true',{
+  const initRes=await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&fields=id',{
     method:'POST',
     headers:{
       Authorization:`Bearer ${token}`,
@@ -3042,7 +3025,7 @@ async function driveUpload(fileBuffer, fileName, mimeType, drivePath){
 // ── Download file dari Google Drive ───────────────────
 async function driveDownload(driveFileId){
   const token=await getDriveToken();
-  const res=await fetch(`https://www.googleapis.com/drive/v3/files/${driveFileId}?alt=media&supportsAllDrives=true`,{
+  const res=await fetch(`https://www.googleapis.com/drive/v3/files/${driveFileId}?alt=media`,{
     headers:{Authorization:`Bearer ${token}`}
   });
   if(!res.ok) throw new Error('Drive download gagal: HTTP '+res.status);
@@ -3547,9 +3530,18 @@ async function deleteUserPermanent(id){
       if(isDrive && dok.drive_file_id && driveReady){
         // Hapus dari Google Drive
         try{
-          await driveDelete(dok.drive_file_id);
-          driveCount++;
-          console.info('[deleteUser] Drive deleted:',dok.drive_file_id);
+          const token=await getDriveToken();
+          const res=await fetch(
+            `https://www.googleapis.com/drive/v3/files/${dok.drive_file_id}`,
+            {method:'DELETE', headers:{Authorization:`Bearer ${token}`}}
+          );
+          if(res.ok || res.status===404){
+            driveCount++;
+            console.info('[deleteUser] Drive deleted:',dok.drive_file_id);
+          } else {
+            failCount++;
+            console.warn('[deleteUser] Drive delete HTTP',res.status,'file:',dok.drive_file_id);
+          }
         }catch(e){
           failCount++;
           console.warn('[deleteUser] Drive delete error:',e.message);
@@ -3959,8 +3951,15 @@ async function delDokAdmin(id, r2Key, driveFileId){
     try{
       await ensureDriveConfig();
       if(DRIVE.serviceAccountJson){
-        await driveDelete(driveFid);
-        console.info('[delete] Drive file terhapus:',driveFid);
+        const token=await getDriveToken();
+        const res=await fetch(`https://www.googleapis.com/drive/v3/files/${driveFid}`,{
+          method:'DELETE',headers:{Authorization:`Bearer ${token}`}
+        });
+        if(res.ok||res.status===404){
+          console.info('[delete] Drive file terhapus:',driveFid);
+        } else {
+          console.warn('[delete] Drive delete HTTP',res.status,'untuk file',driveFid);
+        }
       }
     }catch(e){ console.warn('[delete] Drive delete warning:',e.message); }
   }
@@ -4596,7 +4595,7 @@ async function doUpload(){
           msg='🚫 Gagal menyimpan: '+(errCode||'error tidak diketahui');
         // Cleanup file yang sudah diupload
         if(storageType==='drive'&&driveFileId){
-          try{ await driveDelete(driveFileId); }catch(ce){}
+          try{ const t=await getDriveToken(); await fetch(`https://www.googleapis.com/drive/v3/files/${driveFileId}`,{method:'DELETE',headers:{Authorization:`Bearer ${t}`}}); }catch(ce){}
         } else if(storageType==='r2'&&r2Key){
           try{ await r2Delete(r2Key); }catch(ce){}
         }
@@ -4611,7 +4610,7 @@ async function doUpload(){
     if(dbErr){
       console.error('DB insert error:',dbErr);
       if(storageType==='drive'&&driveFileId){
-        try{ await driveDelete(driveFileId); console.log('Drive cleanup OK'); }catch(ce){}
+        try{ const t=await getDriveToken(); await fetch(`https://www.googleapis.com/drive/v3/files/${driveFileId}`,{method:'DELETE',headers:{Authorization:`Bearer ${t}`}}); console.log('Drive cleanup OK'); }catch(ce){}
         driveFileId=null;
       } else if(storageType==='r2'&&r2Key){
         try{ await r2Delete(r2Key); }catch(ce){}
@@ -6000,7 +5999,7 @@ async function doUploadAdmin(){
           msg='🚫 Gagal: '+(errCode||'error tidak diketahui');
         // Cleanup
         if(storageType==='drive'&&driveFileId){
-          try{ await driveDelete(driveFileId); }catch(ce){}
+          try{ const t=await getDriveToken(); await fetch(`https://www.googleapis.com/drive/v3/files/${driveFileId}`,{method:'DELETE',headers:{Authorization:`Bearer ${t}`}}); }catch(ce){}
         } else if(storageType==='r2'&&r2Key){
           try{ await r2Delete(r2Key); }catch(ce){}
         }
@@ -6014,7 +6013,7 @@ async function doUploadAdmin(){
     if(dbErrA){
       console.error('DB insert error (admin):',dbErrA);
       if(storageType==='drive'&&driveFileId){
-        try{ await driveDelete(driveFileId); }catch(ce){}
+        try{ const t=await getDriveToken(); await fetch(`https://www.googleapis.com/drive/v3/files/${driveFileId}`,{method:'DELETE',headers:{Authorization:`Bearer ${t}`}}); }catch(ce){}
       } else if(storageType==='r2'&&r2Key){
         try{ await r2Delete(r2Key); }catch(ce){}
       }
@@ -6551,7 +6550,7 @@ const PAGE_LOADERS={
   backupUser:()=>loadUserBackupPage(),
   dokUser:()=>{ if(_shouldReload('dokUser')){ loadDokUser(selKatId,1); _markLoaded('dokUser'); } },
   upload:()=>checkStorageOnUploadPage(),
-  setting:()=>{ _resetSBarCache(); loadR2().then(()=>loadStorageUsage()).catch(()=>loadStorageUsage()); loadDriveConfig().then(()=>refreshDriveStorageUI()).catch(()=>{}); },
+  setting:()=>{ _resetSBarCache(); loadR2(); loadStorageUsage(); loadDriveConfig().then(()=>refreshDriveStorageUI()).catch(()=>{}); },
   backup:()=>{ loadBackupPage(); },
 };
 
