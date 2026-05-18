@@ -893,12 +893,12 @@ tbody td.wrap{white-space:normal;min-width:140px;}
           <div class="storage-wrap" id="storageWrap" style="margin-top:1rem">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.35rem">
               <span style="font-size:.82rem;font-weight:700;color:var(--navy)"><i class="fas fa-database" style="margin-right:.4rem;color:var(--accent)"></i>Penggunaan R2</span>
-              <span style="font-size:.82rem;font-weight:700;color:var(--navy)" id="storageText"><i class="fas fa-spinner fa-spin" style="font-size:.75rem;color:var(--muted)"></i> Memuat...</span>
+              <span style="font-size:.82rem;font-weight:700;color:var(--navy)" id="storageText">—</span>
             </div>
             <div class="storage-bar-bg"><div class="storage-bar-fill safe" id="storageBar" style="width:0%"></div></div>
             <div class="storage-meta">
-              <span id="storageUsed">Memuat data...</span>
-              <span id="storagePct"></span>
+              <span id="storageUsed">—</span>
+              <span id="storagePct">—</span>
               <span id="storageLimit">Batas: —</span>
             </div>
             <div id="storageAlert"></div>
@@ -2944,26 +2944,9 @@ async function driveUpload(fileBuffer, fileName, mimeType, drivePath){
   const driveFileName=drivePath ? drivePath.replace(/[\/\?%*:|"<>]/g,'_')+'__'+fileName : fileName;
   const fileSize=fileBuffer.byteLength;
 
-  // Helper: pindahkan file ke folder tujuan setelah upload
-  // Service Account tidak bisa langsung upload ke "My Drive" orang lain via parents[],
-  // tapi bisa upload ke Drive-nya sendiri lalu move ke folder yang di-share
-  async function _moveToFolder(fileId, freshToken){
-    if(!DRIVE.folderId) return; // tidak ada folder target, biarkan di root
-    const moveRes=await fetch(
-      `https://www.googleapis.com/drive/v3/files/${fileId}?addParents=${encodeURIComponent(DRIVE.folderId)}&removeParents=root&fields=id,parents&supportsAllDrives=true`,
-      {method:'PATCH', headers:{Authorization:`Bearer ${freshToken}`,'Content-Type':'application/json'}, body:'{}'}
-    );
-    if(!moveRes.ok){
-      const t=await moveRes.text();
-      // Jika move gagal (403 folder shared drive), file tetap ada di Drive SA — tidak critical
-      console.warn('[driveUpload] Move ke folder gagal (file tetap tersimpan di root Drive SA):',t.slice(0,150));
-    }
-  }
-
   // ── File kecil (<= 5MB): gunakan multipart upload (1 request, lebih cepat) ──
   if(fileSize <= DRIVE_MULTIPART_LIMIT){
-    // Upload tanpa parents — masuk ke root Drive service account
-    const meta=JSON.stringify({name:driveFileName});
+    const meta=JSON.stringify({name:driveFileName,parents:[DRIVE.folderId]});
     const boundary='sp_b_'+Date.now();
     const enc=new TextEncoder();
     const part1=enc.encode(`--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${meta}\r\n`);
@@ -2982,14 +2965,12 @@ async function driveUpload(fileBuffer, fileName, mimeType, drivePath){
     if(!res.ok){const t=await res.text();throw new Error('Drive upload gagal: '+t.slice(0,200));}
     const data=await res.json();
     if(!data.id) throw new Error('Drive tidak mengembalikan file ID');
-    // Pindahkan ke folder tujuan (best-effort)
-    await _moveToFolder(data.id, token);
     return data.id;
   }
 
   // ── File besar (> 5MB): Resumable Upload — upload per chunk 5MB ─────────────
-  // Upload tanpa parents — masuk ke root Drive service account
-  const meta=JSON.stringify({name:driveFileName});
+  // Langkah 1: Inisiasi sesi resumable — dapat upload URL
+  const meta=JSON.stringify({name:driveFileName,parents:[DRIVE.folderId]});
   const initRes=await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&fields=id&supportsAllDrives=true',{
     method:'POST',
     headers:{
@@ -3055,8 +3036,6 @@ async function driveUpload(fileBuffer, fileName, mimeType, drivePath){
     // Jika tidak dapat ID dari response terakhir, coba query
     throw new Error('Drive upload selesai tapi file ID tidak didapat');
   }
-  // Pindahkan ke folder tujuan (best-effort)
-  try{ await _moveToFolder(driveFileId, await getDriveToken()); }catch(e2){ console.warn('[driveUpload] Move folder gagal:',e2.message); }
   return driveFileId;
 }
 
@@ -6360,14 +6339,13 @@ function renderStorageBar(usedBytes){
   if(!wrap) return;
   wrap.style.display='block';
 
-  const limitBytes=R2_LIMIT_BYTES||1; // hindari pembagian nol
+  const limitBytes=R2_LIMIT_BYTES;
   const pct=Math.min((usedBytes/limitBytes)*100, 100);
   const bar=_getSBarEl('storageBar');
   const alert=_getSBarEl('storageAlert');
 
   if(bar){
-    // Minimum lebar 2px agar bar terlihat walau usage sangat kecil
-    bar.style.width=Math.max(pct,pct>0?0.5:0).toFixed(2)+'%';
+    bar.style.width=pct.toFixed(2)+'%';
     bar.className='storage-bar-fill';
     if(pct>=100)       bar.classList.add('danger');
     else if(pct>=87.5) bar.classList.add('warn');
@@ -6380,21 +6358,17 @@ function renderStorageBar(usedBytes){
   const limitEl=_getSBarEl('storageLimit');
   if(usedEl) usedEl.textContent='R2 terpakai: '+fmtSz(usedBytes);
   if(pctEl)  pctEl.textContent=pct.toFixed(1)+'%';
-  if(textEl) textEl.textContent='R2: '+fmtSz(usedBytes)+' / '+fmtSz(R2_LIMIT_BYTES||0);
-  if(limitEl) limitEl.textContent='Batas: '+fmtSz(R2_LIMIT_BYTES||0);
+  if(textEl) textEl.textContent='R2: '+fmtSz(usedBytes)+' / '+fmtSz(limitBytes);
+  if(limitEl) limitEl.textContent='Batas: '+fmtSz(limitBytes);
 
-  const warnBytes=(R2_LIMIT_BYTES||0)*0.875;
-  if(alert){
-    if(!R2_LIMIT_BYTES){
-      alert.innerHTML='<div class="storage-limit-warn"><i class="fas fa-exclamation-triangle"></i>Limit R2 belum diset. Simpan konfigurasi R2 terlebih dahulu.</div>';
-    } else if(usedBytes>=R2_LIMIT_BYTES){
-      alert.innerHTML='<div class="storage-limit-danger"><i class="fas fa-ban"></i>Penyimpanan R2 PENUH — Upload baru tidak diizinkan.</div>';
-    } else if(usedBytes>=warnBytes){
-      const sisa=fmtSz(R2_LIMIT_BYTES-usedBytes);
-      alert.innerHTML=`<div class="storage-limit-warn"><i class="fas fa-exclamation-triangle"></i>Peringatan: Sisa ruang R2 hanya <strong>${sisa}</strong>.</div>`;
-    } else {
-      alert.innerHTML='';
-    }
+  const warnBytes=limitBytes*0.875;
+  if(usedBytes>=limitBytes){
+    alert.innerHTML='<div class="storage-limit-danger"><i class="fas fa-ban"></i>Penyimpanan R2 PENUH — Upload baru tidak diizinkan.</div>';
+  } else if(usedBytes>=warnBytes){
+    const sisa=fmtSz(limitBytes-usedBytes);
+    alert.innerHTML=`<div class="storage-limit-warn"><i class="fas fa-exclamation-triangle"></i>Peringatan: Sisa ruang R2 hanya <strong>${sisa}</strong>.</div>`;
+  } else {
+    alert.innerHTML='';
   }
 }
 
