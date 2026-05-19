@@ -2965,6 +2965,25 @@ async function migrateR2bToR2(){
 
 async function _doR2Transfer(fromStorage, toStorage, label){
   if(!confirm(`Transfer semua file dari ${label}?\nProses ini memindahkan file satu per satu dan tidak bisa dibatalkan.`)) return;
+
+  // ── Cek kapasitas tujuan sebelum mulai ──
+  try{
+    const[r2Now,r2bNow]=await Promise.all([_hitung_r2_dari_db(),_hitung_r2b_dari_db()]);
+    if(toStorage==='secondary'){
+      const r2bLimit=R2B_LIMIT_BYTES||0;
+      if(r2bLimit>0 && r2bNow>=r2bLimit){
+        toast(`🚫 R2 Cadangan penuh (${fmtSz(r2bNow)}/${fmtSz(r2bLimit)}). Transfer dibatalkan.`,'err');
+        _updateSettingBanner(r2Now,r2bNow); return;
+      }
+    } else {
+      const r2Limit=R2_LIMIT_BYTES||0;
+      if(r2Limit>0 && r2Now>=r2Limit){
+        toast(`🚫 R2 Utama penuh (${fmtSz(r2Now)}/${fmtSz(r2Limit)}). Transfer dibatalkan.`,'err');
+        _updateSettingBanner(r2Now,r2bNow); return;
+      }
+    }
+  }catch(e){ /* lanjutkan jika cek gagal */ }
+
   const{data:{session}}=await sb.auth.getSession();
   const token=session?.access_token||'';
 
@@ -5049,61 +5068,64 @@ async function checkStorageOnUploadPage(){
     const driveLimitBytes = driveGb > 0 ? Math.round(driveGb * 1024 * 1024 * 1024) : 0;
     R2_LIMIT_BYTES=r2LimitBytes;
 
-    // Baca usage dari cache (diisi admin saat buka dashboard/setting)
-    // Jika cache kosong → coba RPC → tolak upload agar aman
-    let r2Used=-1, driveUsed=-1;
-    const cache=await _bacaCacheStorage();
-    if(cache){ r2Used=cache.r2; driveUsed=cache.drive; }
-    else {
-      // Coba RPC sebagai fallback
-      try{
-        const{data,error}=await sb.rpc('get_total_storage_used');
-        if(!error&&data&&'r2_bytes' in data){ r2Used=parseInt(data.r2_bytes||0); driveUsed=parseInt(data.drive_bytes||0); }
-      }catch(e){}
+    // Baca usage langsung dari DB (admin) atau RPC (user)
+    let r2Used=-1, r2bUsed=0, driveUsed=-1;
+    try{
+      const{data,error}=await sb.rpc('get_total_storage_used');
+      if(!error&&data&&'r2_bytes' in data){
+        r2Used=parseInt(data.r2_bytes||0);
+        driveUsed=parseInt(data.drive_bytes||0);
+      }
+    }catch(e){}
+    // Fallback cache jika RPC gagal
+    if(r2Used<0){
+      const cache=await _bacaCacheStorage();
+      if(cache){ r2Used=cache.r2; driveUsed=cache.drive; }
     }
-
     if(r2Used<0||driveUsed<0){
-      // Cache belum ada — disable tombol dengan pesan informatif
-      disable('⚠️ Data kapasitas belum tersedia. Admin perlu login dahulu untuk memuat data. Silahkan coba lagi nanti.');
+      disable('⚠️ Data kapasitas belum tersedia. Silahkan refresh halaman atau hubungi admin.');
       return;
     }
+    // Hitung r2b usage
+    try{ r2bUsed=await _hitung_r2b_dari_db(); }catch(e){ r2bUsed=0; }
 
     currentStorageBytes=r2Used;
+    currentStorageBBytes=r2bUsed;
     renderStorageBar(r2Used);
+    renderStorageBBar(r2bUsed);
+    _updateSettingBanner(r2Used, r2bUsed);
 
-    const r2Sisa   =Math.max(0,r2LimitBytes  -r2Used);
-    const r2Full   =(r2Used  >=r2LimitBytes);
+    const r2Sisa   =Math.max(0,r2LimitBytes-r2Used);
+    const r2Full   =(r2Used>=r2LimitBytes);
+    const r2bAktif = R2B_AUTO_OVERFLOW && R2B.accountId && R2B.bucket && R2B.accessKey;
+    const r2bLimitB= R2B_LIMIT_BYTES||0;
+    const r2bSisa  = Math.max(0,r2bLimitB-r2bUsed);
+    const r2bFull  = r2bLimitB>0 && (r2bUsed>=r2bLimitB);
     const driveSisa=Math.max(0,driveLimitBytes-driveUsed);
     const driveFull=(driveUsed>=driveLimitBytes);
-
-    // Drive hanya dianggap aktif jika driveGb > 0 (limit sudah diset di app_config)
     const driveAktif = driveConfigured && driveAutoOverflow && driveGb > 0;
 
-    if(driveAktif){
-      if(r2Full && driveFull){
-        disable('🚫 Semua penyimpanan penuh (R2 + Drive). Silahkan hubungi admin.'); return;
-      }
-      if(r2Full && !driveFull){
+    // Jika R2 Utama penuh tapi ada overflow aktif
+    if(r2Full){
+      if(r2bAktif && !r2bFull){
         showInlineAlert('upSuccessAlert',
-          `ℹ️ R2 penuh — file berikutnya akan disimpan ke Drive (sisa Drive: ${fmtSz(driveSisa)} dari ${fmtSz(driveLimitBytes)}).`,'warn');
+          `ℹ️ R2 Utama penuh — file berikutnya akan disimpan ke R2 Cadangan (sisa: ${fmtSz(r2bSisa)} dari ${fmtSz(r2bLimitB)}).`,'warn');
         enable(); return;
       }
-      if(!r2Full && driveFull){
-        // Drive penuh tapi R2 masih ada — tetap bisa upload ke R2
+      if(driveAktif && !driveFull){
         showInlineAlert('upSuccessAlert',
-          `⚠️ Drive penuh (${fmtSz(driveUsed)}/${fmtSz(driveLimitBytes)}). File akan disimpan ke R2 (sisa R2: ${fmtSz(r2Sisa)}).`,'warn');
+          `ℹ️ R2 Utama penuh — file berikutnya akan disimpan ke Drive (sisa Drive: ${fmtSz(driveSisa)} dari ${fmtSz(driveLimitBytes)}).`,'warn');
         enable(); return;
       }
-      enable(); return;
+      // Semua overflow juga penuh
+      disable('🚫 Semua penyimpanan penuh. Silahkan hubungi administrator.'); return;
     }
 
-    // Hanya R2 (Drive tidak dikonfigurasi / autoOverflow off / limitGb belum diset)
-    if(driveConfigured && driveAutoOverflow && driveGb <= 0){
-      // AutoOverflow aktif tapi limit Drive belum diset → tampilkan peringatan admin
+    // R2 Utama masih ada ruang
+    if(driveAktif && driveFull){
       showInlineAlert('upSuccessAlert',
-        '⚠️ AutoOverflow ke Drive aktif tapi limit Drive belum diset. Upload ke R2 saja.','warn');
+        `⚠️ Drive penuh (${fmtSz(driveUsed)}/${fmtSz(driveLimitBytes)}). File akan disimpan ke R2 (sisa R2: ${fmtSz(r2Sisa)}).`,'warn');
     }
-    if(r2Full){ disable('🚫 Penyimpanan R2 penuh. Silahkan hubungi admin.'); return; }
     enable();
   }catch(e){
     console.warn('checkStorageOnUploadPage error:',e.message);
@@ -6139,33 +6161,40 @@ async function _checkAdminStorageLimit(fileSize){
     const alertBox=document.getElementById('upAdminSizeAlert');
     const alertTxt=document.getElementById('upAdminSizeAlertTxt');
     if(!alertBox||!alertTxt) return;
-    // Hitung fresh dari DB
-    const r2Used=await _hitung_r2_dari_db();
-    const driveUsed=await _hitung_drive_dari_db();
+    // Hitung fresh dari DB per bucket
+    const [r2Used, r2bUsed, driveUsed]=await Promise.all([
+      _hitung_r2_dari_db(), _hitung_r2b_dari_db(), _hitung_drive_dari_db()
+    ]);
     const r2Limit=R2_LIMIT_BYTES||0;
     const r2Sisa=Math.max(0,r2Limit-r2Used);
+    const r2Full=r2Used>=r2Limit;
+    // R2 Cadangan
+    const r2bAktif=R2B_AUTO_OVERFLOW&&R2B.accountId&&R2B.bucket&&R2B.accessKey;
+    const r2bLimit=R2B_LIMIT_BYTES||0;
+    const r2bSisa=Math.max(0,r2bLimit-r2bUsed);
+    const r2bFull=r2bLimit>0&&(r2bUsed>=r2bLimit);
+    // Drive
     const driveConfigOk=DRIVE.configured&&DRIVE.autoOverflow&&(DRIVE.limitGb||0)>0;
     const driveLimitBytes=driveConfigOk?Math.round(DRIVE.limitGb*1024*1024*1024):0;
     const driveSisa=driveConfigOk?Math.max(0,driveLimitBytes-driveUsed):0;
+    const driveFull=driveConfigOk&&(driveUsed>=driveLimitBytes);
 
-    if(fileSize>r2Sisa && !driveConfigOk){
-      // R2 tidak cukup dan Drive tidak aktif/belum diset
-      alertTxt.innerHTML=`<strong>🚫 R2 tidak cukup!</strong> File: <strong>${fmtSz(fileSize)}</strong>, sisa R2: <strong>${fmtSz(r2Sisa)}</strong> dari ${fmtSz(r2Limit)}.<br><small>Hapus dokumen lama atau aktifkan overflow ke Google Drive.</small>`;
-      alertBox.style.display='flex';
-    } else if(fileSize>r2Sisa && driveConfigOk && fileSize>driveSisa){
-      // R2 tidak cukup, Drive juga tidak cukup
-      alertTxt.innerHTML=`<strong>🚫 Semua storage penuh!</strong> File: <strong>${fmtSz(fileSize)}</strong>.<br>Sisa R2: ${fmtSz(r2Sisa)}, sisa Drive: ${fmtSz(driveSisa)}.<br><small>Hapus dokumen lama atau naikkan limit Drive di Pengaturan.</small>`;
-      alertBox.style.display='flex';
-    } else if(fileSize>r2Sisa && driveConfigOk){
-      // R2 tidak cukup tapi Drive masih ada — tampilkan info (bukan error)
-      alertTxt.innerHTML=`<i class="fas fa-info-circle"></i> R2 penuh — file ini akan diarahkan ke Google Drive (sisa Drive: ${fmtSz(driveSisa)}).`;
-      alertBox.style.display='flex';
-      alertBox.className='alert-box'; // info style
-    } else {
-      // Aman — sembunyikan alert jika sebelumnya tampil
-      alertBox.style.display='none';
+    if(!r2Full){
+      alertBox.style.display='none'; return; // R2 masih cukup, tidak perlu pesan
     }
-  }catch(e){ /* silent — cek akan dilakukan lagi saat doUploadAdmin */ }
+    // R2 penuh — cek overflow
+    if(r2bAktif && !r2bFull){
+      alertTxt.innerHTML=`<i class="fas fa-info-circle"></i> R2 Utama penuh — file ini akan diarahkan ke R2 Cadangan (sisa: ${fmtSz(r2bSisa)}).`;
+      alertBox.style.display='flex'; alertBox.className='alert-box alert-info'; return;
+    }
+    if(driveConfigOk && !driveFull){
+      alertTxt.innerHTML=`<i class="fas fa-info-circle"></i> R2 Utama penuh — file ini akan diarahkan ke Drive (sisa Drive: ${fmtSz(driveSisa)}).`;
+      alertBox.style.display='flex'; alertBox.className='alert-box alert-info'; return;
+    }
+    // Semua penuh
+    alertTxt.innerHTML=`<strong>🚫 Semua penyimpanan penuh!</strong> File: <strong>${fmtSz(fileSize)}</strong>.<br>Sisa R2: ${fmtSz(r2Sisa)}, sisa R2 Cadangan: ${fmtSz(r2bSisa)}.<br><small>Hapus dokumen lama atau naikkan limit di Pengaturan.</small>`;
+    alertBox.style.display='flex'; alertBox.className='alert-box alert-danger';
+  }catch(e){ /* silent */ }
 }
 
 function clearUpAdminFile(){
@@ -6498,15 +6527,20 @@ async function _hitung_r2_dari_db(){
   return total;
 }
 
-// BARU: hitung penggunaan R2 Cadangan dari DB
+// Hitung penggunaan R2 Cadangan dari DB
 async function _hitung_r2b_dari_db(){
   let total=0;
   try{
+    // Ambil semua dokumen R2 lalu filter di client untuk menangkap variasi nilai storage
     const{data,error}=await sb.from('dokumen')
       .select('ukuran_file,storage_type,storage')
-      .eq('storage','secondary');
+      .or('storage_type.is.null,storage_type.eq.r2');
     if(error) throw error;
-    (data||[]).forEach(d=>{ total+=(d.ukuran_file||0); });
+    (data||[]).forEach(d=>{
+      const st=d.storage_type||'r2';
+      const bkt=(d.storage||'primary').toLowerCase().trim();
+      if((st==='r2'||st==='') && bkt==='secondary') total+=(d.ukuran_file||0);
+    });
   }catch(e){
     console.warn('[_hitung_r2b_dari_db] error:',e.message);
   }
