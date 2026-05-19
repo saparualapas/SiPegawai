@@ -5,7 +5,7 @@
 #  Login: npx wrangler login
 # ============================================================
 
-name            = "sipegawai-r2-proxy"
+name = "sipegawai"
 main            = "r2-proxy-worker.js"
 compatibility_date = "2024-01-01"
 
