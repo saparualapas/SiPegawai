@@ -945,7 +945,6 @@ tbody td.wrap{white-space:normal;min-width:140px;}
               <span style="font-size:.67rem;font-weight:700;background:var(--accent-l);color:var(--accent);border-radius:20px;padding:.18rem .6rem">PRIMER</span>
             </div>
             <div class="card-body">
-              <div class="alert-info alert-box" style="margin-bottom:1rem"><i class="fas fa-lock"></i><div>Hanya admin yang dapat mengubah konfigurasi R2. Konfigurasi disimpan terenkripsi di Supabase.</div></div>
               <div style="display:grid;gap:.85rem">
                 <div class="form-group" style="margin:0">
                   <label class="form-label" style="display:flex;align-items:center;gap:.4rem"><i class="fas fa-fingerprint" style="color:var(--muted);font-size:.75rem"></i> Account ID</label>
@@ -977,15 +976,9 @@ tbody td.wrap{white-space:normal;min-width:140px;}
               </div>
               <div id="r2Alert" class="alert-box" style="display:none;margin-top:.5rem"></div>
               <div id="r2Stat" style="margin-top:.65rem;font-size:.79rem;color:var(--muted)"></div>
-              <div class="storage-wrap" id="storageWrap" style="margin-top:1rem">
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.35rem">
-                  <span style="font-size:.82rem;font-weight:700;color:var(--navy)"><i class="fas fa-database" style="margin-right:.4rem;color:var(--accent)"></i>Penggunaan R2 Utama</span>
-                  <span style="font-size:.82rem;font-weight:700;color:var(--navy)" id="storageText"><i class="fas fa-spinner fa-spin" style="font-size:.75rem;color:var(--muted)"></i> Memuat...</span>
-                </div>
-                <div class="storage-bar-bg"><div class="storage-bar-fill safe" id="storageBar" style="width:0%"></div></div>
-                <div class="storage-meta"><span id="storageUsed">Memuat data...</span><span id="storagePct"></span><span id="storageLimit">Batas: —</span></div>
-                <div id="storageAlert"></div>
-              </div>
+              <div class="alert-info alert-box" style="margin-top:.875rem"><i class="fas fa-lock"></i><div>Hanya admin yang dapat mengubah konfigurasi R2. Konfigurasi disimpan terenkripsi di Supabase.</div></div>
+              <!-- storageWrap disembunyikan (sudah tampil di banner atas) -->
+              <div id="storageWrap" style="display:none"><div id="storageBar"></div><div id="storageText"></div><div id="storageUsed"></div><div id="storagePct"></div><div id="storageLimit"></div><div id="storageAlert"></div></div>
             </div>
           </div>
         </div><!-- end kolom kiri -->
@@ -1003,7 +996,6 @@ tbody td.wrap{white-space:normal;min-width:140px;}
               <span style="font-size:.67rem;font-weight:700;background:var(--accent2-l);color:var(--accent2);border-radius:20px;padding:.18rem .6rem">OVERFLOW</span>
             </div>
             <div class="card-body">
-              <div class="alert-info alert-box" style="margin-bottom:1rem"><i class="fas fa-info-circle"></i><div>R2 akun Cloudflare <strong>kedua</strong> sebagai penyimpanan overflow. Jika R2 Utama penuh, file baru otomatis diarahkan ke sini.</div></div>
               <div style="display:grid;gap:.85rem">
                 <div class="form-group" style="margin:0">
                   <label class="form-label" style="display:flex;align-items:center;gap:.4rem"><i class="fas fa-fingerprint" style="color:var(--muted);font-size:.75rem"></i> Account ID <span style="font-size:.67rem;color:var(--muted);font-weight:400;margin-left:.2rem">(akun Cloudflare kedua)</span></label>
@@ -1044,15 +1036,9 @@ tbody td.wrap{white-space:normal;min-width:140px;}
               </div>
               <div id="r2bAlert" class="alert-box" style="display:none;margin-top:.5rem"></div>
               <div id="r2bStat" style="margin-top:.65rem;font-size:.79rem;color:var(--muted)"></div>
-              <div class="storage-wrap" id="storageWrapB" style="margin-top:1rem;display:none">
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.35rem">
-                  <span style="font-size:.82rem;font-weight:700;color:var(--navy)"><i class="fas fa-database" style="margin-right:.4rem;color:var(--accent2)"></i>Penggunaan R2 Cadangan</span>
-                  <span style="font-size:.82rem;font-weight:700;color:var(--navy)" id="storageBText">—</span>
-                </div>
-                <div class="storage-bar-bg"><div class="storage-bar-fill safe" id="storageBBar" style="width:0%"></div></div>
-                <div class="storage-meta"><span id="storageBUsed">—</span><span id="storageBPct"></span><span id="storageBLimit">Batas: —</span></div>
-                <div id="storageBAlert"></div>
-              </div>
+              <div class="alert-info alert-box" style="margin-top:.875rem"><i class="fas fa-info-circle"></i><div>R2 akun Cloudflare <strong>kedua</strong> sebagai penyimpanan overflow. Jika R2 Utama penuh, file baru otomatis diarahkan ke sini.</div></div>
+              <!-- storageWrapB disembunyikan (sudah tampil di banner atas) -->
+              <div id="storageWrapB" style="display:none"><div id="storageBBar"></div><div id="storageBText"></div><div id="storageBUsed"></div><div id="storageBPct"></div><div id="storageBLimit"></div><div id="storageBAlert"></div></div>
             </div>
           </div>
 
@@ -4609,10 +4595,14 @@ async function delDok(id, isAdmin=false){
   showAlertBanner('Dokumen/data telah terhapus','ok');
   // Hitung ulang storage langsung dari DB (akurat, tidak tergantung cache lama)
   const[r2AfterDel,driveAfterDel]=await Promise.all([_hitung_r2_dari_db(),_hitung_drive_dari_db()]);
+  const r2bAfterDel=await _hitung_r2b_dari_db();
   await _simpanCacheStorage(r2AfterDel,driveAfterDel).catch(()=>{});
   currentStorageBytes=r2AfterDel;
+  currentStorageBBytes=r2bAfterDel;
   renderStorageBar(r2AfterDel);
+  renderStorageBBar(r2bAfterDel);
   _renderDriveBar(driveAfterDel);
+  _updateSettingBanner(r2AfterDel,r2bAfterDel);
   if(isAdmin){
     refreshDriveStorageUI();
     loadDokAdmin(dakPage);
@@ -4901,6 +4891,7 @@ async function doUpload(){
     const{data:rpcResult,error:rpcErr}=await sb.rpc('insert_dokumen_safe',{
       p_payload:    insertPayload,
       p_r2_limit:   R2_LIMIT_BYTES,
+      p_r2b_limit:  R2B_LIMIT_BYTES,
       p_drive_limit: Math.round(driveGbLimit*1024*1024*1024),
       p_storage_type: storageType
     });
@@ -4950,7 +4941,8 @@ async function doUpload(){
     }
 
     // Update cache storage setelah upload sukses — hitung ulang dari DB
-    await _updateCacheSetelahUpload();
+    const _usageAfterUp=await _updateCacheSetelahUpload();
+    if(_usageAfterUp) _updateSettingBanner(_usageAfterUp.r2||0,_usageAfterUp.r2b||0);
     setPrg(100,'Selesai!');
     document.getElementById('upPrgBar').classList.add('done');
     toast('Dokumen berhasil diupload ✓','ok');
@@ -6326,6 +6318,7 @@ async function doUploadAdmin(){
     const{data:rpcResultA,error:rpcErrA}=await sb.rpc('insert_dokumen_safe',{
       p_payload:    adminInsertPayload,
       p_r2_limit:   R2_LIMIT_BYTES,
+      p_r2b_limit:  R2B_LIMIT_BYTES,
       p_drive_limit: Math.round(driveGbLimitA*1024*1024*1024),
       p_storage_type: storageType
     });
@@ -6367,7 +6360,8 @@ async function doUploadAdmin(){
       throw new Error('Gagal simpan ke database: '+dbErrA.message);
     }
     // Update cache storage setelah upload sukses — hitung ulang dari DB
-    await _updateCacheSetelahUpload();
+    const _usageAfterAdminUp=await _updateCacheSetelahUpload();
+    if(_usageAfterAdminUp) _updateSettingBanner(_usageAfterAdminUp.r2||0,_usageAfterAdminUp.r2b||0);
     setPrgAdmin(100,'Selesai!');
     document.getElementById('upAdminPrgBar').classList.add('done');
     toast(`Dokumen berhasil diupload atas nama ${upAdminPegSelected?.nama||'pegawai'} ✓`,'ok');
