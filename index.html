@@ -3028,7 +3028,7 @@ async function _doR2Transfer(fromStorage, toStorage, label){
 let currentStorageBBytes=0;
 function renderStorageBBar(usedBytes){
   const wrap=document.getElementById('storageWrapB');
-  if(!wrap) return;
+  if(!wrap||wrap.style.display==='none') return;
   wrap.style.display='block';
 
   const limitBytes=R2B_LIMIT_BYTES||1;
@@ -6727,7 +6727,7 @@ function _resetSBarCache(){ Object.keys(_sBar).forEach(k=>delete _sBar[k]); }
 
 function renderStorageBar(usedBytes){
   const wrap=_getSBarEl('storageWrap');
-  if(!wrap) return;
+  if(!wrap||wrap.style.display==='none') return;
   wrap.style.display='block';
 
   const limitBytes=R2_LIMIT_BYTES||1; // hindari pembagian nol
@@ -6819,42 +6819,47 @@ async function cekStorageCukup(fileSize, isAdmin=false){
   const driveLimitBytes = driveGb > 0 ? Math.round(driveGb * 1024 * 1024 * 1024) : 0;
 
   // ── 2. Hitung usage ─────────────────────────────────────────────────────
-  let r2Used=-1, driveUsed=-1;
+  let r2Used=-1, r2bUsed=-1, driveUsed=-1;
 
   if(isAdmin){
-    // Admin: hitung langsung dari DB — _hitung_r2/drive tidak throw, selalu return angka
-    [r2Used, driveUsed]=await Promise.all([_hitung_r2_dari_db(), _hitung_drive_dari_db()]);
-    // Simpan cache sekaligus agar user biasa bisa baca
+    [r2Used, r2bUsed, driveUsed]=await Promise.all([
+      _hitung_r2_dari_db(), _hitung_r2b_dari_db(), _hitung_drive_dari_db()
+    ]);
     _simpanCacheStorage(r2Used, driveUsed).catch(()=>{});
-    console.info('[cekStorage] admin DB:', 'R2='+fmtSz(r2Used), 'Drive='+fmtSz(driveUsed));
+    console.info('[cekStorage] admin DB:', 'R2='+fmtSz(r2Used), 'R2B='+fmtSz(r2bUsed), 'Drive='+fmtSz(driveUsed));
   } else {
-    // User biasa: WAJIB via RPC get_total_storage_used (SECURITY DEFINER)
-    // Tidak ada fallback lain — RPC adalah satu-satunya sumber yang akurat
     try{
       const rpc=await _getUsageViaRPC();
       r2Used=rpc.r2; driveUsed=rpc.drive;
+      try{ r2bUsed=await _hitung_r2b_dari_db(); }catch(e){ r2bUsed=0; }
     }catch(e){
-      // RPC gagal = function belum dibuat di Supabase → BLOK upload
       return{ok:false, target:null,
         msg:'🚫 Sistem belum siap. Admin perlu membuat SQL function "get_total_storage_used" di Supabase (lihat halaman Pengaturan).'};
     }
   }
 
-  // Jika usage masih -1 setelah semua upaya → BLOK
   if(r2Used<0||driveUsed<0){
     return{ok:false, target:null,
       msg:isAdmin
         ?'🚫 Gagal membaca kapasitas penyimpanan dari database. Coba refresh halaman.'
         :'🚫 Tidak dapat memverifikasi kapasitas. Silahkan hubungi admin.'};
   }
+  if(r2bUsed<0) r2bUsed=0;
 
   currentStorageBytes=r2Used;
+  currentStorageBBytes=r2bUsed;
   renderStorageBar(r2Used);
+  renderStorageBBar(r2bUsed);
+  _updateSettingBanner(r2Used, r2bUsed);
 
   // ── 3. Kalkulasi sisa & status ───────────────────────────────────────────
   const r2Sisa    = Math.max(0, r2LimitBytes  - r2Used);
   const r2Full    = (r2Used  >= r2LimitBytes);
   const r2TakCukup= (fileSize > r2Sisa);
+  // R2 Cadangan
+  const r2bLimitBytes = R2B_LIMIT_BYTES || 0;
+  const r2bSisaCek    = Math.max(0, r2bLimitBytes - r2bUsed);
+  const r2bFullCek    = r2bLimitBytes > 0 && (r2bUsed >= r2bLimitBytes);
   const driveSisa = Math.max(0, driveLimitBytes - driveUsed);
   const driveFull = (driveUsed >= driveLimitBytes);
   const driveTakCukup=(fileSize > driveSisa);
@@ -6904,23 +6909,20 @@ async function cekStorageCukup(fileSize, isAdmin=false){
   // ── 5b. R2 Cadangan sebagai overflow (jika Drive tidak aktif) ─────────────
   const r2bAvailable = R2B_AUTO_OVERFLOW && R2B.accountId && R2B.bucket && R2B.accessKey;
   if(r2bAvailable && !driveAvailable){
+    // R2 Utama masih muat → upload ke primary (r2b tidak relevan)
     if(!r2Full && !r2TakCukup) return{ok:true, target:'r2', msg:''};
-    // R2 utama penuh → cek R2 cadangan
-    const r2bUsed = await _hitung_r2b_dari_db();
-    const r2bSisa = Math.max(0, R2B_LIMIT_BYTES - r2bUsed);
-    const r2bFull = r2bUsed >= R2B_LIMIT_BYTES;
-    const r2bTakCukup = fileSize > r2bSisa;
-    if(r2bFull || r2bTakCukup){
+    // R2 Utama penuh → cek R2 Cadangan (sudah dihitung di atas sbg r2bSisaCek)
+    const r2bTakCukup = fileSize > r2bSisaCek;
+    if(r2bFullCek || r2bTakCukup){
       const msg=isAdmin
-        ?`🚫 R2 Utama penuh & R2 Cadangan tidak cukup (sisa: ${fmtSz(r2bSisa)}).`
+        ?`🚫 R2 Utama penuh (${fmtSz(r2Used)}/${fmtSz(r2LimitBytes)}) & R2 Cadangan tidak cukup (sisa: ${fmtSz(r2bSisaCek)}).`
         :'🚫 Semua penyimpanan penuh. Hubungi administrator.';
       return{ok:false, target:null, msg};
     }
     return{ok:true, target:'secondary', msg:''};
   }
 
-  // ── 6. Keputusan: Hanya R2 (Drive tidak dikonfigurasi / tidak aktif / limit=0) ──
-  // Jika autoOverflow aktif tapi Drive belum dikonfigurasi atau limit=0 → BLOKIR ke Drive juga
+  // ── 6. Keputusan: Hanya R2 Utama (tidak ada overflow aktif) ──────────────
   if(r2Full){
     const msgFull = driveConfigured && driveAutoOverflow && driveLimitBytes<=0
       ? (isAdmin ? `🚫 R2 penuh & limit Drive belum disetel (set limit Drive > 0 di Pengaturan).` : msgR2U)
