@@ -120,11 +120,6 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
 .storage-limit-warn{display:flex;align-items:center;gap:.5rem;background:#fef3c7;border:1px solid #f59e0b;border-radius:10px;padding:.55rem .875rem;margin-top:.6rem;font-size:.8rem;color:#92400e;font-weight:600;}
 .storage-limit-danger{display:flex;align-items:center;gap:.5rem;background:#fee2e2;border:2px solid var(--danger);border-radius:10px;padding:.65rem 1rem;margin-top:.6rem;font-size:.85rem;color:#991b1b;font-weight:700;animation:storageShake .45s ease;}
 @keyframes storageShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
-/* SETTING BANNER responsive */
-@media(max-width:900px){
-  #pageSetting .sett-banner-grid{grid-template-columns:1fr!important;}
-  #pageSetting .sett-config-grid{grid-template-columns:1fr!important;}
-}
 
 /* ACTION SPLASH — overlay loading saat proses CRUD */
 #actionSplash{
@@ -870,287 +865,98 @@ tbody td.wrap{white-space:normal;min-width:140px;}
 
     <!-- PENGATURAN -->
     <div id="pageSetting" style="display:none">
-      <div class="topbar">
-        <div>
-          <div class="page-title">Pengaturan</div>
-          <div class="page-sub">Kelola konfigurasi penyimpanan R2</div>
-        </div>
-      </div>
-
-      <!-- STORAGE OVERVIEW BANNER -->
-      <div class="sett-banner-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;max-width:1100px;margin-bottom:1.375rem">
-        <!-- R2 Utama Overview -->
-        <div style="background:linear-gradient(135deg,var(--navy) 0%,var(--navy3) 100%);border-radius:16px;padding:1.125rem 1.375rem;color:#fff;position:relative;overflow:hidden;box-shadow:var(--shadow-lg)">
-          <div style="position:absolute;top:-20px;right:-20px;width:100px;height:100px;border-radius:50%;background:rgba(26,86,219,.25);pointer-events:none"></div>
-          <div style="display:flex;align-items:center;gap:.65rem;margin-bottom:.75rem">
-            <div style="width:36px;height:36px;border-radius:10px;background:rgba(26,86,219,.4);display:grid;place-items:center;flex-shrink:0">
-              <i class="fas fa-cloud" style="font-size:.9rem;color:#93c5fd"></i>
-            </div>
-            <div>
-              <div style="font-size:.72rem;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.08em;font-weight:700">R2 Utama</div>
-              <div style="font-size:.9rem;font-weight:800;color:#fff" id="settBannerR2Name">Penyimpanan Primer</div>
-            </div>
-            <div style="margin-left:auto">
-              <span id="settBannerR2Status" style="font-size:.67rem;font-weight:700;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:20px;padding:.2rem .6rem;color:rgba(255,255,255,.8)">—</span>
-            </div>
-          </div>
-          <div style="background:rgba(255,255,255,.12);border-radius:99px;height:7px;overflow:hidden;margin-bottom:.4rem">
-            <div id="settBannerR2Bar" style="height:100%;border-radius:99px;background:linear-gradient(90deg,#60a5fa,#34d399);width:0%;transition:width .6s ease"></div>
-          </div>
-          <div style="display:flex;justify-content:space-between;font-size:.72rem;color:rgba(255,255,255,.6)">
-            <span id="settBannerR2Used">—</span>
-            <span id="settBannerR2Pct">—</span>
-            <span id="settBannerR2Limit">Batas: —</span>
-          </div>
-        </div>
-        <!-- R2 Cadangan Overview -->
-        <div style="background:linear-gradient(135deg,#065f46 0%,#047857 100%);border-radius:16px;padding:1.125rem 1.375rem;color:#fff;position:relative;overflow:hidden;box-shadow:var(--shadow-lg)">
-          <div style="position:absolute;top:-20px;right:-20px;width:100px;height:100px;border-radius:50%;background:rgba(4,120,87,.3);pointer-events:none"></div>
-          <div style="display:flex;align-items:center;gap:.65rem;margin-bottom:.75rem">
-            <div style="width:36px;height:36px;border-radius:10px;background:rgba(6,95,70,.5);display:grid;place-items:center;flex-shrink:0">
-              <i class="fas fa-database" style="font-size:.9rem;color:#6ee7b7"></i>
-            </div>
-            <div>
-              <div style="font-size:.72rem;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.08em;font-weight:700">R2 Cadangan</div>
-              <div style="font-size:.9rem;font-weight:800;color:#fff" id="settBannerR2bName">Penyimpanan Overflow</div>
-            </div>
-            <div style="margin-left:auto">
-              <span id="settBannerR2bStatus" style="font-size:.67rem;font-weight:700;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:20px;padding:.2rem .6rem;color:rgba(255,255,255,.8)">—</span>
-            </div>
-          </div>
-          <div style="background:rgba(255,255,255,.12);border-radius:99px;height:7px;overflow:hidden;margin-bottom:.4rem">
-            <div id="settBannerR2bBar" style="height:100%;border-radius:99px;background:linear-gradient(90deg,#34d399,#a3e635);width:0%;transition:width .6s ease"></div>
-          </div>
-          <div style="display:flex;justify-content:space-between;font-size:.72rem;color:rgba(255,255,255,.6)">
-            <span id="settBannerR2bUsed">—</span>
-            <span id="settBannerR2bPct">—</span>
-            <span id="settBannerR2bLimit">Batas: —</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- GRID KONFIGURASI -->
-      <div class="sett-config-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:1.375rem;max-width:1100px;align-items:start;min-width:0">
-
-        <!-- ═══ KOLOM KIRI: R2 UTAMA ═══ -->
+      <div class="topbar"><div><div class="page-title">Pengaturan</div></div></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.375rem;max-width:1100px;align-items:start;min-width:0">
+        <!-- KOLOM KIRI: Cloudflare R2 -->
         <div style="min-width:0">
-          <div class="card" style="min-width:0;overflow:hidden">
-            <div class="card-hd" style="background:linear-gradient(90deg,rgba(26,86,219,.06),transparent);border-bottom:2px solid var(--accent-l)">
-              <span class="card-title">
-                <span style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;background:var(--accent-l);margin-right:.55rem">
-                  <i class="fas fa-cloud" style="color:var(--accent);font-size:.8rem"></i>
-                </span>
-                Cloudflare R2 — Penyimpanan Utama
-              </span>
-              <span style="font-size:.67rem;font-weight:700;background:var(--accent-l);color:var(--accent);border-radius:20px;padding:.18rem .6rem">PRIMER</span>
+        <div class="card" style="min-width:0;overflow:hidden"><div class="card-hd"><span class="card-title"><i class="fas fa-cloud" style="color:var(--accent);margin-right:.4rem"></i>Cloudflare R2</span></div><div class="card-body">
+          <div class="alert-info alert-box"><i class="fas fa-lock"></i><div>Hanya admin yang dapat mengubah konfigurasi R2.</div></div>
+          <div class="form-group"><label class="form-label">Account ID</label><input class="form-control" id="r2AID" style="font-family:'JetBrains Mono',monospace;font-size:.79rem"/></div>
+          <div class="form-group"><label class="form-label">Bucket</label><input class="form-control" id="r2Bkt"/></div>
+          <div class="form-group"><label class="form-label">Access Key</label><input class="form-control" id="r2AK" style="font-family:'JetBrains Mono',monospace;font-size:.79rem"/></div>
+          <div class="form-group"><label class="form-label">Secret Key <span style="font-size:.72rem;color:var(--muted)">(kosongkan jika tidak ingin mengubah)</span></label><input class="form-control" type="password" id="r2SK" placeholder="Biarkan kosong untuk mempertahankan nilai lama"/></div>
+          <div class="form-group"><label class="form-label">Batas Penyimpanan R2 <span style="font-size:.72rem;color:var(--muted)">(max 8 GB)</span></label>
+            <div style="display:flex;gap:.5rem;align-items:center">
+              <input class="form-control" id="r2LimitVal" type="number" min="1" max="8192" value="8" style="max-width:100px" oninput="updateR2LimitPreview()"/>
+              <select class="form-control" id="r2LimitUnit" style="max-width:80px" onchange="updateR2LimitPreview()">
+                <option value="GB">GB</option>
+                <option value="MB">MB</option>
+              </select>
+              <span style="font-size:.8rem;color:var(--muted)" id="r2LimitPreview">= 8 GB</span>
             </div>
-            <div class="card-body">
-              <div class="alert-info alert-box" style="margin-bottom:1rem"><i class="fas fa-lock"></i><div>Hanya admin yang dapat mengubah konfigurasi R2. Konfigurasi disimpan terenkripsi di Supabase.</div></div>
-
-              <!-- Field Group dengan label yang lebih bersih -->
-              <div style="display:grid;gap:.85rem">
-                <div class="form-group" style="margin:0">
-                  <label class="form-label" style="display:flex;align-items:center;gap:.4rem">
-                    <i class="fas fa-fingerprint" style="color:var(--muted);font-size:.75rem"></i> Account ID
-                  </label>
-                  <input class="form-control" id="r2AID" style="font-family:'JetBrains Mono',monospace;font-size:.79rem" placeholder="a1b2c3d4e5f6..."/>
-                </div>
-                <div class="form-group" style="margin:0">
-                  <label class="form-label" style="display:flex;align-items:center;gap:.4rem">
-                    <i class="fas fa-box" style="color:var(--muted);font-size:.75rem"></i> Nama Bucket
-                  </label>
-                  <input class="form-control" id="r2Bkt" placeholder="sipegawai-docs"/>
-                </div>
-                <div class="form-group" style="margin:0">
-                  <label class="form-label" style="display:flex;align-items:center;gap:.4rem">
-                    <i class="fas fa-key" style="color:var(--muted);font-size:.75rem"></i> Access Key ID
-                  </label>
-                  <input class="form-control" id="r2AK" style="font-family:'JetBrains Mono',monospace;font-size:.79rem" placeholder="..."/>
-                </div>
-                <div class="form-group" style="margin:0">
-                  <label class="form-label" style="display:flex;align-items:center;gap:.4rem">
-                    <i class="fas fa-shield-alt" style="color:var(--muted);font-size:.75rem"></i> Secret Access Key
-                    <span style="font-size:.67rem;color:var(--muted);font-weight:400;margin-left:.2rem">(kosongkan jika tidak ingin mengubah)</span>
-                  </label>
-                  <input class="form-control" type="password" id="r2SK" placeholder="Biarkan kosong untuk mempertahankan nilai lama"/>
-                </div>
-
-                <!-- Limit Storage -->
-                <div class="form-group" style="margin:0">
-                  <label class="form-label" style="display:flex;align-items:center;gap:.4rem">
-                    <i class="fas fa-tachometer-alt" style="color:var(--muted);font-size:.75rem"></i> Batas Penyimpanan
-                    <span style="font-size:.67rem;color:var(--muted);font-weight:400;margin-left:.2rem">Free tier: maks 10 GB</span>
-                  </label>
-                  <div style="display:flex;gap:.5rem;align-items:center">
-                    <input class="form-control" id="r2LimitVal" type="number" min="1" max="8192" value="8" style="max-width:90px" oninput="updateR2LimitPreview()"/>
-                    <select class="form-control" id="r2LimitUnit" style="max-width:80px" onchange="updateR2LimitPreview()">
-                      <option value="GB">GB</option>
-                      <option value="MB">MB</option>
-                    </select>
-                    <span style="font-size:.8rem;color:var(--accent);font-weight:600" id="r2LimitPreview">= 8 GB</span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Tombol simpan -->
-              <div style="margin-top:1.125rem">
-                <button class="btn-p" onclick="saveR2()" style="width:100%;justify-content:center;padding:.65rem">
-                  <i class="fas fa-save"></i> Simpan Konfigurasi R2 Utama
-                </button>
-              </div>
-              <div id="r2Alert" class="alert-box" style="display:none;margin-top:.5rem"></div>
-              <div id="r2Stat" style="margin-top:.65rem;font-size:.79rem;color:var(--muted)"></div>
-
-              <!-- Storage bar R2 -->
-              <div class="storage-wrap" id="storageWrap" style="margin-top:1rem">
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.35rem">
-                  <span style="font-size:.82rem;font-weight:700;color:var(--navy)">
-                    <i class="fas fa-database" style="margin-right:.4rem;color:var(--accent)"></i>Penggunaan R2 Utama
-                  </span>
-                  <span style="font-size:.82rem;font-weight:700;color:var(--navy)" id="storageText">
-                    <i class="fas fa-spinner fa-spin" style="font-size:.75rem;color:var(--muted)"></i> Memuat...
-                  </span>
-                </div>
-                <div class="storage-bar-bg"><div class="storage-bar-fill safe" id="storageBar" style="width:0%"></div></div>
-                <div class="storage-meta">
-                  <span id="storageUsed">Memuat data...</span>
-                  <span id="storagePct"></span>
-                  <span id="storageLimit">Batas: —</span>
-                </div>
-                <div id="storageAlert"></div>
-              </div>
-            </div>
+            <div style="font-size:.72rem;color:var(--muted);margin-top:.25rem">Cloudflare R2 free tier: maks 10 GB. Setting ini membatasi kuota internal.</div>
           </div>
+          <button class="btn-p" onclick="saveR2()" style="width:100%;justify-content:center"><i class="fas fa-save"></i> Simpan R2</button>
+          <div id="r2Alert" class="alert-box" style="display:none;margin-top:.5rem"></div>
+          <div id="r2Stat" style="margin-top:.65rem;font-size:.79rem;color:var(--muted)"></div>
+          <!-- Storage bar R2 dipindah dari dashboard -->
+          <div class="storage-wrap" id="storageWrap" style="margin-top:1rem">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.35rem">
+              <span style="font-size:.82rem;font-weight:700;color:var(--navy)"><i class="fas fa-database" style="margin-right:.4rem;color:var(--accent)"></i>Penggunaan R2</span>
+              <span style="font-size:.82rem;font-weight:700;color:var(--navy)" id="storageText"><i class="fas fa-spinner fa-spin" style="font-size:.75rem;color:var(--muted)"></i> Memuat...</span>
+            </div>
+            <div class="storage-bar-bg"><div class="storage-bar-fill safe" id="storageBar" style="width:0%"></div></div>
+            <div class="storage-meta">
+              <span id="storageUsed">Memuat data...</span>
+              <span id="storagePct"></span>
+              <span id="storageLimit">Batas: —</span>
+            </div>
+            <div id="storageAlert"></div>
+          </div>
+        </div></div>
+
         </div><!-- end kolom kiri -->
-
-        <!-- ═══ KOLOM KANAN: R2 CADANGAN ═══ -->
+        <!-- KOLOM KANAN: R2 Cadangan -->
         <div style="min-width:0">
-          <div class="card" style="min-width:0;overflow:hidden">
-            <div class="card-hd" style="background:linear-gradient(90deg,rgba(14,159,110,.07),transparent);border-bottom:2px solid var(--accent2-l)">
-              <span class="card-title">
-                <span style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;background:var(--accent2-l);margin-right:.55rem">
-                  <i class="fas fa-database" style="color:var(--accent2);font-size:.8rem"></i>
-                </span>
-                Cloudflare R2 — Penyimpanan Cadangan
-              </span>
-              <span style="font-size:.67rem;font-weight:700;background:var(--accent2-l);color:var(--accent2);border-radius:20px;padding:.18rem .6rem">OVERFLOW</span>
+        <div class="card" style="min-width:0;overflow:hidden">
+          <div class="card-hd"><span class="card-title"><i class="fas fa-database" style="color:var(--accent2);margin-right:.4rem"></i>R2 Cadangan (Overflow Storage)</span></div>
+          <div class="card-body">
+            <div class="alert-info alert-box" style="margin-bottom:.875rem"><i class="fas fa-info-circle"></i><div>R2 akun Cloudflare kedua sebagai penyimpanan overflow. Jika R2 utama penuh, file baru otomatis diarahkan ke sini.</div></div>
+            <div class="form-group"><label class="form-label">Account ID <span style="font-size:.72rem;color:var(--muted)">(akun CF baru)</span></label><input class="form-control" id="r2bAID" style="font-family:'JetBrains Mono',monospace;font-size:.79rem"/></div>
+            <div class="form-group"><label class="form-label">Bucket</label><input class="form-control" id="r2bBkt"/></div>
+            <div class="form-group"><label class="form-label">Access Key</label><input class="form-control" id="r2bAK" style="font-family:'JetBrains Mono',monospace;font-size:.79rem"/></div>
+            <div class="form-group"><label class="form-label">Secret Key <span style="font-size:.72rem;color:var(--muted)">(kosongkan jika tidak ingin mengubah)</span></label><input class="form-control" type="password" id="r2bSK" placeholder="Biarkan kosong untuk mempertahankan nilai lama"/></div>
+            <div class="form-group"><label class="form-label">Batas Penyimpanan R2 Cadangan <span style="font-size:.72rem;color:var(--muted)">(max 8 GB)</span></label>
+              <div style="display:flex;gap:.5rem;align-items:center">
+                <input class="form-control" id="r2bLimitVal" type="number" min="1" max="8192" value="8" style="max-width:100px" oninput="updateR2bLimitPreview()"/>
+                <select class="form-control" id="r2bLimitUnit" style="max-width:80px" onchange="updateR2bLimitPreview()">
+                  <option value="GB">GB</option>
+                  <option value="MB">MB</option>
+                </select>
+                <span style="font-size:.8rem;color:var(--muted)" id="r2bLimitPreview">= 8 GB</span>
+              </div>
             </div>
-            <div class="card-body">
-              <div class="alert-info alert-box" style="margin-bottom:1rem"><i class="fas fa-info-circle"></i><div>R2 akun Cloudflare <strong>kedua</strong> sebagai penyimpanan overflow. Jika R2 Utama penuh, file baru otomatis diarahkan ke sini.</div></div>
-
-              <div style="display:grid;gap:.85rem">
-                <div class="form-group" style="margin:0">
-                  <label class="form-label" style="display:flex;align-items:center;gap:.4rem">
-                    <i class="fas fa-fingerprint" style="color:var(--muted);font-size:.75rem"></i> Account ID
-                    <span style="font-size:.67rem;color:var(--muted);font-weight:400;margin-left:.2rem">(akun Cloudflare kedua)</span>
-                  </label>
-                  <input class="form-control" id="r2bAID" style="font-family:'JetBrains Mono',monospace;font-size:.79rem" placeholder="a1b2c3d4e5f6..."/>
-                </div>
-                <div class="form-group" style="margin:0">
-                  <label class="form-label" style="display:flex;align-items:center;gap:.4rem">
-                    <i class="fas fa-box" style="color:var(--muted);font-size:.75rem"></i> Nama Bucket
-                  </label>
-                  <input class="form-control" id="r2bBkt" placeholder="sipegawai-docs-backup"/>
-                </div>
-                <div class="form-group" style="margin:0">
-                  <label class="form-label" style="display:flex;align-items:center;gap:.4rem">
-                    <i class="fas fa-key" style="color:var(--muted);font-size:.75rem"></i> Access Key ID
-                  </label>
-                  <input class="form-control" id="r2bAK" style="font-family:'JetBrains Mono',monospace;font-size:.79rem" placeholder="..."/>
-                </div>
-                <div class="form-group" style="margin:0">
-                  <label class="form-label" style="display:flex;align-items:center;gap:.4rem">
-                    <i class="fas fa-shield-alt" style="color:var(--muted);font-size:.75rem"></i> Secret Access Key
-                    <span style="font-size:.67rem;color:var(--muted);font-weight:400;margin-left:.2rem">(kosongkan jika tidak ingin mengubah)</span>
-                  </label>
-                  <input class="form-control" type="password" id="r2bSK" placeholder="Biarkan kosong untuk mempertahankan nilai lama"/>
-                </div>
-
-                <!-- Limit Storage Cadangan -->
-                <div class="form-group" style="margin:0">
-                  <label class="form-label" style="display:flex;align-items:center;gap:.4rem">
-                    <i class="fas fa-tachometer-alt" style="color:var(--muted);font-size:.75rem"></i> Batas Penyimpanan Cadangan
-                    <span style="font-size:.67rem;color:var(--muted);font-weight:400;margin-left:.2rem">max 8 GB</span>
-                  </label>
-                  <div style="display:flex;gap:.5rem;align-items:center">
-                    <input class="form-control" id="r2bLimitVal" type="number" min="1" max="8192" value="8" style="max-width:90px" oninput="updateR2bLimitPreview()"/>
-                    <select class="form-control" id="r2bLimitUnit" style="max-width:80px" onchange="updateR2bLimitPreview()">
-                      <option value="GB">GB</option>
-                      <option value="MB">MB</option>
-                    </select>
-                    <span style="font-size:.8rem;color:var(--accent2);font-weight:600" id="r2bLimitPreview">= 8 GB</span>
-                  </div>
-                </div>
-
-                <!-- Auto overflow checkbox -->
-                <div style="background:var(--surface2);border:1.5px solid var(--border);border-radius:11px;padding:.75rem 1rem">
-                  <label style="display:flex;align-items:flex-start;gap:.65rem;cursor:pointer;margin:0">
-                    <input type="checkbox" id="r2bAutoOverflow" style="width:16px;height:16px;accent-color:var(--accent2);margin-top:.1rem;flex-shrink:0"/>
-                    <div>
-                      <div style="font-size:.84rem;font-weight:600;color:var(--navy)">Otomatis alihkan ke R2 Cadangan</div>
-                      <div style="font-size:.72rem;color:var(--muted);margin-top:.15rem">File baru akan otomatis diunggah ke R2 Cadangan saat R2 Utama sudah melebihi batas</div>
-                    </div>
-                  </label>
-                </div>
+            <div class="form-group"><label class="form-label" style="display:flex;align-items:center;gap:.5rem;cursor:pointer">
+              <input type="checkbox" id="r2bAutoOverflow" style="width:16px;height:16px;accent-color:var(--accent)"/>
+              <span>Otomatis alihkan ke R2 Cadangan saat R2 Utama penuh</span>
+            </label></div>
+            <div style="display:flex;gap:.65rem;flex-wrap:wrap">
+              <button class="btn-p" onclick="saveR2b()" style="flex:1;justify-content:center"><i class="fas fa-save"></i> Simpan R2 Cadangan</button>
+              <button class="btn-s" onclick="migrateR2ToR2b()" id="btnMigrateR2b" style="flex:1;justify-content:center;color:var(--warn);border-color:var(--warn)"><i class="fas fa-exchange-alt"></i> Transfer Utama → Cadangan</button>
+              <button class="btn-s" onclick="migrateR2bToR2()" id="btnMigrateR2bBack" style="flex:1;justify-content:center;color:var(--accent2);border-color:var(--accent2)"><i class="fas fa-exchange-alt fa-flip-horizontal"></i> Transfer Cadangan → Utama</button>
+            </div>
+            <div id="r2bAlert" class="alert-box" style="display:none;margin-top:.5rem"></div>
+            <div id="r2bStat" style="margin-top:.65rem;font-size:.79rem;color:var(--muted)"></div>
+            <div class="storage-wrap" id="storageWrapB" style="margin-top:1rem;display:none">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.35rem">
+                <span style="font-size:.82rem;font-weight:700;color:var(--navy)"><i class="fas fa-database" style="margin-right:.4rem;color:var(--accent2)"></i>Penggunaan R2 Cadangan</span>
+                <span style="font-size:.82rem;font-weight:700;color:var(--navy)" id="storageBText">—</span>
               </div>
-
-              <!-- Tombol simpan -->
-              <div style="margin-top:1.125rem">
-                <button class="btn-p" onclick="saveR2b()" style="width:100%;justify-content:center;padding:.65rem;background:linear-gradient(135deg,var(--accent2),#059669)">
-                  <i class="fas fa-save"></i> Simpan Konfigurasi R2 Cadangan
-                </button>
+              <div class="storage-bar-bg"><div class="storage-bar-fill safe" id="storageBBar" style="width:0%"></div></div>
+              <div class="storage-meta">
+                <span id="storageBUsed">—</span>
+                <span id="storageBPct"></span>
+                <span id="storageBLimit">Batas: —</span>
               </div>
-              <div id="r2bAlert" class="alert-box" style="display:none;margin-top:.5rem"></div>
-              <div id="r2bStat" style="margin-top:.65rem;font-size:.79rem;color:var(--muted)"></div>
-
-              <!-- Storage bar R2 Cadangan -->
-              <div class="storage-wrap" id="storageWrapB" style="margin-top:1rem;display:none">
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.35rem">
-                  <span style="font-size:.82rem;font-weight:700;color:var(--navy)">
-                    <i class="fas fa-database" style="margin-right:.4rem;color:var(--accent2)"></i>Penggunaan R2 Cadangan
-                  </span>
-                  <span style="font-size:.82rem;font-weight:700;color:var(--navy)" id="storageBText">—</span>
-                </div>
-                <div class="storage-bar-bg"><div class="storage-bar-fill safe" id="storageBBar" style="width:0%"></div></div>
-                <div class="storage-meta">
-                  <span id="storageBUsed">—</span>
-                  <span id="storageBPct"></span>
-                  <span id="storageBLimit">Batas: —</span>
-                </div>
-                <div id="storageBAlert"></div>
-              </div>
+              <div id="storageBAlert"></div>
+            </div>
+            <div id="transferResultBox" style="display:none;margin-top:.875rem;border-radius:10px;border:1.5px solid var(--border);overflow:hidden">
+              <div id="transferResultHeader" style="padding:.6rem 1rem;font-weight:700;font-size:.82rem;display:flex;align-items:center;gap:.5rem"></div>
+              <div id="transferResultBody" style="padding:.75rem 1rem;font-size:.8rem;line-height:1.7;border-top:1px solid var(--border)"></div>
             </div>
           </div>
-
-          <!-- Transfer Card — terpisah di bawah R2 Cadangan -->
-          <div class="card" style="min-width:0;overflow:hidden;margin-top:1.125rem">
-            <div class="card-hd" style="background:linear-gradient(90deg,rgba(217,119,6,.06),transparent)">
-              <span class="card-title">
-                <span style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;background:var(--warn-l);margin-right:.55rem">
-                  <i class="fas fa-exchange-alt" style="color:var(--warn);font-size:.8rem"></i>
-                </span>
-                Transfer Data Antar Bucket
-              </span>
-            </div>
-            <div class="card-body">
-              <div class="alert-warn alert-box" style="margin-bottom:.875rem"><i class="fas fa-exclamation-triangle"></i><div>Proses transfer memindahkan file antar bucket. Pastikan kedua R2 sudah dikonfigurasi sebelum memulai.</div></div>
-              <div style="display:flex;gap:.65rem;flex-direction:column">
-                <button class="btn-s" onclick="migrateR2ToR2b()" id="btnMigrateR2b" style="justify-content:center;color:var(--warn);border-color:var(--warn);padding:.6rem">
-                  <i class="fas fa-arrow-right"></i> Transfer R2 Utama → Cadangan
-                </button>
-                <button class="btn-s" onclick="migrateR2bToR2()" id="btnMigrateR2bBack" style="justify-content:center;color:var(--accent2);border-color:var(--accent2);padding:.6rem">
-                  <i class="fas fa-arrow-left"></i> Transfer Cadangan → R2 Utama
-                </button>
-              </div>
-              <!-- Hasil transfer -->
-              <div id="transferResultBox" style="display:none;margin-top:.875rem;border-radius:10px;border:1.5px solid var(--border);overflow:hidden">
-                <div id="transferResultHeader" style="padding:.6rem 1rem;font-weight:700;font-size:.82rem;display:flex;align-items:center;gap:.5rem"></div>
-                <div id="transferResultBody" style="padding:.75rem 1rem;font-size:.8rem;line-height:1.7;border-top:1px solid var(--border)"></div>
-              </div>
-            </div>
-          </div>
+        </div>
         </div><!-- end kolom kanan -->
-
       </div><!-- end grid -->
     </div>
 
@@ -1792,7 +1598,6 @@ let CU=null,CP=null;
 let allProfiles=[],allJabatan=[],allKategori=[];
 let polling=null,selKatId=null;
 let R2={accountId:'',bucket:'',accessKey:'',secretKey:''};
-
 let DRIVE={serviceAccountJson:'',folderId:'',limitGb:10,autoOverflow:false,configured:false};
 let R2B={accountId:'',bucket:'',accessKey:'',secretKey:''};
 let R2B_LIMIT_BYTES=8*1024*1024*1024;
@@ -2772,6 +2577,185 @@ async function saveR2(){
   loadStorageUsage().catch(()=>renderStorageBar(currentStorageBytes));
 }
 
+
+// ═══════════════════════════════
+//  R2 CADANGAN CONFIG
+// ═══════════════════════════════
+async function loadR2b(){
+  const cached=sessionStorage.getItem('r2bcfg_session');
+  if(cached){try{R2B={...R2B,...JSON.parse(cached)};fillR2bFields();return;}catch(e){}}
+  try{
+    const{data,error}=await sb.from('app_config').select('key,value')
+      .in('key',['r2bAccountId','r2bBucket','r2bAccessKey','r2bSecretKey','r2bLimitBytes','r2bAutoOverflow']);
+    if(!error && data && data.length){
+      data.forEach(row=>{
+        if(row.key==='r2bAccountId')   R2B.accountId=row.value||'';
+        if(row.key==='r2bBucket')      R2B.bucket=row.value||'';
+        if(row.key==='r2bAccessKey')   R2B.accessKey=row.value||'';
+        if(row.key==='r2bSecretKey')   R2B.secretKey=row.value||'';
+        if(row.key==='r2bLimitBytes' && row.value) R2B_LIMIT_BYTES=parseInt(row.value)||R2B_LIMIT_BYTES;
+        if(row.key==='r2bAutoOverflow') R2B_AUTO_OVERFLOW=(row.value==='true');
+      });
+      sessionStorage.setItem('r2bcfg_session',JSON.stringify(R2B));
+      fillR2bFields();
+    }
+  }catch(e){ console.warn('loadR2b error:',e.message); }
+}
+
+function fillR2bFields(){
+  const g=id=>document.getElementById(id);
+  if(g('r2bAID')) g('r2bAID').value=R2B.accountId||'';
+  if(g('r2bBkt')) g('r2bBkt').value=R2B.bucket||'';
+  if(g('r2bAK'))  g('r2bAK').value=R2B.accessKey||'';
+  if(g('r2bLimitVal')){
+    const lBytes=R2B_LIMIT_BYTES||8*1024*1024*1024;
+    const lGb=lBytes/(1024*1024*1024);
+    g('r2bLimitVal').value=lGb>=1?lGb.toFixed(0):(lBytes/(1024*1024)).toFixed(0);
+    if(g('r2bLimitUnit')) g('r2bLimitUnit').value=lGb>=1?'GB':'MB';
+  }
+  if(g('r2bAutoOverflow')) g('r2bAutoOverflow').checked=R2B_AUTO_OVERFLOW||false;
+  const stEl=g('r2bStat');
+  if(stEl) stEl.textContent=R2B.accountId?'✓ R2 Cadangan sudah dikonfigurasi':'Belum dikonfigurasi';
+  updateR2bLimitPreview();
+  renderStorageBBar(currentStorageBBytes||0);
+}
+
+function updateR2bLimitPreview(){
+  const val=parseFloat(document.getElementById('r2bLimitVal')?.value)||0;
+  const unit=document.getElementById('r2bLimitUnit')?.value||'GB';
+  const bytes=unit==='GB'?val*1024*1024*1024:val*1024*1024;
+  const el=document.getElementById('r2bLimitPreview');
+  if(el) el.textContent=val?'= '+fmtSz(bytes):'';
+}
+
+async function saveR2b(){
+  const aid=document.getElementById('r2bAID')?.value.trim()||'';
+  const bkt=document.getElementById('r2bBkt')?.value.trim()||'';
+  const ak =document.getElementById('r2bAK')?.value.trim()||'';
+  const sk =document.getElementById('r2bSK')?.value.trim()||'';
+  const lv =parseFloat(document.getElementById('r2bLimitVal')?.value)||8;
+  const lu =document.getElementById('r2bLimitUnit')?.value||'GB';
+  const auto=document.getElementById('r2bAutoOverflow')?.checked||false;
+  if(!aid||!bkt||!ak){ toast('Account ID, Bucket, dan Access Key wajib diisi!','warn'); return; }
+  const lBytes=lu==='GB'?Math.round(lv*1024*1024*1024):Math.round(lv*1024*1024);
+  const alertEl=document.getElementById('r2bAlert');
+  try{
+    const upserts=[
+      {key:'r2bAccountId',   value:aid},
+      {key:'r2bBucket',      value:bkt},
+      {key:'r2bAccessKey',   value:ak},
+      {key:'r2bLimitBytes',  value:String(lBytes)},
+      {key:'r2bAutoOverflow',value:String(auto)},
+    ];
+    if(sk) upserts.push({key:'r2bSecretKey',value:sk});
+    const{error}=await sb.from('app_config').upsert(upserts,{onConflict:'key'});
+    if(error) throw error;
+    R2B={accountId:aid,bucket:bkt,accessKey:ak,secretKey:sk||R2B.secretKey};
+    R2B_LIMIT_BYTES=lBytes;
+    R2B_AUTO_OVERFLOW=auto;
+    sessionStorage.setItem('r2bcfg_session',JSON.stringify(R2B));
+    sessionStorage.setItem('r2blimit_session',String(lBytes));
+    toast('R2 Cadangan berhasil disimpan ✓','ok');
+    if(alertEl){ alertEl.style.display='block'; alertEl.className='alert-box alert-success'; alertEl.innerHTML='<i class="fas fa-check-circle"></i><div>Konfigurasi R2 Cadangan tersimpan.</div>'; }
+    fillR2bFields();
+    await loadStorageUsage();
+  }catch(e){
+    toast('Gagal simpan R2 Cadangan: '+e.message,'err');
+    if(alertEl){ alertEl.style.display='flex'; alertEl.className='alert-box alert-danger'; alertEl.innerHTML='<i class="fas fa-times-circle"></i><div>'+e.message+'</div>'; }
+  }
+}
+
+async function migrateR2ToR2b(){ await _doR2Transfer('primary','secondary','R2 Utama → Cadangan'); }
+async function migrateR2bToR2(){ await _doR2Transfer('secondary','primary','R2 Cadangan → Utama'); }
+
+async function _doR2Transfer(fromStorage,toStorage,label){
+  if(!confirm('Transfer semua file dari '+label+'?\nProses ini memindahkan file satu per satu dan tidak bisa dibatalkan.')) return;
+  const{data:{session}}=await sb.auth.getSession();
+  const token=session?.access_token||'';
+
+  let storageQuery;
+  if(fromStorage==='secondary'){
+    storageQuery=sb.from('dokumen').select('id,r2_key,nama_file,ukuran_file,storage_type').eq('storage','secondary');
+  } else {
+    storageQuery=sb.from('dokumen').select('id,r2_key,nama_file,ukuran_file,storage_type').neq('storage','secondary');
+  }
+  const{data:docs,error}=await storageQuery;
+  if(error){ toast('Gagal ambil daftar dokumen: '+error.message,'err'); return; }
+  const validDocs=(docs||[]).filter(d=>d.r2_key && d.storage_type!=='drive');
+  if(!validDocs.length){ toast('Tidak ada dokumen R2 di '+label.split('→')[0].trim(),'warn'); return; }
+
+  const hdr=document.getElementById('transferResultHeader');
+  const bdy=document.getElementById('transferResultBody');
+  const box=document.getElementById('transferResultBox');
+  if(box){ box.style.display='block'; }
+  if(hdr){ hdr.style.background='#fef3c7'; hdr.innerHTML='<i class="fas fa-spinner fa-spin"></i> Transfer sedang berjalan (0/'+validDocs.length+')...'; }
+
+  let ok=0, fail=0, failList=[];
+  for(let i=0;i<validDocs.length;i++){
+    const doc=validDocs[i];
+    if(hdr) hdr.innerHTML='<i class="fas fa-spinner fa-spin"></i> Transfer '+(i+1)+'/'+validDocs.length+': '+esc(doc.nama_file||doc.r2_key)+'...';
+    try{
+      const res=await fetch(WORKER_URL+'/transfer',{
+        method:'POST',
+        headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},
+        body:JSON.stringify({key:doc.r2_key,from:fromStorage,to:toStorage})
+      });
+      const data=await res.json();
+      if(!res.ok||!data.ok) throw new Error(data.error||'Gagal');
+      const newStorage=toStorage==='secondary'?'secondary':'primary';
+      await sb.from('dokumen').update({storage:newStorage}).eq('id',doc.id);
+      ok++;
+    }catch(e){
+      fail++;
+      failList.push((doc.nama_file||doc.r2_key)+': '+e.message);
+      console.warn('[transfer]',doc.nama_file,e.message);
+    }
+  }
+  await loadStorageUsage().catch(()=>{});
+  const isOk=fail===0;
+  if(hdr){
+    hdr.style.background=isOk?'#f0fdf4':'#fef3c7';
+    hdr.innerHTML=isOk
+      ?'<i class="fas fa-check-circle" style="color:var(--accent2)"></i> Transfer selesai: '+ok+' file berhasil dipindah'
+      :'<i class="fas fa-exclamation-triangle" style="color:var(--warn)"></i> Transfer: '+ok+' berhasil, '+fail+' gagal';
+  }
+  if(bdy){
+    let bodyHtml='<div>Sumber: <strong>'+label.split('→')[0].trim()+'</strong> → Tujuan: <strong>'+label.split('→')[1].trim()+'</strong></div>';
+    if(failList.length){
+      bodyHtml+='<div style="margin-top:.5rem;color:var(--danger)"><strong>File gagal:</strong><ul style="margin:.3rem 0 0 1rem">';
+      failList.forEach(f=>{ bodyHtml+='<li>'+esc(f)+'</li>'; });
+      bodyHtml+='</ul></div>';
+    }
+    bdy.innerHTML=bodyHtml;
+  }
+  toast(isOk?'✓ '+ok+' file berhasil dipindahkan':ok+' berhasil, '+fail+' gagal','ok');
+}
+
+let currentStorageBBytes=0;
+function renderStorageBBar(usedBytes){
+  const wrap=document.getElementById('storageWrapB');
+  if(!wrap) return;
+  wrap.style.display='block';
+  const limitBytes=R2B_LIMIT_BYTES||1;
+  const pct=Math.min((usedBytes/limitBytes)*100,100);
+  const bar=document.getElementById('storageBBar');
+  if(bar){
+    bar.style.width=Math.max(pct,pct>0?0.5:0).toFixed(2)+'%';
+    bar.className='storage-bar-fill';
+    if(pct>=100) bar.classList.add('danger');
+    else if(pct>=87.5) bar.classList.add('warn');
+    else bar.classList.add('safe');
+  }
+  const usedEl =document.getElementById('storageBUsed');
+  const pctEl  =document.getElementById('storageBPct');
+  const textEl =document.getElementById('storageBText');
+  const limitEl=document.getElementById('storageBLimit');
+  if(usedEl)  usedEl.textContent='R2 Cadangan terpakai: '+fmtSz(usedBytes);
+  if(pctEl)   pctEl.textContent=pct.toFixed(1)+'%';
+  if(textEl)  textEl.textContent='Cadangan: '+fmtSz(usedBytes)+' / '+fmtSz(R2B_LIMIT_BYTES||0);
+  if(limitEl) limitEl.textContent='Batas: '+fmtSz(R2B_LIMIT_BYTES||0);
+}
+
 // ═══════════════════════════════
 //  GOOGLE DRIVE CONFIG
 // ═══════════════════════════════
@@ -2942,195 +2926,6 @@ async function saveDriveConfig(){
         'warn'),600);
     }
   }catch(e){}
-}
-
-// ──────────────────────────────────────────────────────────────
-//  R2 CADANGAN CONFIG
-// ──────────────────────────────────────────────────────────────
-async function loadR2b(){
-  const cached=sessionStorage.getItem('r2bcfg_session');
-  if(cached){try{R2B={...R2B,...JSON.parse(cached)};fillR2bFields();return;}catch(e){}}
-  try{
-    const{data,error}=await sb.from('app_config').select('key,value')
-      .in('key',['r2bAccountId','r2bBucket','r2bAccessKey','r2bSecretKey','r2bLimitBytes','r2bAutoOverflow']);
-    if(!error && data && data.length){
-      data.forEach(row=>{
-        if(row.key==='r2bAccountId')  R2B.accountId=row.value||'';
-        if(row.key==='r2bBucket')     R2B.bucket=row.value||'';
-        if(row.key==='r2bAccessKey')  R2B.accessKey=row.value||'';
-        if(row.key==='r2bSecretKey')  R2B.secretKey=row.value||'';
-        if(row.key==='r2bLimitBytes' && row.value) R2B_LIMIT_BYTES=parseInt(row.value)||R2B_LIMIT_BYTES;
-        if(row.key==='r2bAutoOverflow') R2B_AUTO_OVERFLOW=(row.value==='true');
-      });
-      sessionStorage.setItem('r2bcfg_session', JSON.stringify(R2B));
-      fillR2bFields();
-    }
-  }catch(e){ console.warn('loadR2b error:',e.message); }
-}
-
-function fillR2bFields(){
-  const el=id=>document.getElementById(id);
-  if(el('r2bAID')) el('r2bAID').value=R2B.accountId||'';
-  if(el('r2bBkt')) el('r2bBkt').value=R2B.bucket||'';
-  if(el('r2bAK'))  el('r2bAK').value=R2B.accessKey||'';
-  if(el('r2bLimitVal')){
-    const lBytes=R2B_LIMIT_BYTES||8*1024*1024*1024;
-    const lGb=lBytes/(1024*1024*1024);
-    el('r2bLimitVal').value=lGb>=1?lGb.toFixed(0):(lBytes/(1024*1024)).toFixed(0);
-    if(el('r2bLimitUnit')) el('r2bLimitUnit').value=lGb>=1?'GB':'MB';
-  }
-  if(el('r2bAutoOverflow')) el('r2bAutoOverflow').checked=R2B_AUTO_OVERFLOW||false;
-  const stEl=el('r2bStat');
-  if(stEl) stEl.textContent=R2B.accountId?'✓ R2 Cadangan sudah dikonfigurasi':'Belum dikonfigurasi';
-  updateR2bLimitPreview();
-  renderStorageBBar(currentStorageBBytes||0);
-}
-
-function updateR2bLimitPreview(){
-  const val=parseFloat(document.getElementById('r2bLimitVal')?.value)||0;
-  const unit=document.getElementById('r2bLimitUnit')?.value||'GB';
-  const bytes=unit==='GB'?val*1024*1024*1024:val*1024*1024;
-  const el=document.getElementById('r2bLimitPreview');
-  if(el) el.textContent=val?'= '+fmtSz(bytes):'';
-}
-
-async function saveR2b(){
-  const aid=document.getElementById('r2bAID')?.value.trim()||'';
-  const bkt=document.getElementById('r2bBkt')?.value.trim()||'';
-  const ak =document.getElementById('r2bAK')?.value.trim()||'';
-  const sk =document.getElementById('r2bSK')?.value.trim()||'';
-  const lv =parseFloat(document.getElementById('r2bLimitVal')?.value)||8;
-  const lu =document.getElementById('r2bLimitUnit')?.value||'GB';
-  const auto=document.getElementById('r2bAutoOverflow')?.checked||false;
-  if(!aid||!bkt||!ak){ toast('Account ID, Bucket, dan Access Key wajib diisi!','warn'); return; }
-
-  const lBytes=lu==='GB'?Math.round(lv*1024*1024*1024):Math.round(lv*1024*1024);
-  const alertEl=document.getElementById('r2bAlert');
-
-  try{
-    const upserts=[
-      {key:'r2bAccountId',  value:aid},
-      {key:'r2bBucket',     value:bkt},
-      {key:'r2bAccessKey',  value:ak},
-      {key:'r2bLimitBytes', value:String(lBytes)},
-      {key:'r2bAutoOverflow',value:String(auto)},
-    ];
-    if(sk) upserts.push({key:'r2bSecretKey', value:sk});
-
-    const{error}=await sb.from('app_config').upsert(upserts,{onConflict:'key'});
-    if(error) throw error;
-
-    R2B={accountId:aid,bucket:bkt,accessKey:ak,secretKey:sk||R2B.secretKey};
-    R2B_LIMIT_BYTES=lBytes;
-    R2B_AUTO_OVERFLOW=auto;
-    sessionStorage.setItem('r2bcfg_session',JSON.stringify(R2B));
-    sessionStorage.setItem('r2blimit_session',String(lBytes));
-
-    toast('R2 Cadangan berhasil disimpan ✓','ok');
-    if(alertEl){ alertEl.style.display='block'; alertEl.className='alert-box alert-ok'; alertEl.innerHTML='<i class="fas fa-check-circle"></i> Konfigurasi R2 Cadangan tersimpan.'; }
-    fillR2bFields();
-    await loadStorageUsage();
-  }catch(e){
-    toast('Gagal simpan R2 Cadangan: '+e.message,'err');
-    if(alertEl){ alertEl.style.display='block'; alertEl.className='alert-box alert-danger'; alertEl.innerHTML='<i class="fas fa-times-circle"></i> '+e.message; }
-  }
-}
-
-// Transfer manual: R2 Utama → R2 Cadangan
-async function migrateR2ToR2b(){
-  await _doR2Transfer('primary','secondary','R2 Utama → Cadangan');
-}
-// Transfer manual: R2 Cadangan → R2 Utama
-async function migrateR2bToR2(){
-  await _doR2Transfer('secondary','primary','R2 Cadangan → Utama');
-}
-
-async function _doR2Transfer(fromStorage, toStorage, label){
-  if(!confirm(`Transfer semua file dari ${label}?\nProses ini memindahkan file satu per satu dan tidak bisa dibatalkan.`)) return;
-  const{data:{session}}=await sb.auth.getSession();
-  const token=session?.access_token||'';
-
-  // Ambil semua dokumen yang ada di storage sumber
-  const storageFilter = fromStorage==='secondary'
-    ? sb.from('dokumen').select('id,r2_key,nama_file,ukuran_file').eq('storage','secondary')
-    : sb.from('dokumen').select('id,r2_key,nama_file,ukuran_file').neq('storage','secondary');
-
-  const{data:docs,error}=await storageFilter;
-  if(error){ toast('Gagal ambil daftar dokumen: '+error.message,'err'); return; }
-  if(!docs||!docs.length){ toast('Tidak ada dokumen di '+label.split('→')[0].trim(),'warn'); return; }
-
-  const hdr=document.getElementById('transferResultHeader');
-  const bdy=document.getElementById('transferResultBody');
-  const box=document.getElementById('transferResultBox');
-  if(box){ box.style.display='block'; if(hdr){ hdr.style.background='#fef3c7'; hdr.innerHTML='<i class="fas fa-spinner fa-spin"></i> Transfer sedang berjalan...'; } }
-
-  let ok=0, fail=0, failList=[];
-  for(const doc of docs){
-    if(!doc.r2_key) continue;
-    try{
-      const res=await fetch(`${WORKER_URL}/transfer`,{
-        method:'POST',
-        headers:{'Authorization':`Bearer ${token}`,'Content-Type':'application/json'},
-        body:JSON.stringify({key:doc.r2_key, from:fromStorage, to:toStorage})
-      });
-      const data=await res.json();
-      if(!res.ok||!data.ok) throw new Error(data.error||'Gagal');
-      // Update kolom storage di Supabase
-      const newStorage = toStorage==='secondary' ? 'secondary' : 'primary';
-      await sb.from('dokumen').update({storage:newStorage}).eq('id',doc.id);
-      ok++;
-    }catch(e){
-      fail++;
-      failList.push((doc.nama_file||doc.r2_key)+': '+e.message);
-      console.warn('[transfer]',doc.nama_file, e.message);
-    }
-  }
-
-  await _updateCacheAndRenderAll();
-
-  const isOk=fail===0;
-  if(hdr){
-    hdr.style.background=isOk?'#f0fdf4':'#fef3c7';
-    hdr.innerHTML=isOk
-      ?`<i class="fas fa-check-circle" style="color:var(--accent2)"></i> Transfer selesai: ${ok} file berhasil dipindah`
-      :`<i class="fas fa-exclamation-triangle" style="color:var(--warn)"></i> Transfer: ${ok} berhasil, ${fail} gagal`;
-  }
-  if(bdy){
-    let html=`<div>Sumber: <strong>${label.split('→')[0].trim()}</strong> → Tujuan: <strong>${label.split('→')[1].trim()}</strong></div>`;
-    if(failList.length){
-      html+=`<div style="margin-top:.5rem;color:var(--danger)"><strong>File gagal:</strong><ul style="margin:.3rem 0 0 1rem">`;
-      failList.forEach(f=>{ html+=`<li>${f}</li>`; });
-      html+=`</ul></div>`;
-    }
-    bdy.innerHTML=html;
-  }
-  toast(isOk?`✓ ${ok} file berhasil dipindahkan`:`${ok} berhasil, ${fail} gagal`,'ok');
-}
-
-let currentStorageBBytes=0;
-function renderStorageBBar(usedBytes){
-  const wrap=document.getElementById('storageWrapB');
-  if(!wrap) return;
-  wrap.style.display='block';
-
-  const limitBytes=R2B_LIMIT_BYTES||1;
-  const pct=Math.min((usedBytes/limitBytes)*100,100);
-  const bar=document.getElementById('storageBBar');
-  if(bar){
-    bar.style.width=Math.max(pct,pct>0?0.5:0).toFixed(2)+'%';
-    bar.className='storage-bar-fill';
-    if(pct>=100)       bar.classList.add('danger');
-    else if(pct>=87.5) bar.classList.add('warn');
-    else               bar.classList.add('safe');
-  }
-  const usedEl=document.getElementById('storageBUsed');
-  const pctEl =document.getElementById('storageBPct');
-  const textEl=document.getElementById('storageBText');
-  const limitEl=document.getElementById('storageBLimit');
-  if(usedEl)  usedEl.textContent='R2 Cadangan terpakai: '+fmtSz(usedBytes);
-  if(pctEl)   pctEl.textContent=pct.toFixed(1)+'%';
-  if(textEl)  textEl.textContent='Cadangan: '+fmtSz(usedBytes)+' / '+fmtSz(R2B_LIMIT_BYTES||0);
-  if(limitEl) limitEl.textContent='Batas: '+fmtSz(R2B_LIMIT_BYTES||0);
 }
 
 async function testDriveConfig(){
@@ -3896,7 +3691,7 @@ async function deleteUserPermanent(id){
 
   // Ambil SEMUA dokumen user — r2_key, drive_file_id, storage_type
   const{data:userDocs, error:fetchErr}=await sb.from('dokumen')
-    .select('id,r2_key,drive_file_id,storage_type')
+    .select('id,r2_key,drive_file_id,storage_type,storage')
     .eq('user_id',id);
 
   if(fetchErr) console.warn('[deleteUser] Gagal ambil dokumen:', fetchErr.message);
@@ -4212,7 +4007,7 @@ async function loadDokAdmin(p=1){
 
   const from=(p-1)*PS, to=from+PS-1;
   let q=sb.from('dokumen')
-    .select('id,nama_file,kategori_id,keterangan,ukuran_file,uploaded_at,r2_key,drive_file_id,storage_type,uploaded_by,user_id,kategori_dokumen:kategori_id(nama)',{count:'exact'})
+    .select('id,nama_file,kategori_id,keterangan,ukuran_file,uploaded_at,r2_key,drive_file_id,storage_type,storage,uploaded_by,user_id,kategori_dokumen:kategori_id(nama)',{count:'exact'})
     .eq('user_id',dakF.userId);
   if(dakF.katId) q=q.eq('kategori_id',dakF.katId);
   if(dakF.q) q=q.ilike('nama_file','%'+dakF.q+'%');
@@ -4333,6 +4128,7 @@ async function delDokAdmin(id, r2Key, driveFileId){
     showAlertBanner('Gagal menghapus dokumen: '+dbErr.message,'err');
     return;
   }
+  // Hapus dari R2 jika dokumen ada di R2
   if(stTypeDel!=='drive' && r2Key){
     try{ await r2Delete(r2Key, stTypeDel==='secondary'?'secondary':'primary'); }
     catch(e){ console.warn('R2 delete warning:',e.message); }
@@ -4375,17 +4171,14 @@ async function adminOpenDok(r2Key, nama, driveFileId){
       showActionSplash('Mengunduh dari Cloudflare R2...','Mohon tunggu sebentar');
       const token=await getWorkerToken();
       const encodedKey=r2Key.split('/').map(encodeURIComponent).join('/');
-      // Ambil info storage dari DB untuk tahu bucket mana
-      let storageHint='primary';
+      let _aBucket='primary';
       try{
-        const{data:dInfo}=await sb.from('dokumen').select('storage').eq('r2_key',r2Key).maybeSingle();
-        if(dInfo?.storage==='secondary') storageHint='secondary';
+        const{data:_aInfo}=await sb.from('dokumen').select('storage').eq('r2_key',r2Key).maybeSingle();
+        if(_aInfo?.storage==='secondary') _aBucket='secondary';
       }catch(e){}
-      const fetchHdrs={'Authorization':`Bearer ${token}`};
-      if(storageHint==='secondary') fetchHdrs['X-Storage']='secondary';
-      const res=await fetch(`${WORKER_URL}/file/${encodedKey}`,{
-        headers:fetchHdrs
-      });
+      const _aHdrs={'Authorization':`Bearer ${token}`};
+      if(_aBucket==='secondary') _aHdrs['X-Storage']='secondary';
+      const res=await fetch(`${WORKER_URL}/file/${encodedKey}`,{headers:_aHdrs});
       if(!res.ok){
         const d=await res.json().catch(()=>({}));
         throw new Error(d.error||`Gagal mengambil file (${res.status})`);
@@ -4539,7 +4332,7 @@ async function loadDokUser(katId=null,p=1){
   const btnBack=document.getElementById('btnBackKat');
   if(btnBack) btnBack.style.display=katId?'inline-flex':'none';
   const from=(p-1)*PS,to=from+PS-1;
-  let q=sb.from('dokumen').select('id,nama_file,kategori_id,keterangan,ukuran_file,uploaded_at,r2_key,drive_file_id,storage_type,kategori_dokumen:kategori_id(id,nama)',{count:'exact'}).eq('user_id',CU.id);
+  let q=sb.from('dokumen').select('id,nama_file,kategori_id,keterangan,ukuran_file,uploaded_at,r2_key,drive_file_id,storage_type,storage,kategori_dokumen:kategori_id(id,nama)',{count:'exact'}).eq('user_id',CU.id);
   if(katId) q=q.eq('kategori_id',katId);
   if(dukQ) q=q.or(`nama_file.ilike.%${dukQ}%,keterangan.ilike.%${dukQ}%`);
   const{data,count:total,error:qErr}=await q.order('uploaded_at',{ascending:false}).range(from,to);
@@ -4635,7 +4428,7 @@ function konfirmHapusDokAdmin(btn){
 
 async function delDok(id, isAdmin=false){
   showActionSplash('Menghapus dokumen...','Menghapus file dari penyimpanan');
-  const{data:dok,error:fetchErr}=await sb.from('dokumen').select('r2_key,nama_file,drive_file_id,storage_type').eq('id',id).single();
+  const{data:dok,error:fetchErr}=await sb.from('dokumen').select('r2_key,nama_file,drive_file_id,storage_type,storage').eq('id',id).single();
   if(fetchErr){
     hideActionSplash();
     showAlertBanner('Gagal menghapus dokumen: '+fetchErr.message,'err');
@@ -4720,17 +4513,15 @@ async function openDokNewTab(r2Key, nama, driveFileId){
       showActionSplash('Mengunduh dari Cloudflare R2...','Mohon tunggu sebentar');
       const token=await getWorkerToken();
       const encodedKey=r2Key.split('/').map(encodeURIComponent).join('/');
-     // Baca storage dari data dokumen jika tersedia, atau query DB
-  let _stHint='primary';
-  try{
-    const{data:_dInfo}=await sb.from('dokumen').select('storage').eq('r2_key',r2Key).maybeSingle();
-    if(_dInfo?.storage==='secondary') _stHint='secondary';
-  }catch(e){}
-  const _fHdrs={'Authorization':`Bearer ${token}`};
-  if(_stHint==='secondary') _fHdrs['X-Storage']='secondary';
-  const res=await fetch(`${WORKER_URL}/file/${encodedKey}`,{
-    headers:_fHdrs
-  });
+      // Cek storage bucket dari DB
+      let _bucket='primary';
+      try{
+        const{data:_dInfo}=await sb.from('dokumen').select('storage').eq('r2_key',r2Key).eq('user_id',CU.id).maybeSingle();
+        if(_dInfo?.storage==='secondary') _bucket='secondary';
+      }catch(e){}
+      const _fHdrs={'Authorization':`Bearer ${token}`};
+      if(_bucket==='secondary') _fHdrs['X-Storage']='secondary';
+      const res=await fetch(`${WORKER_URL}/file/${encodedKey}`,{headers:_fHdrs});
       if(!res.ok){const d=await res.json().catch(()=>({}));throw new Error(d.error||`Gagal mengambil file (${res.status})`);}
       blob=await res.blob();
     } else {
@@ -4931,7 +4722,8 @@ async function doUpload(){
     // ── Tentukan target penyimpanan dari hasil cekStorageCukup ──
     let storageType='r2';
     let driveFileId=null;
-  if(storTarget==='drive'){
+    let storageBucket='primary'; // 'primary' atau 'secondary'
+    if(storTarget==='drive'){
       setPrg(20,'R2 penuh — mengunggah ke Google Drive...');
       if(!DRIVE.serviceAccountJson) await ensureDriveConfig();
       const katNama=allKategori.find(k=>k.id===katId)?.nama||'Lainnya';
@@ -4940,14 +4732,13 @@ async function doUpload(){
       storageType='drive';
     } else if(storTarget==='secondary'){
       setPrg(20,'R2 Utama penuh — mengunggah ke R2 Cadangan...');
-      const r2PutRes=await r2Put(ep,R2.bucket,r2Key,fileBuffer,upFile.type||'application/octet-stream','secondary');
-      storageType='r2';
-      insertPayload.storage='secondary';
+      await r2Put(ep,R2.bucket,r2Key,fileBuffer,upFile.type||'application/octet-stream','secondary');
+      storageBucket='secondary';
     } else {
       setPrg(20,'Mengunggah ke Cloudflare R2...');
       const r2PutResult=await r2Put(ep,R2.bucket,r2Key,fileBuffer,upFile.type||'application/octet-stream');
-      storageType='r2';
-      insertPayload.storage=r2PutResult?.storage==='secondary'?'secondary':'primary';
+      // Worker bisa auto-fallback ke secondary
+      storageBucket=r2PutResult?.storage==='secondary'?'secondary':'primary';
     }
 
     setPrg(75,'Memeriksa kapasitas & menyimpan ke database...');
@@ -4963,14 +4754,10 @@ async function doUpload(){
       ukuran_file:upFile.size,
       storage_type:storageType,
       drive_file_id:driveFileId||null,
-      uploaded_at:new Date().toISOString()
+      uploaded_at:new Date().toISOString(),
+      storage:storageBucket
     };
-    // r2_key NOT NULL constraint — wajib diisi
-    // Jika Drive: set ke string kosong (file ada di drive_file_id)
-    // Jika R2: set ke r2Key yang sebenarnya
     insertPayload.r2_key = storageType==='r2' ? r2Key : '';
-    // Simpan storage bucket yang dipakai — 'primary' atau 'secondary'
-    // (diisi setelah r2Put, default 'primary')
 
     // Gunakan RPC atomik — cek kapasitas + insert dalam 1 transaksi Postgres
     // Ini mencegah race condition saat 2 user upload bersamaan
@@ -5115,7 +4902,7 @@ async function checkStorageOnUploadPage(){
     let r2LimitBytes=R2_LIMIT_BYTES, driveGb=0, driveConfigured=false, driveAutoOverflow=false;
     try{
       const{data:rows}=await sb.from('app_config').select('key,value')
-        .in('key',['r2LimitBytes','driveLimitGb','driveAutoOverflow','driveJson','driveFolderId']);
+        .in('key',['r2LimitBytes','driveLimitGb','driveAutoOverflow','driveJson','driveFolderId','r2bLimitBytes','r2bAutoOverflow','r2bAccountId','r2bAccessKey']);
       if(rows&&rows.length){
         let hJ=false,hF=false;
         rows.forEach(r=>{
@@ -5204,47 +4991,36 @@ function showStorageBlockAlert(msg){
 }
 
 // Upload via Cloudflare Worker (bisa beda akun R2)
-// storageHint: 'primary' (default) | 'secondary' — dikirim ke Worker via header X-Storage
 async function r2Put(ep,bucket,key,body,ct,storageHint){
   const{data:{session}}=await sb.auth.getSession();
   const token=session?.access_token||'';
   if(!token) throw new Error('Sesi tidak aktif, silakan login ulang.');
-
   const encodedKey=key.split('/').map(encodeURIComponent).join('/');
   const reqHeaders={
     'Authorization':`Bearer ${token}`,
     'Content-Type':ct||'application/octet-stream',
   };
   if(storageHint==='secondary') reqHeaders['X-Storage']='secondary';
-
   const res=await fetch(`${WORKER_URL}/upload/${encodedKey}`,{
     method:'PUT',
     headers:reqHeaders,
     body,
   });
-
   if(!res.ok){
     const data=await res.json().catch(()=>({}));
     if(res.status===413) throw new Error(data.error||'Penyimpanan penuh.');
     throw new Error(data.error||`Upload gagal (${res.status})`);
   }
-  const result=await res.json();
-  // Kembalikan storage yang benar-benar dipakai Worker (bisa berbeda karena auto-fallback)
-  return result;
+  return await res.json();
 }
-
-
-// storageHint: 'primary' (default) | 'secondary'
-async function r2Delete(key, storageHint){
+async function r2Delete(key,storageHint){
   if(!key || key.trim()==='') return;
   const{data:{session}}=await sb.auth.getSession();
   const token=session?.access_token||'';
   if(!token) throw new Error('Sesi tidak aktif.');
-
   const encodedKey=key.split('/').map(encodeURIComponent).join('/');
   const reqHeaders={'Authorization':`Bearer ${token}`};
   if(storageHint==='secondary') reqHeaders['X-Storage']='secondary';
-
   const res=await fetch(`${WORKER_URL}/file/${encodedKey}`,{
     method:'DELETE',
     headers:reqHeaders,
@@ -5254,16 +5030,12 @@ async function r2Delete(key, storageHint){
     throw new Error(data.error||`Hapus gagal (${res.status})`);
   }
 }
-
-// storageType: nilai dari kolom dokumen.storage ('primary'/'secondary'/null)
 async function getSignedUrl(key, driveFileId, storageType){
   if(driveFileId) return '__drive__:'+driveFileId;
   const encodedKey=key.split('/').map(encodeURIComponent).join('/');
-  // Sisipkan info storage di URL sebagai custom scheme agar bisa dibaca fetchFile
   const hint=storageType==='secondary'?'__secondary__':'';
   return hint+`${WORKER_URL}/file/${encodedKey}`;
 }
-
 async function hmac(k,d){const ck=await crypto.subtle.importKey('raw',typeof k==='string'?new TextEncoder().encode(k):k,{name:'HMAC',hash:'SHA-256'},false,['sign']);return new Uint8Array(await crypto.subtle.sign('HMAC',ck,new TextEncoder().encode(d)));}
 async function sha256h(d){const b=typeof d==='string'?new TextEncoder().encode(d):d;return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',b))).map(x=>x.toString(16).padStart(2,'0')).join('');}
 function toHex(a){return Array.from(a).map(b=>b.toString(16).padStart(2,'0')).join('');}
@@ -5377,7 +5149,7 @@ async function doUserBackupR2(){
 
   // Ambil semua dokumen milik user ini
   const{data:docs,error}=await sb.from('dokumen')
-    .select('nama_file,r2_key,drive_file_id,storage_type,ukuran_file,kategori_dokumen:kategori_id(nama)')
+    .select('nama_file,r2_key,drive_file_id,storage_type,storage,ukuran_file,kategori_dokumen:kategori_id(nama)')
     .eq('user_id',CU.id)
     .order('uploaded_at',{ascending:true});
 
@@ -5407,20 +5179,16 @@ async function doUserBackupR2(){
   async function fetchFile(url, retries=3){
     const{data:{session}}=await sb.auth.getSession();
     const tok=session?.access_token||'';
+    // Drive file
     if(url.startsWith('__drive__:')){
       const fid=url.replace('__drive__:','');
       return await driveDownload(fid);
     }
-    // Strip __secondary__ prefix dan set header X-Storage
-    let isSecondary=false;
-    if(url.startsWith('__secondary__')){ isSecondary=true; url=url.replace('__secondary__',''); }
     for(let i=0;i<retries;i++){
       try{
         const ctrl=new AbortController();
         const timer=setTimeout(()=>ctrl.abort(),60000);
-        const hdrs=tok?{'Authorization':`Bearer ${tok}`}:{};
-        if(isSecondary) hdrs['X-Storage']='secondary';
-        const res=await fetch(url,{signal:ctrl.signal,headers:hdrs});
+        const res=await fetch(url,{signal:ctrl.signal,headers:tok?{'Authorization':`Bearer ${tok}`}:{}});
         clearTimeout(timer);
         if(!res.ok) throw new Error('HTTP '+res.status);
         return res;
@@ -5550,18 +5318,21 @@ async function loadBackupPage(){
 
   // Ambil semua data storage sekaligus — dipakai untuk backupDokStat DAN r2BackupStat
   // Gabungkan query storStats & dokPerPegRaw dalam satu fetch (hemat 1 round-trip)
-  const{data:storStats}=await sb.from('dokumen').select('storage_type,ukuran_file,user_id');
-  const r2Docs=(storStats||[]).filter(d=>!d.storage_type||d.storage_type==='r2');
+  const{data:storStats}=await sb.from('dokumen').select('storage_type,storage,ukuran_file,user_id');
+  const r2Docs=(storStats||[]).filter(d=>(!d.storage_type||d.storage_type==='r2')&&d.storage!=='secondary');
+  const r2bDocs=(storStats||[]).filter(d=>d.storage==='secondary');
   const driveDocs=(storStats||[]).filter(d=>d.storage_type==='drive');
   const r2Bytes=r2Docs.reduce((s,d)=>s+(d.ukuran_file||0),0);
+  const r2bBytes=r2bDocs.reduce((s,d)=>s+(d.ukuran_file||0),0);
   const driveBytes=driveDocs.reduce((s,d)=>s+(d.ukuran_file||0),0);
   // Hitung dokumen per pegawai dari storStats (tanpa query terpisah)
   const _dokPerPegFromStats={};
   (storStats||[]).forEach(d=>{ _dokPerPegFromStats[d.user_id]=(_dokPerPegFromStats[d.user_id]||0)+1; });
 
-  // Update storage bar dari data yang sudah ada (tidak perlu query ulang)
   currentStorageBytes=r2Bytes;
+  currentStorageBBytes=r2bBytes;
   renderStorageBar(r2Bytes);
+  renderStorageBBar(r2bBytes);
 
   document.getElementById('backupDokStat').innerHTML=
     `<i class="fas fa-file-alt" style="color:var(--accent2)"></i> <strong>${dokCount||0}</strong> dokumen &nbsp;·&nbsp; R2: <strong>${fmtSz(r2Bytes)}</strong>${driveDocs.length?' &nbsp;·&nbsp; <i class="fab fa-google-drive" style="color:#0F9D58"></i> Drive: <strong>'+fmtSz(driveBytes)+'</strong>':''}`;
@@ -5825,7 +5596,7 @@ async function doBackupR2PerPegawai(){
   const btn=document.getElementById('btnDoBackupR2Peg');
   setBtn(btn,true);
   const{data:docs,error}=await sb.from('dokumen')
-    .select('nama_file,r2_key,drive_file_id,storage_type,kategori_dokumen:kategori_id(nama),profiles:user_id(nama_lengkap)')
+    .select('nama_file,r2_key,drive_file_id,storage_type,storage,kategori_dokumen:kategori_id(nama),profiles:user_id(nama_lengkap)')
     .eq('user_id',pegId).order('uploaded_at',{ascending:false});
   setBtn(btn,false,'<i class="fas fa-download"></i> Download File Pegawai Ini');
   if(error){toast('Gagal mengambil data: '+error.message,'err');return;}
@@ -5852,7 +5623,7 @@ async function backupR2Files(){
   // Pastikan Drive config termuat sebelum mengambil data
   if(!DRIVE.serviceAccountJson) await ensureDriveConfig();
   const{data:docs,error}=await sb.from('dokumen')
-    .select('nama_file,r2_key,drive_file_id,storage_type,kategori_dokumen:kategori_id(nama),profiles:user_id(nama_lengkap)')
+    .select('nama_file,r2_key,drive_file_id,storage_type,storage,kategori_dokumen:kategori_id(nama),profiles:user_id(nama_lengkap)')
     .order('profiles(nama_lengkap)',{ascending:true});
   setBtn(btn,false,'<i class="fas fa-cloud-download-alt"></i> Download Semua File (.zip)');
   if(error){toast('Gagal mengambil data: '+error.message,'err');return;}
@@ -5906,22 +5677,25 @@ async function _doR2Zip(docs, zipFilename, logType, label){
   async function fetchWithRetry(url, retries=3){
     const{data:{session}}=await sb.auth.getSession();
     const tok=session?.access_token||'';
-    // Drive file
     if(url.startsWith('__drive__:')){
       const fid=url.replace('__drive__:','');
       return await driveDownload(fid);
     }
+    // Strip __secondary__ prefix dan set header X-Storage
+    let isSecondary=false;
+    if(url.startsWith('__secondary__')){ isSecondary=true; url=url.replace('__secondary__',''); }
     for(let i=0;i<retries;i++){
       try{
         const ctrl=new AbortController();
-        const timer=setTimeout(()=>ctrl.abort(),60000); // 60s timeout per file
-        const res=await fetch(url,{signal:ctrl.signal,headers:tok?{'Authorization':`Bearer ${tok}`}:{}});
+        const timer=setTimeout(()=>ctrl.abort(),60000);
+        const hdrs=tok?{'Authorization':`Bearer ${tok}`}:{};
+        if(isSecondary) hdrs['X-Storage']='secondary';
+        const res=await fetch(url,{signal:ctrl.signal,headers:hdrs});
         clearTimeout(timer);
         if(!res.ok) throw new Error('HTTP '+res.status);
         return res;
       }catch(e){
         if(i===retries-1) throw e;
-        // Tunggu sebentar sebelum retry
         await new Promise(r=>setTimeout(r,1500*(i+1)));
       }
     }
@@ -5954,7 +5728,7 @@ async function _doR2Zip(docs, zipFilename, logType, label){
       );
 
       // Generate fresh signed URL setiap file agar tidak expired (support R2+Drive)
-      const url=await getSignedUrl(doc.r2_key, doc.drive_file_id);
+      const url=await getSignedUrl(doc.r2_key, doc.drive_file_id, doc.storage);
 
       // Fetch dengan retry
       const res=await fetchWithRetry(url);
@@ -6233,21 +6007,28 @@ async function _checkAdminStorageLimit(fileSize){
     const driveLimitBytes=driveConfigOk?Math.round(DRIVE.limitGb*1024*1024*1024):0;
     const driveSisa=driveConfigOk?Math.max(0,driveLimitBytes-driveUsed):0;
 
-    if(fileSize>r2Sisa && !driveConfigOk){
-      // R2 tidak cukup dan Drive tidak aktif/belum diset
-      alertTxt.innerHTML=`<strong>🚫 R2 tidak cukup!</strong> File: <strong>${fmtSz(fileSize)}</strong>, sisa R2: <strong>${fmtSz(r2Sisa)}</strong> dari ${fmtSz(r2Limit)}.<br><small>Hapus dokumen lama atau aktifkan overflow ke Google Drive.</small>`;
+    const r2bConfigOk = R2B_AUTO_OVERFLOW && R2B.accountId && R2B.accessKey && R2B.bucket;
+    const r2bUsed = r2bConfigOk ? await _hitung_r2b_dari_db() : 0;
+    const r2bSisa = r2bConfigOk ? Math.max(0, R2B_LIMIT_BYTES - r2bUsed) : 0;
+
+    if(fileSize>r2Sisa && !driveConfigOk && !r2bConfigOk){
+      alertTxt.innerHTML=`<strong>🚫 R2 tidak cukup!</strong> File: <strong>${fmtSz(fileSize)}</strong>, sisa R2: <strong>${fmtSz(r2Sisa)}</strong> dari ${fmtSz(r2Limit)}.<br><small>Hapus dokumen lama atau aktifkan R2 Cadangan di Pengaturan.</small>`;
       alertBox.style.display='flex';
     } else if(fileSize>r2Sisa && driveConfigOk && fileSize>driveSisa){
-      // R2 tidak cukup, Drive juga tidak cukup
       alertTxt.innerHTML=`<strong>🚫 Semua storage penuh!</strong> File: <strong>${fmtSz(fileSize)}</strong>.<br>Sisa R2: ${fmtSz(r2Sisa)}, sisa Drive: ${fmtSz(driveSisa)}.<br><small>Hapus dokumen lama atau naikkan limit Drive di Pengaturan.</small>`;
       alertBox.style.display='flex';
+    } else if(fileSize>r2Sisa && r2bConfigOk && fileSize>r2bSisa){
+      alertTxt.innerHTML=`<strong>🚫 Semua storage penuh!</strong> File: <strong>${fmtSz(fileSize)}</strong>.<br>Sisa R2 Utama: ${fmtSz(r2Sisa)}, sisa R2 Cadangan: ${fmtSz(r2bSisa)}.<br><small>Hapus dokumen lama.</small>`;
+      alertBox.style.display='flex';
     } else if(fileSize>r2Sisa && driveConfigOk){
-      // R2 tidak cukup tapi Drive masih ada — tampilkan info (bukan error)
       alertTxt.innerHTML=`<i class="fas fa-info-circle"></i> R2 penuh — file ini akan diarahkan ke Google Drive (sisa Drive: ${fmtSz(driveSisa)}).`;
       alertBox.style.display='flex';
-      alertBox.className='alert-box'; // info style
+      alertBox.className='alert-box';
+    } else if(fileSize>r2Sisa && r2bConfigOk){
+      alertTxt.innerHTML=`<i class="fas fa-info-circle"></i> R2 Utama penuh — file ini akan diarahkan ke R2 Cadangan (sisa: ${fmtSz(r2bSisa)}).`;
+      alertBox.style.display='flex';
+      alertBox.className='alert-box';
     } else {
-      // Aman — sembunyikan alert jika sebelumnya tampil
       alertBox.style.display='none';
     }
   }catch(e){ /* silent — cek akan dilakukan lagi saat doUploadAdmin */ }
@@ -6362,6 +6143,7 @@ async function doUploadAdmin(){
     // ── Tentukan target penyimpanan dari cekStorageCukup ──
     let storageType='r2';
     let driveFileId=null;
+    let storageBucketA='primary';
     if(adminStorTarget==='drive'){
       setPrgAdmin(25,'R2 penuh — mengunggah ke Google Drive...');
       if(!DRIVE.serviceAccountJson) await ensureDriveConfig();
@@ -6370,10 +6152,14 @@ async function doUploadAdmin(){
       const pegNamaUpload=(pegRow?.nama_lengkap||pegId).replace(/[^a-zA-Z0-9_ ]/g,'_');
       driveFileId=await driveUpload(fileBuffer,upAdminFile.name,upAdminFile.type||'application/octet-stream',`${pegNamaUpload}/${katNamaUpload}`);
       storageType='drive';
+    } else if(adminStorTarget==='secondary'){
+      setPrgAdmin(25,'R2 Utama penuh — mengunggah ke R2 Cadangan...');
+      await r2Put(ep,R2.bucket,r2Key,fileBuffer,upAdminFile.type||'application/octet-stream','secondary');
+      storageBucketA='secondary';
     } else {
       setPrgAdmin(25,'Mengunggah ke Cloudflare R2...');
       const r2PutResultA=await r2Put(ep,R2.bucket,r2Key,fileBuffer,upAdminFile.type||'application/octet-stream');
-      adminInsertPayload.storage = r2PutResultA?.storage==='secondary' ? 'secondary' : 'primary';
+      storageBucketA=r2PutResultA?.storage==='secondary'?'secondary':'primary';
     }
 
     setPrgAdmin(75,'Memeriksa kapasitas & menyimpan ke database...');
@@ -6388,9 +6174,9 @@ async function doUploadAdmin(){
       ukuran_file  : upAdminFile.size,
       storage_type : storageType,
       drive_file_id: driveFileId||null,
-      uploaded_at  : new Date().toISOString()
+      uploaded_at  : new Date().toISOString(),
+      storage      : storageBucketA
     };
-    // r2_key NOT NULL constraint — wajib diisi
     adminInsertPayload.r2_key = storageType==='r2' ? r2Key : '';
 
     // Pastikan id selalu ada sebelum kirim ke RPC/insert
@@ -6581,7 +6367,6 @@ async function _hitung_r2_dari_db(){
   return total;
 }
 
-// BARU: hitung penggunaan R2 Cadangan dari DB
 async function _hitung_r2b_dari_db(){
   let total=0;
   try{
@@ -6749,7 +6534,7 @@ async function getDriveUsedBytes(){ return getDriveStorageUsedFromDB(); }
 
 async function loadStorageUsage(){
   try{
-    const[r2,drive,r2b]=await Promise.all([_hitung_r2_dari_db(), _hitung_drive_dari_db(), _hitung_r2b_dari_db()]);
+    const[r2,drive,r2b]=await Promise.all([_hitung_r2_dari_db(),_hitung_drive_dari_db(),_hitung_r2b_dari_db()]);
     await _simpanCacheStorage(r2,drive).catch(()=>{});
     currentStorageBytes=r2;
     currentStorageBBytes=r2b;
@@ -6830,11 +6615,15 @@ async function cekStorageCukup(fileSize, isAdmin=false){
     if(!error && rows && rows.length){
       let hJ=false,hF=false;
       rows.forEach(r=>{
-        if(r.key==='r2LimitBytes'   && r.value){ r2LimitBytes=parseInt(r.value); R2_LIMIT_BYTES=r2LimitBytes; }
-        if(r.key==='driveLimitGb'   && r.value){ driveGb=parseFloat(r.value); DRIVE.limitGb=driveGb; }
+        if(r.key==='r2LimitBytes'    && r.value){ r2LimitBytes=parseInt(r.value); R2_LIMIT_BYTES=r2LimitBytes; }
+        if(r.key==='driveLimitGb'    && r.value){ driveGb=parseFloat(r.value); DRIVE.limitGb=driveGb; }
         if(r.key==='driveAutoOverflow')          { driveAutoOverflow=(r.value==='true'); DRIVE.autoOverflow=driveAutoOverflow; }
-        if(r.key==='driveJson'      && r.value)  hJ=true;
-        if(r.key==='driveFolderId'  && r.value)  hF=true;
+        if(r.key==='driveJson'       && r.value)  hJ=true;
+        if(r.key==='driveFolderId'   && r.value)  hF=true;
+        if(r.key==='r2bLimitBytes'   && r.value){ R2B_LIMIT_BYTES=parseInt(r.value)||R2B_LIMIT_BYTES; }
+        if(r.key==='r2bAutoOverflow')             { R2B_AUTO_OVERFLOW=(r.value==='true'); }
+        if(r.key==='r2bAccountId'    && r.value)  R2B.accountId=r.value;
+        if(r.key==='r2bAccessKey'    && r.value)  R2B.accessKey=r.value;
       });
       driveConfigured=hJ&&hF;
     } else if(error){
@@ -6954,16 +6743,16 @@ async function cekStorageCukup(fileSize, isAdmin=false){
     // Drive masih ada ruang — izinkan overflow ke Drive
     return{ok:true, target:'drive', msg:''};
   }
+
   // ── 5b. R2 Cadangan sebagai overflow (jika Drive tidak aktif) ─────────────
-  const r2bAvailable = R2B_AUTO_OVERFLOW && R2B.accountId && R2B.bucket && R2B.accessKey;
+  const r2bAvailable = R2B_AUTO_OVERFLOW && R2B.accountId && R2B.accessKey && R2B.bucket;
   if(r2bAvailable && !driveAvailable){
     if(!r2Full && !r2TakCukup) return{ok:true, target:'r2', msg:''};
-    // R2 utama penuh → cek R2 cadangan
-    const r2bUsed = await _hitung_r2b_dari_db();
-    const r2bSisa = Math.max(0, R2B_LIMIT_BYTES - r2bUsed);
-    const r2bFull = r2bUsed >= R2B_LIMIT_BYTES;
-    const r2bTakCukup = fileSize > r2bSisa;
-    if(r2bFull || r2bTakCukup){
+    const r2bUsed=await _hitung_r2b_dari_db();
+    const r2bSisa=Math.max(0,R2B_LIMIT_BYTES-r2bUsed);
+    const r2bFull=(r2bUsed>=R2B_LIMIT_BYTES);
+    const r2bTakCukup=(fileSize>r2bSisa);
+    if(r2bFull||r2bTakCukup){
       const msg=isAdmin
         ?`🚫 R2 Utama penuh & R2 Cadangan tidak cukup (sisa: ${fmtSz(r2bSisa)}).`
         :'🚫 Semua penyimpanan penuh. Hubungi administrator.';
